@@ -1,0 +1,189 @@
+package pbnetwork;
+
+enum ConnectionError {
+	CONNECTION_ERROR_NETWORK_ERROR = 0;
+	CONNECTION_ERROR_INVALID_USERNAME = 1;
+	CONNECTION_ERROR_AUTHENTICATION_FAILED = 2;
+	CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE = 3;
+	CONNECTION_ERROR_NO_SSL_SUPPORT = 4;
+	CONNECTION_ERROR_ENCRYPTION_ERROR = 5;
+	CONNECTION_ERROR_NAME_IN_USE = 6;
+	CONNECTION_ERROR_INVALID_SETTINGS = 7;
+	CONNECTION_ERROR_CERT_NOT_PROVIDED = 8;
+	CONNECTION_ERROR_CERT_UNTRUSTED = 9;
+	CONNECTION_ERROR_CERT_EXPIRED = 10;
+	CONNECTION_ERROR_CERT_NOT_ACTIVATED = 11;
+	CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH = 12;
+	CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH = 13;
+	CONNECTION_ERROR_CERT_SELF_SIGNED = 14;
+	CONNECTION_ERROR_CERT_OTHER_ERROR = 15;
+	CONNECTION_ERROR_OTHER_ERROR = 16;
+}
+
+enum StatusType {
+	STATUS_ONLINE		= 0;
+	STATUS_AWAY			= 1;
+	STATUS_FFC			= 2;
+	STATUS_XA			= 3;
+	STATUS_DND			= 4;
+	STATUS_NONE			= 5;
+	STATUS_INVISIBLE	= 6;
+}
+
+message Connected {
+	required string user = 1;
+}
+
+message Disconnected {
+	required string user = 1;
+	required int32 error = 2;
+	optional string message = 3;
+}
+
+message Login {
+	required string user = 1;
+	required string legacyName = 2;
+	required string password = 3;
+	repeated string extraFields = 4;
+}
+
+message Logout {
+	required string user = 1;
+	required string legacyName = 2;
+}
+
+message Buddy {
+	required string userName = 1;
+	required string buddyName = 2;
+	optional string alias = 3;
+	repeated string group = 4;
+	optional StatusType status = 5;
+	optional string statusMessage = 6;
+	optional string iconHash = 7;
+	optional bool blocked = 8;
+}
+
+message ConversationMessage {
+	required string userName = 1;
+	required string buddyName = 2;
+	required string message = 3;
+	optional string nickname = 4;
+	optional string xhtml = 5;
+	optional string timestamp = 6;
+	optional bool headline = 7;
+	optional string id = 8;
+	optional bool pm = 9;
+}
+
+message Room {
+	required string userName = 1;
+	required string nickname = 2;
+	required string room = 3;
+	optional string password = 4;
+}
+
+message RoomList {
+	repeated string room = 1;
+	repeated string name = 2;
+}
+
+enum ParticipantFlag {
+	PARTICIPANT_FLAG_NONE = 0;
+	PARTICIPANT_FLAG_MODERATOR = 1;
+	PARTICIPANT_FLAG_CONFLICT = 2;
+	PARTICIPANT_FLAG_BANNED = 4;
+	PARTICIPANT_FLAG_NOT_AUTHORIZED = 8;
+	PARTICIPANT_FLAG_ME = 16;
+	PARTICIPANT_FLAG_KICKED = 32;
+	PARTICIPANT_FLAG_ROOM_NOT_FOUND = 64;
+}
+
+message Participant {
+	required string userName = 1;
+	required string room = 2;
+	required string nickname = 3;
+	required int32 flag = 4;
+	required StatusType status = 5;
+	optional string statusMessage = 6;
+	optional string newname = 7;
+}
+
+message VCard {
+	required string userName = 1;
+	required string buddyName = 2;
+	required int32 id = 3;
+	optional string fullname = 4;
+	optional string nickname = 5;
+	optional bytes photo = 6;
+}
+
+message Status {
+	required string userName = 1;
+	required StatusType status = 3;
+	optional string statusMessage = 4;
+}
+
+message Stats {
+	required int32 res = 1;
+	required int32 init_res = 2;
+	required int32 shared = 3;
+	required string id = 4;
+}
+
+message File {
+	required string userName = 1;
+	required string buddyName = 2;
+	required string fileName = 3;
+	required int32 size = 4;
+	optional int32 ftID = 5;
+}
+
+message FileTransferData {
+	required int32 ftID = 1;
+	required bytes data = 2;
+}
+
+message BackendConfig {
+	required string config = 1;
+}
+
+message WrapperMessage {
+	enum Type { 
+		TYPE_CONNECTED 				= 1;
+		TYPE_DISCONNECTED 			= 2;
+		TYPE_LOGIN 					= 3;
+		TYPE_LOGOUT 				= 4;
+		TYPE_BUDDY_CHANGED			= 6;
+		TYPE_BUDDY_REMOVED			= 7;
+		TYPE_CONV_MESSAGE			= 8;
+		TYPE_PING					= 9;
+		TYPE_PONG					= 10;
+		TYPE_JOIN_ROOM				= 11;
+		TYPE_LEAVE_ROOM				= 12;
+		TYPE_PARTICIPANT_CHANGED	= 13;
+		TYPE_ROOM_NICKNAME_CHANGED	= 14;
+		TYPE_ROOM_SUBJECT_CHANGED	= 15;
+		TYPE_VCARD					= 16;
+		TYPE_STATUS_CHANGED			= 17;
+		TYPE_BUDDY_TYPING			= 18;
+		TYPE_BUDDY_STOPPED_TYPING	= 19;
+		TYPE_BUDDY_TYPED			= 20;
+		TYPE_AUTH_REQUEST			= 21;
+		TYPE_ATTENTION				= 22;
+		TYPE_STATS					= 23;
+		TYPE_FT_START				= 24;
+		TYPE_FT_FINISH				= 25;
+		TYPE_FT_DATA				= 26;
+		TYPE_FT_PAUSE				= 27;
+		TYPE_FT_CONTINUE			= 28;
+		TYPE_EXIT					= 29;
+		TYPE_BACKEND_CONFIG			= 30;
+		TYPE_QUERY					= 31;
+		TYPE_ROOM_LIST				= 32;
+		TYPE_CONV_MESSAGE_ACK		= 33;
+		TYPE_RAW_XML				= 34;
+	}
+	required Type type = 1;
+	optional bytes payload = 2;
+}
+;
