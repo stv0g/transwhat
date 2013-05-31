@@ -1,3 +1,8 @@
+gdata/
+atom/
+*.p12
+
+# Python stuff
 *.py[cod]
 
 # C extensions
