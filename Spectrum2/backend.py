@@ -1,4 +1,10 @@
-import protocol_pb2, socket, struct, sys, os
+import protocol_pb2
+import socket
+import struct
+import sys
+import os
+
+import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
  	wrap = protocol_pb2.WrapperMessage()
@@ -26,7 +32,7 @@ class SpectrumBackend:
 		m.message = msg
 		m.nickname = nickname
 		m.xhtml = xhtml
-		#m.timestamp = str(timestamp)
+		m.timestamp = str(timestamp)
 
 		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE)
 		self.send(message)
@@ -77,6 +83,13 @@ class SpectrumBackend:
 		message = WRAP(buddy.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BUDDY_CHANGED)
 		self.send(message)
 
+	def handleBuddyRemoved(self, user, buddyName):
+		buddy = protocol_pb2.Buddy()
+		buddy.userName = user
+		buddy.buddyName = buddyName
+
+		message = WRAP(buddy.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BUDDY_REMOVED)
+		self.send(message);
 
 	def handleBuddyTyping(self, user, buddyName):
 		buddy = protocol_pb2.Buddy()
@@ -184,7 +197,7 @@ class SpectrumBackend:
 		# Check later
 		if ftid != 0:
 			room.ftID = ftid 
-			
+
 		message = WRAP(room.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_FINISH)
 		self.send(message)
 
@@ -334,11 +347,12 @@ class SpectrumBackend:
 			else:
 				return
 
+
 			wrapper = protocol_pb2.WrapperMessage()
 			if (wrapper.ParseFromString(self.m_data[4:]) == False):
 				self.m_data = self.m_data[expected_size+4:]
 				return
-
+		
 			self.m_data = self.m_data[4+expected_size:]
 
 			if wrapper.type == protocol_pb2.WrapperMessage.TYPE_LOGIN:
