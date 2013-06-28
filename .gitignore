@@ -1,5 +1,7 @@
 gdata/
 atom/
+logs/q
+
 *.p12
 
 # Python stuff
