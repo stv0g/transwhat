@@ -5,6 +5,8 @@ import gdata.contacts.client
 import gdata.contacts.data
 import atom.data
 
+from constants import *
+
 gdata.contacts.REL_MOBILE='http://schemas.google.com/g/2005#mobile'
 
 class GoogleClient():
