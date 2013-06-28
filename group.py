@@ -6,3 +6,6 @@ class Group():
 		self.subject = subject
 		self.subjectOwner = subjectOwner
 		self.owner = owner
+
+		self.nick = "me"
+		self.participants = { }
