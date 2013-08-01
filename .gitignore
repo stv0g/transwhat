@@ -1,5 +1,8 @@
+# Third Party libs
 gdata/
 atom/
+Yowsup/
+
 logs/
 
 *.p12
