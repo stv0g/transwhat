@@ -29,7 +29,7 @@ class SpectrumBackend:
 		m = protocol_pb2.ConversationMessage()
 		m.userName = user
 		m.buddyName = legacyName
-		m.message = msg
+		m.message = msg.decode("utf-8")
 		m.nickname = nickname
 		m.xhtml = xhtml
 		m.timestamp = str(timestamp)
@@ -170,8 +170,8 @@ class SpectrumBackend:
 		roomList = protocol_pb2.RoomList()
 
 		for room in rooms:
-			roomList.room.append(room[0])
-			roomList.name.append(room[1])
+			roomList.room.append(room[0].decode("utf-8"))
+			roomList.name.append(room[1].decode("utf-8"))
 
 		message = WRAP(roomList.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_ROOM_LIST)
 		self.send(message);
