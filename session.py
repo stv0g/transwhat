@@ -190,7 +190,7 @@ class Session:
 				self.call("presence_sendUnavailable")
 
 	def changeStatusMessage(self, statusMessage):
-		if statusMessage != self.statusMessage:
+		if (statusMessage != self.statusMessage) or (self.initialized == False):
 			self.statusMessage = statusMessage
 			self.call("profile_setStatus", (statusMessage.encode("utf-8"),))
 			self.logger.info("Status message changed: %s", statusMessage)

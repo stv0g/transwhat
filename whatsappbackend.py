@@ -63,9 +63,7 @@ class WhatsAppBackend(SpectrumBackend):
 
 	def handleStatusChangeRequest(self, user, status, statusMessage):
 		self.logger.debug("handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)", user, status, statusMessage)
-		if len(statusMessage):
-			self.sessions[user].changeStatusMessage(statusMessage)
-
+		self.sessions[user].changeStatusMessage(statusMessage)
 		self.sessions[user].changeStatus(status)
 
 	def handleBuddyUpdatedRequest(self, user, buddy, nick, groups):
