@@ -27,7 +27,21 @@ import logging
 import urllib
 import time
 
-from Yowsup.connectionmanager import YowsupConnectionManager
+from yowsup.stacks import YowStack
+from yowsup.layers import YowLayerEvent
+from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
+								AuthError)
+from yowsup.layers.coder import YowCoderLayer
+from yowsup.layers.network import YowNetworkLayer
+from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
+from yowsup.layers.protocol_media import YowMediaProtocolLayer
+from yowsup.layers.stanzaregulator import YowStanzaRegulator
+from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
+from yowsup.layers.protocol_acks import YowAckProtocolLayer
+from yowsup.layers.logger import YowLoggerLayer
+from yowsup.common import YowConstants
+from yowsup import env
+
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -60,38 +74,23 @@ class Session:
 		self.initialized = False
 
 		self.buddies = BuddyList(legacyName, db)
-		self.frontend = YowsupConnectionManager()
 
 		self.bot = Bot(self)
 
-		# Events
-		self.listen("auth_success", self.onAuthSuccess)
-		self.listen("auth_fail", self.onAuthFailed)
-		self.listen("disconnected", self.onDisconnected)
+		env.CURRENT_ENV = env.S40YowsupEnv()
+		layers = (
+				(YowAuthenticationProtocolLayer,
+					YowMessagesProtocolLayer,
+					YowReceiptProtocolLayer,
+					YowAckProtocolLayer,
+					YowMediaProtocolLayer),
+				YowCoderLayer,
+				YowCryptLayer,
+				YowStanzaRegulator,
+				YowNetworkLayer
+		)
+		self.stack = YowStack(layers)
 
-		self.listen("contact_typing", self.onContactTyping)
-		self.listen("contact_paused", self.onContactPaused)
-
-		self.listen("presence_updated", self.onPrecenceUpdated)
-		self.listen("presence_available", self.onPrecenceAvailable)
-		self.listen("presence_unavailable", self.onPrecenceUnavailable)
-
-		self.listen("message_received", self.onMessageReceived)
-		self.listen("image_received", self.onMediaReceived)
-		self.listen("video_received", self.onMediaReceived)
-		self.listen("audio_received", self.onMediaReceived)
-		self.listen("location_received", self.onLocationReceived)
-		self.listen("vcard_received", self.onVcardReceived)
-
-		self.listen("group_messageReceived", self.onGroupMessageReceived)
-		self.listen("group_gotInfo", self.onGroupGotInfo)
-		self.listen("group_gotParticipants", self.onGroupGotParticipants)
-		self.listen("group_subjectReceived", self.onGroupSubjectReceived)
-
-		self.listen("notification_groupParticipantAdded", self.onGroupParticipantAdded)
-		self.listen("notification_groupParticipantRemoved", self.onGroupParticipantRemoved)
-		self.listen("notification_contactProfilePictureUpdated", self.onContactProfilePictureUpdated)
-		self.listen("notification_groupPictureUpdated", self.onGroupPictureUpdated)
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
@@ -108,8 +107,17 @@ class Session:
 		self.call("disconnect", ("logout",))
 
 	def login(self, password):
-		self.password = utils.decodePassword(password)
-		self.call("auth_login", (self.legacyName, self.password))
+		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
+							password)
+		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
+							YowConstants.ENDPOINTS[0])
+		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
+							YowConstants.DOMAIN)
+		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
+							env.CURRENT_ENV.getResource())
+		self.stack.broadcastEvent(
+				YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
+		self.stack.loop()
 
 	def updateRoomList(self):
 		rooms = []
