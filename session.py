@@ -108,7 +108,7 @@ class Session:
 
 	def login(self, password):
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
-							password)
+							(self.legacyName, password))
 		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
 							YowConstants.ENDPOINTS[0])
 		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
