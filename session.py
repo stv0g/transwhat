@@ -419,7 +419,7 @@ class SpectrumLayer(YowInterfaceLayer):
 
 	def onEvent(self, layerEvent):
 		# We cannot use __init__, since it can take no arguments
-		if layerEvent.name == SpectrumLayer.EVENT_START:
+		if layerEvent.getName() == SpectrumLayer.EVENT_START:
 			self.logger = logging.getLogger(self.__class__.__name__)
 			self.backend = layerEvent.getArg("backend")
 			self.user = layerEvent.getArg("user")
@@ -429,6 +429,10 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
 			return True
+		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
+			reason = layerEvent.getArg("reason")
+			self.logger.info("Disconnected: %s (%s)", self.user, reason)
+			self.backend.handleDisconnected(sefl.user, 0, reason)
 		return False
 
 	@ProtocolEntityCallback("success")
@@ -469,5 +473,3 @@ class SpectrumLayer(YowInterfaceLayer):
 			buddy = self.buddies[number]
 			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
 			self.toLower(entity)
-
-
