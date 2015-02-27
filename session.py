@@ -91,9 +91,14 @@ class Session():
 				YowNetworkLayer
 		)
 		self.stack = YowStack(layers)
-		self.stack.setProp(SpectrumLayer.PROP_BACKEND, self.backend)
-		self.stack.setProp(SpectrumLayer.PROP_USER, self.user)
-		self.stack.setProp(SpectrumLayer.PROP_DB, self.db)
+		self.stack.broadcastEvent(
+			YowLayerEvent(SpectrumLayer.EVENT_START,
+				backend = self.backend,
+				user = self.user,
+				db = self.db,
+				legacyName = self.legacyName
+			)
+		)
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
@@ -406,19 +411,18 @@ class Session():
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
 
 class SpectrumLayer(YowInterfaceLayer):
-	PROP_BACKEND = "yowsup.prop.SpectrumLayer.backend"
-	PROP_USER = "yowsup.prop.SpectrumLayer.user"
-	PROP_DB = "yowsup.prop.SpectrumLayer.db"
-	PROP_LEGACYNAME = "yowsup.prop.SpectrumLayer.legacyName"
+	EVENT_START = "transwhat.event.SpectrumLayer.start"
 
-	def __init__(self):
-		super(SpectrumLayer, self).__init__()
-		self.backend = self.getProp(SpectrumLayer.PROP_BACKEND)
-		self.user = self.getProp(SpectrumLayer.PROP_USER)
-		db = self.getProp(SpectrumLayer.PROP_DB)
-		self.buddies = BuddyList(legacyName, db)
-		self.legacyName(self.getProp(SpectrumLayer.PROP_LEGACYNAME))
-		self.bot = Bot(self)
+	def onEvent(self, layerEvent):
+		# We cannot use __init__, since it can take no arguments
+		if layerEvent.name == SpectrumLayer.EVENT_START:
+			self.backend = layerEvent.getArg("backend")
+			self.user = layerEvent.getArg("user")
+			self.legacyName = layerEvent.getArg("legacyName")
+			db = layerEvent.getArg("db")
+
+			self.buddies = BuddyList(legacyName, db)
+			self.bot = Bot(self)
 
 	@ProtocolEntityCallback("success")
 	def onAuthSuccess(self, entity):
