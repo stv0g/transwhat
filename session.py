@@ -43,6 +43,7 @@ from yowsup.layers.logger import YowLoggerLayer
 from yowsup.common import YowConstants
 from yowsup import env
 from yowsup.layers.protocol_presence import *
+from yowsup.layers.protocol_presence.protocolentities import *
 
 from Spectrum2 import protocol_pb2
 
@@ -106,7 +107,7 @@ class Session():
 	def call(self, method, args = ()):
 		args = [str(s) for s in args]
 		self.logger.debug("%s(%s)", method, ", ".join(args))
-#		self.frontend.methodInterface.call(method, args)
+		self.stack.broadcastEvent(YowLayerEvent(method, **args))
 
 	def logout(self):
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
@@ -209,7 +210,7 @@ class Session():
 	def changeStatusMessage(self, statusMessage):
 		if (statusMessage != self.statusMessage) or (self.initialized == False):
 			self.statusMessage = statusMessage
-			self.call("profile_setStatus", (statusMessage.encode("utf-8"),))
+			self.call("profile_setStatus", message = statusMessage.encode("utf-8"))
 			self.logger.info("Status message changed: %s", statusMessage)
 
 			if self.initialized == False:
@@ -419,6 +420,7 @@ class SpectrumLayer(YowInterfaceLayer):
 
 	def onEvent(self, layerEvent):
 		# We cannot use __init__, since it can take no arguments
+		retval = False
 		if layerEvent.getName() == SpectrumLayer.EVENT_START:
 			self.logger = logging.getLogger(self.__class__.__name__)
 			self.backend = layerEvent.getArg("backend")
@@ -428,12 +430,25 @@ class SpectrumLayer(YowInterfaceLayer):
 
 			self.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
-			return True
+			retval = True
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			reason = layerEvent.getArg("reason")
 			self.logger.info("Disconnected: %s (%s)", self.user, reason)
 			self.backend.handleDisconnected(sefl.user, 0, reason)
-		return False
+		elif layerEvent.getName() == 'presence_sendAvailable':
+			entity = AvailablePresenceProtocolEntity()
+			self.toLower(entity)
+			retval = True
+		elif layerEvent.getName() == 'presence_sendUnavailable':
+			entity = UnavailablePresenceProtocolEntity()
+			self.toLower(entity)
+			retval = True
+		elif layerEvent.getName() == 'profile_setStatus':
+			entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
+			self.toLower(entity)
+			retval = True
+		self.logger.debug("EVENT %s", layerEvent.getName())
+		return retval
 
 	@ProtocolEntityCallback("success")
 	def onAuthSuccess(self, entity):
