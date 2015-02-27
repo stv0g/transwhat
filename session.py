@@ -439,7 +439,7 @@ class SpectrumLayer(YowInterfaceLayer):
 	@ProtocolEntityCallback("failure")
 	def onAuthFailed(self, entity):
 		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
-		self.backend.handleDisconnected(self.user, 0, reason)
+		self.backend.handleDisconnected(self.user, 0, entity.getReason())
 		self.password = None
 
 	def updateRoster(self):
