@@ -28,8 +28,8 @@ import urllib
 import time
 
 from yowsup.stacks import YowStack
-from yowsup.layers import YowLayerEvent
-from yowsup.layers import YowParallelLayer
+from yowsup.layers import YowLayerEvent, YowParallelLayer
+from yowsup.layers.interface import YowInterfaceLayer, PrototocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
 from yowsup.layers.coder import YowCoderLayer
@@ -42,6 +42,7 @@ from yowsup.layers.protocol_acks import YowAckProtocolLayer
 from yowsup.layers.logger import YowLoggerLayer
 from yowsup.common import YowConstants
 from yowsup import env
+from yowsup.layers.protocol_presence import *
 
 from Spectrum2 import protocol_pb2
 
@@ -51,7 +52,7 @@ from group import Group
 from bot import Bot
 from constants import *
 
-class Session:
+class Session():
 
 	def __init__(self, backend, user, legacyName, extra, db):
 		self.logger = logging.getLogger(self.__class__.__name__)
@@ -74,12 +75,11 @@ class Session:
 		self.password = None
 		self.initialized = False
 
-		self.buddies = BuddyList(legacyName, db)
 
 		self.bot = Bot(self)
 
 		env.CURRENT_ENV = env.S40YowsupEnv()
-		layers = (
+		layers = (SpectrumLayer,
 				YowParallelLayer((YowAuthenticationProtocolLayer,
 					YowMessagesProtocolLayer,
 					YowReceiptProtocolLayer,
@@ -91,7 +91,9 @@ class Session:
 				YowNetworkLayer
 		)
 		self.stack = YowStack(layers)
-
+		self.stack.setProp(SpectrumLayer.PROP_BACKEND, self.backend)
+		self.stack.setProp(SpectrumLayer.PROP_USER, self.user)
+		self.stack.setProp(SpectrumLayer.PROP_DB, self.db)
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
@@ -236,47 +238,6 @@ class Session:
 			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			self.call("presence_unsubscribe", (number + "@s.whatsapp.net",))
-
-		for number in add:
-			buddy = self.buddies[number]
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick, buddy.groups, protocol_pb2.STATUS_NONE)
-			self.call("presence_request", (number + "@s.whatsapp.net",)) # includes presence_subscribe
-
-
-	# yowsup Signals
-	def onAuthSuccess(self, user):
-		self.logger.info("Auth success: %s", user)
-
-		self.backend.handleConnected(self.user)
-		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
-
-		self.updateRoster()
-
-		self.call("ready")
-		self.call("group_getGroups", ("participating",))
-
-	def onAuthFailed(self, user, reason):
-		self.logger.info("Auth failed: %s (%s)", user, reason)
-		self.backend.handleDisconnected(self.user, 0, reason)
-		self.password = None
 
 	def onDisconnected(self, reason):
 		self.logger.info("Disconnected from whatsapp: %s (%s)", self.legacyName, reason)
@@ -443,3 +404,63 @@ class Session:
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
+
+class SpectrumLayer(YowInterfaceLayer):
+	PROP_BACKEND = "yowsup.prop.SpectrumLayer.backend"
+	PROP_USER = "yowsup.prop.SpectrumLayer.user"
+	PROP_DB = "yowsup.prop.SpectrumLayer.db"
+	PROP_LEGACYNAME = "yowsup.prop.SpectrumLayer.legacyName"
+
+	def __init__(self):
+		super(SpectrumLayer, self).__init__()
+		self.backend = self.getProp(SpectrumLayer.PROP_BACKEND)
+		self.user = self.getProp(SpectrumLayer.PROP_USER)
+		db = self.getProp(SpectrumLayer.PROP_DB)
+		self.buddies = BuddyList(legacyName, db)
+		self.legacyName(self.getProp(SpectrumLayer.PROP_LEGACYNAME))
+		self.bot = Bot(self)
+
+	@PrototocolEntityCallback("success")
+	def onAuthSuccess(self, entity):
+		self.logger.info("Auth success: %s", self.user)
+
+		self.backend.handleConnected(self.user)
+		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
+
+		self.updateRoster()
+
+		self.call("ready")
+		self.call("group_getGroups", ("participating",))
+
+	@PrototocolEntityCallback("failed")
+	def onAuthFailed(self, entity):
+		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
+		self.backend.handleDisconnected(self.user, 0, reason)
+		self.password = None
+
+	def updateRoster(self):
+		self.logger.debug("Update roster")
+
+		old = self.buddies.keys()
+		self.buddies.load()
+		new = self.buddies.keys()
+
+		add = set(new) - set(old)
+		remove = set(old) - set(new)
+
+		self.logger.debug("Roster remove: %s", str(list(remove)))
+		self.logger.debug("Roster add: %s", str(list(add)))
+
+		for number in remove:
+			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
+			self.backend.handleBuddyRemoved(self.user, number)
+			self.broadcastEvent(YowNetworkLayer)
+			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+			self.toLower(entity)
+
+		for number in add:
+			buddy = self.buddies[number]
+			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+			self.toLower(entity)
+
+
