@@ -419,9 +419,9 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.backend = layerEvent.getArg("backend")
 			self.user = layerEvent.getArg("user")
 			self.legacyName = layerEvent.getArg("legacyName")
-			db = layerEvent.getArg("db")
+			self.db = layerEvent.getArg("db")
 
-			self.buddies = BuddyList(legacyName, db)
+			self.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
 
 	@ProtocolEntityCallback("success")
