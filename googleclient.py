@@ -37,12 +37,12 @@ class GoogleClient():
 
 	def __init__(self):
 		self.client = gdata.contacts.client.ContactsClient()
-		self.token = gdata.gauth.OAuth2Token(
-			client_id = GOOGLE_CLIENT_ID,
-			client_secret = GOOGLE_CLIENT_SECRET,
-			scope = 'https://www.google.com/m8/feeds/contacts',
-			user_agent = 'whatTrans'
-		)
+	#	self.token = gdata.gauth.OAuth2Token(
+	#		client_id = GOOGLE_CLIENT_ID,
+	#		client_secret = GOOGLE_CLIENT_SECRET,
+	#		scope = 'https://www.google.com/m8/feeds/contacts',
+	#		user_agent = 'whatTrans'
+	#	)
 
 	def getTokenUrl(self, uri = 'urn:ietf:wg:oauth:2.0:oob'):
 		return self.token.generate_authorize_url(redirect_uri=uri)
