@@ -122,7 +122,11 @@ class Session():
 							env.CURRENT_ENV.getResource())
 		self.stack.broadcastEvent(
 				YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
-		self.stack.loop()
+		try:
+			self.stack.loop()
+		except AuthError as e: # For some reason Yowsup throws an exception
+			self.logger.debug("Auth error -> user: %s; details: %s;",
+					self.user, e)
 
 	def updateRoomList(self):
 		rooms = []
