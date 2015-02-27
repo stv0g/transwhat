@@ -416,6 +416,7 @@ class SpectrumLayer(YowInterfaceLayer):
 	def onEvent(self, layerEvent):
 		# We cannot use __init__, since it can take no arguments
 		if layerEvent.name == SpectrumLayer.EVENT_START:
+			self.logger = logging.getLogger(self.__class__.__name__)
 			self.backend = layerEvent.getArg("backend")
 			self.user = layerEvent.getArg("user")
 			self.legacyName = layerEvent.getArg("legacyName")
@@ -432,9 +433,6 @@ class SpectrumLayer(YowInterfaceLayer):
 		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
 
 		self.updateRoster()
-
-		self.call("ready")
-		self.call("group_getGroups", ("participating",))
 
 	@ProtocolEntityCallback("failed")
 	def onAuthFailed(self, entity):
@@ -458,7 +456,6 @@ class SpectrumLayer(YowInterfaceLayer):
 		for number in remove:
 			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
-			self.broadcastEvent(YowNetworkLayer)
 			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
 			self.toLower(entity)
 
