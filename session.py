@@ -104,10 +104,10 @@ class Session():
 	def __del__(self): # handleLogoutRequest
 		self.logout()
 
-	def call(self, method, args = ()):
-		args = [str(s) for s in args]
-		self.logger.debug("%s(%s)", method, ", ".join(args))
-		self.stack.broadcastEvent(YowLayerEvent(method, **args))
+	def call(self, method, **kwargs):
+		self.logger.debug("%s(%s)", method,
+				", ".join(str(k) + ': ' + str(v) for k, v in kwargs.items()))
+		self.stack.broadcastEvent(YowLayerEvent(method, **kwargs))
 
 	def logout(self):
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
