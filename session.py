@@ -29,6 +29,7 @@ import time
 
 from yowsup.stacks import YowStack
 from yowsup.layers import YowLayerEvent
+from yowsup.layers import YowParallelLayer
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
 from yowsup.layers.coder import YowCoderLayer
@@ -79,11 +80,11 @@ class Session:
 
 		env.CURRENT_ENV = env.S40YowsupEnv()
 		layers = (
-				(YowAuthenticationProtocolLayer,
+				YowParallelLayer((YowAuthenticationProtocolLayer,
 					YowMessagesProtocolLayer,
 					YowReceiptProtocolLayer,
 					YowAckProtocolLayer,
-					YowMediaProtocolLayer),
+					YowMediaProtocolLayer)),
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
@@ -98,13 +99,10 @@ class Session:
 	def call(self, method, args = ()):
 		args = [str(s) for s in args]
 		self.logger.debug("%s(%s)", method, ", ".join(args))
-		self.frontend.methodInterface.call(method, args)
-
-	def listen(self, event, callback):
-		self.frontend.signalInterface.registerListener(event, callback)
+#		self.frontend.methodInterface.call(method, args)
 
 	def logout(self):
-		self.call("disconnect", ("logout",))
+		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
 
 	def login(self, password):
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
