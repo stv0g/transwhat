@@ -29,7 +29,7 @@ import time
 
 from yowsup.stacks import YowStack
 from yowsup.layers import YowLayerEvent, YowParallelLayer
-from yowsup.layers.interface import YowInterfaceLayer, PrototocolEntityCallback
+from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
 from yowsup.layers.coder import YowCoderLayer
@@ -420,7 +420,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		self.legacyName(self.getProp(SpectrumLayer.PROP_LEGACYNAME))
 		self.bot = Bot(self)
 
-	@PrototocolEntityCallback("success")
+	@ProtocolEntityCallback("success")
 	def onAuthSuccess(self, entity):
 		self.logger.info("Auth success: %s", self.user)
 
@@ -432,7 +432,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		self.call("ready")
 		self.call("group_getGroups", ("participating",))
 
-	@PrototocolEntityCallback("failed")
+	@ProtocolEntityCallback("failed")
 	def onAuthFailed(self, entity):
 		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
 		self.backend.handleDisconnected(self.user, 0, reason)
