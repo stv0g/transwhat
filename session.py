@@ -424,6 +424,8 @@ class SpectrumLayer(YowInterfaceLayer):
 
 			self.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
+			return True
+		return False
 
 	@ProtocolEntityCallback("success")
 	def onAuthSuccess(self, entity):
@@ -434,7 +436,7 @@ class SpectrumLayer(YowInterfaceLayer):
 
 		self.updateRoster()
 
-	@ProtocolEntityCallback("failed")
+	@ProtocolEntityCallback("failure")
 	def onAuthFailed(self, entity):
 		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
 		self.backend.handleDisconnected(self.user, 0, reason)
