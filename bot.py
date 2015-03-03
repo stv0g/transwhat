@@ -178,8 +178,8 @@ following user commands are available:
 \\lastseen			request last online timestamp from buddy""")
 
 	def _fortune(self, database = '', prefix=''):
-		if os.path.exists("/usr/share/games/fortunes/%s" % database):
-			fortune = os.popen('/usr/games/fortune %s' % database).read()
+		if os.path.exists("/usr/share/fortune/%s" % database):
+			fortune = os.popen('/usr/bin/fortune %s' % database).read()
 			self.send(prefix + fortune[:-1])
 		else:
 			self.send("invalid database")

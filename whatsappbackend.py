@@ -33,6 +33,13 @@ class WhatsAppBackend(SpectrumBackend):
 	def __init__(self, io, db):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
+                #self.logger = logging.getLogger('Transwhat Backend')
+                #self.logger.setLevel(logging.DEBUG)
+                #ch = logging.StreamHandler()
+                #ch.setLevel(logging.DEBUG)
+                #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                #ch.setFormatter(formatter)
+                #self.logger.addHandler(ch)
 		self.io = io
 		self.db = db
 		self.sessions = { }
@@ -41,49 +48,69 @@ class WhatsAppBackend(SpectrumBackend):
 
 	# RequestsHandlers
 	def handleLoginRequest(self, user, legacyName, password, extra):
-		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
+		self.logger.info("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
 		if user not in self.sessions:
 			self.sessions[user] = Session(self, user, legacyName, extra, self.db)
+                        self.logger.info("handleLoginRequest Create (user=%s, legacyName=%s)", user, legacyName)
+
 
 		self.sessions[user].login(password)
 
 	def handleLogoutRequest(self, user, legacyName):
-		self.logger.debug("handleLogoutRequest(user=%s, legacyName=%s)", user, legacyName)
+		self.logger.info("handleLogoutRequest(user=%s, legacyName=%s)", user, legacyName)
 		if user in self.sessions:
 			self.sessions[user].logout()
 			del self.sessions[user]
 
-	def handleMessageSendRequest(self, user, buddy, message, xhtml = ""):
-		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s)", user, buddy, message)
-		self.sessions[user].sendMessageToWA(buddy, message)
+	def handleMessageSendRequest(self, user, buddy, message, xhtml = "", ID = 0):
+		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, id=%d)", user, buddy, message, ID)
+		if user not in self.sessions:
+                        return;
+		self.sessions[user].sendMessageToWA(buddy, message, ID)
+                #self.handleMessageAck(user, buddy, ID)
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
 		self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)", user, room, nickname)
-		self.sessions[user].joinRoom(room, nickname)
+		if user not in self.sessions:
+                        return;
+		self.sessions[user].joinRoom(room, nickname, False)
 
 	def handleStatusChangeRequest(self, user, status, statusMessage):
 		self.logger.debug("handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)", user, status, statusMessage)
+		if user not in self.sessions:
+                        return;
 		self.sessions[user].changeStatusMessage(statusMessage)
 		self.sessions[user].changeStatus(status)
 
 	def handleBuddyUpdatedRequest(self, user, buddy, nick, groups):
 		self.logger.debug("handleBuddyUpdatedRequest(user=%s, buddy=%s, nick=%s, groups=%s)", user, buddy, nick, str(groups))
+		if user not in self.sessions:
+                        return;
 		self.sessions[user].updateBuddy(buddy, nick, groups)
 
 	def handleBuddyRemovedRequest(self, user, buddy, groups):
 		self.logger.debug("handleBuddyRemovedRequest(user=%s, buddy=%s, groups=%s)", user, buddy, str(groups))
+		if user not in self.sessions:
+                        return;
 		self.sessions[user].removeBuddy(buddy)
 
 	def handleTypingRequest(self, user, buddy):
 		self.logger.debug("handleTypingRequest(user=%s, buddy=%s)", user, buddy)
+		if user not in self.sessions:
+                        return;
 		self.sessions[user].sendTypingStarted(buddy)
 
 	def handleTypedRequest(self, user, buddy):
 		self.logger.debug("handleTypedRequest(user=%s, buddy=%s)", user, buddy)
+		if user not in self.sessions:
+                        return;
 		self.sessions[user].sendTypingStopped(buddy)
 
 	def handleStoppedTypingRequest(self, user, buddy):
 		self.logger.debug("handleStoppedTypingRequest(user=%s, buddy=%s)", user, buddy)
+		if user not in self.sessions:
+                        return;
+
 		self.sessions[user].sendTypingStopped(buddy)
 
 	# TODO
@@ -94,28 +121,53 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
 	def handleVCardRequest(self, user, buddy, ID):
-		pass
+                self.logger.info("VCard requested for %s !!",buddy)
+		if user not in self.sessions:
+			return;
+                self.sessions[user].call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
+                #sql = 'UPDATE numbers SET picture=%s WHERE number=%s'
+                #args = (blob_value,buddy, )
+                #self.logger.info("Insert Picture SQL: %s, args: %s", sql, args)
+                cursor=self.db.cursor()
+                cursor.execute('SELECT picture FROM numbers WHERE number=%s', (buddy,))
+                #self.db.commit()
+                if not (cursor.rowcount == 0): 
+                    (pic,) = cursor.fetchone()
+                    #pic=file('/tmp/tmpJoMbLq','rb')
+                    self.handleVCard(user,ID,buddy,"","",pic)
+                
+		
 
 	def handleVCardUpdatedRequest(self, user, photo, nickname):
+                self.logger.info("VCard update requested")
 		pass
 
 	def handleAttentionRequest(self, user, buddy, message):
+                self.logger.info("Attetion request for %s !!",buddy)
 		pass
 
 	def handleFTStartRequest(self, user, buddy, fileName, size, ftID):
-		pass
+		self.logger.info("FT Start request for %s !!",buddy)
+                pass
 
 	def handleFTFinishRequest(self, user, buddy, fileName, size, ftID):
+                self.logger.info("FT Finish request for %s !!",buddy)
 		pass
 
 	def handleFTPauseRequest(self, ftID):
+                self.logger.info("FT Pause request")
 		pass
 
 	def handleFTContinueRequest(self, ftID):
+                self.logger.info("FT Continue request")
 		pass
 
 	def handleRawXmlRequest(self, xml):
+                self.logger.info("Raw XML request")
 		pass
+
+	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+		self.logger.info("Meassage ACK request for %s !!",leagcyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)
