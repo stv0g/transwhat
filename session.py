@@ -93,7 +93,7 @@ class Session:
 		self.listen("message_received", self.onMessageReceived)
 		self.listen("image_received", self.onMediaReceived)
 		self.listen("video_received", self.onMediaReceived)
-		self.listen("audio_received", self.onMediaReceived)
+		self.listen("audio_received", self.onAudioReceived)
 		self.listen("location_received", self.onLocationReceived)
 		self.listen("vcard_received", self.onVcardReceived)
 
@@ -104,7 +104,7 @@ class Session:
 
                 self.listen("group_imageReceived", self.onGroupMediaReceived)
                 self.listen("group_videoReceived", self.onGroupMediaReceived)
-                self.listen("group_audioReceived", self.onGroupMediaReceived)
+                self.listen("group_audioReceived", self.onGroupAudioReceived)
                 self.listen("group_locationReceived", self.onGroupLocationReceived)
 
                 self.listen("receipt_messageDelivered", self.onReceiptMessageDeliverd)
@@ -386,7 +386,24 @@ class Session:
                 #if receiptRequested: 
 		self.call("message_ack", (gjid, messageId))
                 
+	def onAudioReceived(self, messageId, jid,  url, size, timestamp, receiptRequested, pushName, isBroadcast):
+                buddy = jid.split("@")[0]
 
+                self.logger.info("Media received from %s: %s", buddy, url)
+                # self.sendMessageToXMPP(buddy, utils.shorten(url))
+                self.sendMessageToXMPP(buddy, url)
+                #if receiptRequested: 
+                self.call("message_ack", (jid, messageId))
+
+        def onGroupAudioReceived(self, messageId, gjid, jid, url, size, timestamp,  receiptRequested, pushName):
+                buddy = jid.split("@")[0]
+                room = gjid.split("@")[0]
+
+                self.logger.info("Group Media message received in  %s from %s: %s (%s)", room, buddy, url, preview)
+
+                self.sendGroupMessageToXMPP(room, buddy, url)
+                #if receiptRequested: 
+                self.call("message_ack", (gjid, messageId))
 
 
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, timestamp, receiptRequested, pushName, isBroadcast):
@@ -506,7 +523,7 @@ class Session:
                            nick = buddy
                           #nick = ""
                         #nick = ""
-                        buddyFull = buddy 
+                        buddyFull = buddy
 			if buddy == group.owner:
 				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 			else:
@@ -592,9 +609,8 @@ class Session:
                 cursor=self.db.cursor()
                 cursor.execute(sql,args)
                 self.db.commit()
-
-	        
-		#if receiptRequested: self.call("notification_ack", (jid, messageId))
+     
+                # if receiptRequested: self.call("notification_ack", (jid, messageId))
 
         def onReceiptMessageDeliverd(self, jid, msgId):
                 buddy = jid.split("@")[0]
