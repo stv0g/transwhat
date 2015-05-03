@@ -63,7 +63,7 @@ class WhatsAppBackend(SpectrumBackend):
 			del self.sessions[user]
 
 	def handleMessageSendRequest(self, user, buddy, message, xhtml = "", ID = 0):
-		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, id=%d)", user, buddy, message, ID)
+		self.logger.info("handleMessageSendRequest(user=%s, buddy=%s, message=%s, id=%s)", user, buddy, message, ID)
 		if user not in self.sessions:
                         return;
 		self.sessions[user].sendMessageToWA(buddy, message, ID)

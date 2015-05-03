@@ -67,6 +67,8 @@ class Session:
 		self.timer = None
 		self.password = None
 		self.initialized = False
+		self.lastMsgId = None
+		self.synced = False
 
 		self.buddies = BuddyList(legacyName, db)
 		self.frontend = YowsupConnectionManager()
@@ -154,13 +156,21 @@ class Session:
 	def sendMessageToWA(self, sender, message, ID):
 		self.logger.info("Message (ID: %s) send from %s to %s: %s", ID, self.legacyName, sender, message)
 		message = message.encode("utf-8")
+		if ID == self.lastMsgId:
+			return
+		self.lastMsgId = ID
 
 		if sender == "bot":
 			self.bot.parse(message)
 		elif "-" in sender: # group msg
 			if "/" in sender:
-				room, buddy = sender.split("/")
-				self.call("message_send", (buddy + "@s.whatsapp.net", message))
+				room, nick2 = sender.split("/")
+                                buddy2 = nick2
+                                for buddy, buddy3 in self.buddies.iteritems():
+                                     self.logger.info("Group buddy=%s nick=%s", buddy, buddy3.nick)
+                                     if buddy3.nick == nick2:
+                                        buddy2 = buddy
+				self.call("message_send", (buddy2 + "@s.whatsapp.net", message))
 			else:
 				room = sender
 				group = self.groups[room]
@@ -177,7 +187,11 @@ class Session:
                                 self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
                                 self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
 			else:
-				waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
+                    		if ("jpg" in message) or ("webp" in message):
+					#waId = self.call("message_imageSend", (buddy + "@s.whatsapp.net", message, None, 0, None))
+					waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
+				else: 
+					waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
 				self.msgIDs[waId] = MsgIDs( ID, waId) 
 				self.logger.info("WA Message send to %s with ID %s", buddy, waId)
 
@@ -196,8 +210,9 @@ class Session:
 		try:
                         nick = self.buddies[buddy].nick
                 except KeyError:
-                        nick = "unknown"
-
+                        nick = buddy
+                
+                buddyFull = buddy 
                 if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
@@ -207,10 +222,10 @@ class Session:
 			if room not in self.groupOfflineQueue:
 				self.groupOfflineQueue[room] = [ ]
 
-			self.groupOfflineQueue[room].append((buddy,  messageContent + ": " + nick, timestamp))
+			self.groupOfflineQueue[room].append((nick,  messageContent, timestamp))
 		else:
 			self.logger.debug("Group message sent from %s to %s: %s", buddy, room, messageContent) 
-			self.backend.handleMessage(self.user, room,  messageContent + ": " + nick, buddy, "", timestamp)
+			self.backend.handleMessage(self.user, room,  messageContent, nick , "", timestamp)
 
 	def changeStatus(self, status):
 		if status != self.status:
@@ -258,10 +273,16 @@ class Session:
 			self.logger.info("Joining room: %s room=%s, nick=%s", self.legacyName, room, nick)
 
 			group.nick = nick
+                        try:
+                            ownerNick = self.buddies[group.subjectOwner].nick
+                        except KeyError:
+                            ownerNick = group.subjectOwner
+
                         #time.sleep(2)
                         if init == False:
 			    self.call("group_getParticipants", (room + "@g.us",)) #FIXME
-			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
+			self.backend.handleSubject(self.user, room, group.subject, ownerNick)
+                        #self.backend.handleSubject(self.user, room, group.subject, self.user)
                         self.backend.handleRoomNicknameChanged(self.user,room,group.subject)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
@@ -272,7 +293,13 @@ class Session:
 		old = self.buddies.keys()
 		self.buddies.load()
 		new = self.buddies.keys()
+		contacts = new
+		#self.logger.info("Roster: %s", str(list(new)))
 
+		if self.synced == False:
+			self.call("sync_sendSync", (contacts,))
+			self.synced = True
+		#self.call("sync_sendContacts", (contacts,))
 		add = set(new) - set(old)
 		remove = set(old) - set(new)
 
@@ -340,7 +367,7 @@ class Session:
 		#if receiptRequested: 
 		self.call("message_ack", (jid, messageId))
 
-	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
+	def onMediaReceived(self, messageId, jid, preview, url, size, caption, timestamp, receiptRequested, pushName, isBroadcast):
 		buddy = jid.split("@")[0]
 
 		self.logger.info("Media received from %s: %s", buddy, url)
@@ -349,7 +376,7 @@ class Session:
 		#if receiptRequested: 
 		self.call("message_ack", (jid, messageId))
 
-        def onGroupMediaReceived(self, messageId, gjid, jid,  preview, url, size,  receiptRequested):
+        def onGroupMediaReceived(self, messageId, gjid, jid,  preview, url, size, caption, timestamp,  receiptRequested, pushName):
                 buddy = jid.split("@")[0]
                 room = gjid.split("@")[0]
 
@@ -362,31 +389,35 @@ class Session:
 
 
 
-	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
+	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, timestamp, receiptRequested, pushName, isBroadcast):
 		buddy = jid.split("@")[0]
 		self.logger.info("Location received from %s: %s, %s", buddy, latitude, longitude)
 
 		url = "http://maps.google.de?%s" % urllib.urlencode({ "q": "%s %s" % (latitude, longitude) })
+                geo = "geo:"+latitude+","+longitude
 		# self.sendMessageToXMPP(buddy, utils.shorten(url))
                 self.sendMessageToXMPP(buddy, url)
+		self.sendMessageToXMPP(buddy, geo)
 		#if receiptRequested: 
 		self.call("message_ack", (jid, messageId))
 
 
-        def onGroupLocationReceived(self, messageId, gjid, jid, name, preview, latitude, longitude, receiptRequested):
+        def onGroupLocationReceived(self, messageId, gjid, jid, name, preview, latitude, longitude, timestamp, receiptRequested, pushName):
                 buddy = jid.split("@")[0]
                 room = gjid.split("@")[0]
                
                 url = "http://maps.google.de?%s" % urllib.urlencode({ "q": "%s %s" % (latitude, longitude) })
+        	geo = "geo:"+latitude+","+longitude
                 # self.sendMessageToXMPP(buddy, utils.shorten(url))
                 self.sendGroupMessageToXMPP(room, buddy, url)
+		self.sendGroupMessageToXMPP(room, buddy, geo)
                 #if receiptRequested: 
 		self.call("message_ack", (gjid, messageId))
 
 
 
 
-	def onVcardReceived(self, messageId, jid, name, data, receiptRequested, isBroadcast): # TODO
+	def onVcardReceived(self, messageId, jid, name, data, timestamp, receiptRequested, pushName, isBroadcast): # TODO
 		buddy = jid.split("@")[0]
 		self.logger.info("VCard received from %s", buddy)
 		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
@@ -469,14 +500,25 @@ class Session:
 		for jid in jids:
 			buddy = jid.split("@")[0]
 			self.logger.info("Added %s to room %s", buddy, room)
-
+                        try:
+                           nick = self.buddies[buddy].nick
+                        except KeyError:
+                           nick = buddy
+                          #nick = ""
+                        #nick = ""
+                        buddyFull = buddy 
 			if buddy == group.owner:
 				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 			else:
 				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+                        if buddy == self.legacyName:
+                           nick = group.nick
+                           flags = protocol_pb2.PARTICIPANT_FLAG_ME
+                           buddyFull = self.user 
 
-			self.backend.handleParticipantChanged(self.user, buddy, room, flags, protocol_pb2.STATUS_ONLINE,"Nici","") # TODO check status
 
+			self.backend.handleParticipantChanged(self.user, buddyFull, room, flags, protocol_pb2.STATUS_ONLINE, buddy, nick) # TODO check status
+                        #self.backend.handleParticipantChanged(self.user, buddy , room, flags, protocol_pb2.STATUS_ONLINE, buddy, nick) # TODO check sta
 			if room in self.groupOfflineQueue:
 				while self.groupOfflineQueue[room]:
 					msg = self.groupOfflineQueue[room].pop(0)
@@ -552,7 +594,7 @@ class Session:
                 self.db.commit()
 
 	        
-                # if receiptRequested: self.call("notification_ack", (jid, messageId))
+		#if receiptRequested: self.call("notification_ack", (jid, messageId))
 
         def onReceiptMessageDeliverd(self, jid, msgId):
                 buddy = jid.split("@")[0]

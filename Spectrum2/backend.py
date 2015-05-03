@@ -3,7 +3,7 @@ import socket
 import struct
 import sys
 import os
-
+import logging
 import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
@@ -19,11 +19,12 @@ class SpectrumBackend:
 	@param host: Host where Spectrum2 NetworkPluginServer runs.
 	@param port: Port. 
 	"""
-	
 	def __init__(self):
 		self.m_pingReceived = False
 		self.m_data = ""
 		self.m_init_res = 0
+		self.logger = logging.getLogger(self.__class__.__name__)
+
 
 	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = ""):
 		m = protocol_pb2.ConversationMessage()
@@ -251,6 +252,7 @@ class SpectrumBackend:
 
 	def handleConvMessagePayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
+		self.logger.error("handleConvMessagePayload")
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return
@@ -363,8 +365,10 @@ class SpectrumBackend:
 			if (len(self.m_data) >= 4):
 				expected_size = struct.unpack('!I', self.m_data[0:4])[0]
 				if (len(self.m_data) - 4 < expected_size):
+					self.logger.error("Expected Data Size Error")
 					return
 			else:
+				self.logger.error("Data too small")
 				return
 
 
@@ -378,9 +382,13 @@ class SpectrumBackend:
 
 			if (parseFromString == False):
 				self.m_data = self.m_data[expected_size+4:]
+				self.logger.error("Parse from String error")
 				return
 		
+
 			self.m_data = self.m_data[4+expected_size:]
+			#self.logger.error("Data Type: %s",wrapper.type)
+
 
 			if wrapper.type == protocol_pb2.WrapperMessage.TYPE_LOGIN:
 				self.handleLoginPayload(wrapper.payload)

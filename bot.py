@@ -48,7 +48,9 @@ class Bot():
 			"prune": self._prune,
 			"welcome": self._welcome,
 			"fortune": self._fortune,
-			"sync": self._sync
+			"sync": self._sync,
+                        "groups": self._groups,
+			"getgroups": self._getgroups
 		}
 
 	def parse(self, message):
@@ -173,6 +175,8 @@ class Bot():
 \\import [token]		import buddies from Google
 \\sync			sync your imported contacts with WhatsApp
 \\fortune [database]		give me a quote
+\\groups		print all attended groups
+\\getgroups		get current groups from WA
 
 following user commands are available:
 \\lastseen			request last online timestamp from buddy""")
@@ -193,3 +197,15 @@ following user commands are available:
 		self.session.buddies.prune()
 		self.session.updateRoster()
 		self.send("buddy list cleared")
+	def _groups(self):
+		for group in self.session.groups:
+			buddy = self.session.groups[group].owner
+			try:
+                           nick = self.session.buddies[buddy].nick
+                        except KeyError:
+                           nick = buddy
+
+			self.send(self.session.groups[group].id + " "  + self.session.groups[group].subject + " Owner: " + nick )
+	def _getgroups(self):
+		self.session.call("group_getGroups", ("participating",))
+
