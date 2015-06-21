@@ -176,17 +176,6 @@ class Session():
 			else:
 				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
 
-	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
-		if timestamp:
-			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
-
-		if self.initialized == False:
-			self.logger.debug("Message queued from %s to %s: %s", buddy, self.legacyName, messageContent)
-			self.offlineQueue.append((buddy, messageContent, timestamp))
-		else:
-			self.logger.debug("Message sent from %s to %s: %s", buddy, self.legacyName, messageContent)
-			self.backend.handleMessage(self.user, buddy, messageContent, "", "", timestamp)
-
 	def sendGroupMessageToXMPP(self, room, buddy, messageContent, timestamp = ""):
 		if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
@@ -258,18 +247,6 @@ class Session():
 		self.logger.info("Disconnected from whatsapp: %s (%s)", self.legacyName, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
 
-	def onMessageReceived(self, messageId, jid, messageContent, timestamp, receiptRequested, pushName, isBroadCast):
-		buddy = jid.split("@")[0]
-		messageContent = utils.softToUni(messageContent)
-
-		if isBroadCast:
-			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)", buddy, self.legacyName, messageContent, timestamp)
-			messageContent = "[Broadcast] " + messageContent
-		else:
-			self.logger.info("Message received from %s to %s: %s (at ts=%s)", buddy, self.legacyName, messageContent, timestamp)
-
-		self.sendMessageToXMPP(buddy, messageContent, timestamp)
-		if receiptRequested: self.call("message_ack", (jid, messageId))
 
 	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
 		buddy = jid.split("@")[0]
@@ -454,7 +431,7 @@ class SpectrumLayer(YowInterfaceLayer):
 			retval = True
 		elif layerEvent.getName() == 'message_send':
 			to = layerEvent.getArg('to')
-			message = layerEvent.getMessage('message')
+			message = layerEvent.getArg('message')
 			messageEntity = TextMessageProtocolEntity(message, to = to)
 			self.toLower(messageEntity)
 		self.logger.debug("EVENT %s", layerEvent.getName())
@@ -498,3 +475,32 @@ class SpectrumLayer(YowInterfaceLayer):
 			buddy = self.buddies[number]
 			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
 			self.toLower(entity)
+
+	@ProtocolEntityCallback("message")
+	def onMessageReceived(self, messageEntity):
+		buddy = messageEntity.getFrom()
+		messageContent = utils.softToUni(messageEntity.getBody())
+		timestamp = messageEntity.getTimestamp()
+
+		if messageEntity.isBroadCast():
+			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
+					buddy, self.legacyName, messageContent, timestamp)
+			messageContent = "[Broadcast] " + messageContent
+		else:
+			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
+					buddy, self.legacyName, messageContent, timestamp)
+
+		self.sendMessageToXMPP(buddy, messageContent, timestamp)
+		# if receiptRequested: self.call("message_ack", (jid, messageId))
+
+	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
+		if timestamp:
+			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
+
+		if self.initialized == False:
+			self.logger.debug("Message queued from %s to %s: %s", buddy, self.legacyName, messageContent)
+			self.offlineQueue.append((buddy, messageContent, timestamp))
+		else:
+			self.logger.debug("Message sent from %s to %s: %s", buddy, self.legacyName, messageContent)
+			self.backend.handleMessage(self.user, buddy, messageContent, "", "", timestamp)
+
