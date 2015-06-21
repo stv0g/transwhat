@@ -40,7 +40,7 @@ class Bot():
 		self.session = session
 		self.name = name
 
-		self.google = GoogleClient()
+	#   self.google = GoogleClient()
 
 		self.commands = {
 #			"import": self._import,
