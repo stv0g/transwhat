@@ -78,7 +78,7 @@ class Session():
 		self.timer = None
 		self.password = None
 		self.initialized = False
-
+		self.loggedin = False
 
 		self.bot = Bot(self)
 
@@ -117,6 +117,7 @@ class Session():
 		self.stack.broadcastEvent(YowLayerEvent(method, **kwargs))
 
 	def logout(self):
+		self.loggedin = False
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
 
 	def login(self, password):
@@ -129,6 +130,8 @@ class Session():
 		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
 							env.CURRENT_ENV.getResource())
 		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
+		self.loggedin = True
+		self.password = password
 		try:
 			self.stack.broadcastEvent(
 					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
@@ -399,7 +402,10 @@ class SpectrumLayer(YowInterfaceLayer):
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			reason = layerEvent.getArg("reason")
 			self.logger.info("Disconnected: %s (%s)", self.user, reason)
-			self.backend.handleDisconnected(self.user, 0, reason)
+			if not self.session.loggedin or self.session.password is None:
+				self.backend.handleDisconnected(self.user, 0, reason)
+			else:
+				self.session.login(self.session.password)
 		elif layerEvent.getName() == 'presence_sendAvailable':
 			entity = AvailablePresenceProtocolEntity()
 			self.toLower(entity)
@@ -454,7 +460,7 @@ class SpectrumLayer(YowInterfaceLayer):
 	def onAuthFailed(self, entity):
 		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
 		self.backend.handleDisconnected(self.user, 0, entity.getReason())
-		self.password = None
+		self.session.password = None
 
 	def updateRoster(self):
 		self.logger.debug("Update roster")
