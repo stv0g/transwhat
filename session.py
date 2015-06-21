@@ -27,7 +27,7 @@ import logging
 import urllib
 import time
 
-from yowsup.stacks import YowStack, YowStackBuilder
+from yowsup.stacks import YowStack
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
@@ -82,10 +82,18 @@ class Session():
 		self.bot = Bot(self)
 
 		env.CURRENT_ENV = env.S40YowsupEnv()
-		self.stack = YowStackBuilder()\
-				.pushDefaultLayers(False)\
-				.push(SpectrumLayer)\
-				.build()
+		layers = (SpectrumLayer,
+				YowParallelLayer((YowAuthenticationProtocolLayer,
+					YowMessagesProtocolLayer,
+					YowReceiptProtocolLayer,
+					YowAckProtocolLayer,
+					YowMediaProtocolLayer)),
+				YowCoderLayer,
+				YowCryptLayer,
+				YowStanzaRegulator,
+				YowNetworkLayer
+		)
+		self.stack = YowStack(layers)
 		self.stack.broadcastEvent(
 			YowLayerEvent(SpectrumLayer.EVENT_START,
 				backend = self.backend,
