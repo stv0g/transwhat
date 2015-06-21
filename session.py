@@ -27,7 +27,7 @@ import logging
 import urllib
 import time
 
-from yowsup.stacks import YowStack
+from yowsup.stacks import YowStack, YowStackBuilder
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
@@ -82,18 +82,10 @@ class Session():
 		self.bot = Bot(self)
 
 		env.CURRENT_ENV = env.S40YowsupEnv()
-		layers = (SpectrumLayer,
-				YowParallelLayer((YowAuthenticationProtocolLayer,
-					YowMessagesProtocolLayer,
-					YowReceiptProtocolLayer,
-					YowAckProtocolLayer,
-					YowMediaProtocolLayer)),
-				YowCoderLayer,
-				YowCryptLayer,
-				YowStanzaRegulator,
-				YowNetworkLayer
-		)
-		self.stack = YowStack(layers)
+		self.stack = YowStackBuilder()\
+				.pushDefaultLayers(False)\
+				.push(SpectrumLayer)\
+				.build()
 		self.stack.broadcastEvent(
 			YowLayerEvent(SpectrumLayer.EVENT_START,
 				backend = self.backend,
@@ -163,13 +155,14 @@ class Session():
 		elif "-" in sender: # group msg
 			if "/" in sender:
 				room, buddy = sender.split("/")
-				self.call("message_send", (buddy + "@s.whatsapp.net", message))
+				self.call("message_send", to = buddy + "@s.whatsapp.net",
+						message = message)
 			else:
 				room = sender
 				group = self.groups[room]
 
 				self.backend.handleMessage(self.user, room, message, group.nick)
-				self.call("message_send", (room + "@g.us", message))
+				self.call("message_send", to = room + "@g.us", message = message)
 		else: # private msg
 			buddy = sender
 			if message == "\\lastseen":
@@ -451,18 +444,21 @@ class SpectrumLayer(YowInterfaceLayer):
 			message = layerEvent.getArg('message')
 			messageEntity = TextMessageProtocolEntity(message, to = to)
 			self.toLower(messageEntity)
+			retval = True
 		elif layerEvent.getName() == 'typing_send':
 			buddy = layerEvent.getArg('buddy')
 			state = OutgoingChatstateProtocolEntity(
 					ChatstateProtocolEntity.STATE_TYPING, buddy
 					)
 			self.toLower(state)
-		elif layerEvent.getName() == 'typing_pause':
+			retval = True
+		elif layerEvent.getName() == 'typing_paused':
 			buddy = layerEvent.getArg('buddy')
 			state = OutgoingChatstateProtocolEntity(
 					ChatstateProtocolEntity.STATE_PAUSE, buddy
 					)
 			self.toLower(state)
+			retval = True
 
 		self.logger.debug("EVENT %s", layerEvent.getName())
 		return retval
