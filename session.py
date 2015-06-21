@@ -494,7 +494,7 @@ class SpectrumLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback("message")
 	def onMessageReceived(self, messageEntity):
-		buddy = messageEntity.getFrom()
+		buddy = messageEntity.getFrom().split('@')[0]
 		messageContent = utils.softToUni(messageEntity.getBody())
 		timestamp = messageEntity.getTimestamp()
 
