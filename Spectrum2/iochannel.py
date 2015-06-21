@@ -4,7 +4,6 @@ import logging
 class IOChannel(asyncore.dispatcher):
 	def __init__(self, host, port, callback):
 		asyncore.dispatcher.__init__(self)
-		self.logger = logging.getLogger(self.__class__.__name__)
 
 		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.connect((host, port))
@@ -14,7 +13,6 @@ class IOChannel(asyncore.dispatcher):
 
 	def sendData(self, data):
 		self.buffer += data
-		self.logger.debug("Added Data to buffer. len(buffer) == %d", len(self.buffer))
 
 	def handle_connect(self):
 		pass
@@ -29,7 +27,6 @@ class IOChannel(asyncore.dispatcher):
 	def handle_write(self):
 		sent = self.send(self.buffer)
 		self.buffer = self.buffer[sent:]
-		self.logger.debug("Flush buffer. len(buffer) == %d", len(self.buffer))
 
 	def writable(self):
 		return (len(self.buffer) > 0)
