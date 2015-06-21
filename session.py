@@ -32,6 +32,7 @@ from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
+from yowsup.layers.protocol_iq                 import YowIqProtocolLayer
 from yowsup.layers.coder import YowCoderLayer
 from yowsup.layers.network import YowNetworkLayer
 from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
@@ -46,7 +47,6 @@ from yowsup.layers.protocol_presence import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 from yowsup.layers.protocol_chatstate.protocolentities import *
-
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -87,7 +87,7 @@ class Session():
 					YowMessagesProtocolLayer,
 					YowReceiptProtocolLayer,
 					YowAckProtocolLayer,
-					YowMediaProtocolLayer)),
+					YowMediaProtocolLayer, YowIqProtocolLayer)),
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
@@ -131,7 +131,7 @@ class Session():
 			self.logger.debug("Auth error -> user: %s; details: %s;",
 					self.user, e)
 		try:
-			self.stack.loop()
+			self.stack.loop(timeout=0.5, discrete=0.5)
 		except AuthError as e: # For some reason Yowsup throws an exception
 			self.logger.debug("Auth error -> user: %s; details: %s;",
 					self.user, e)
