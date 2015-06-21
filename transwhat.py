@@ -38,6 +38,7 @@ from Spectrum2.iochannel import IOChannel
 
 from whatsappbackend import WhatsAppBackend
 from constants import *
+from yowsup.common import YowConstants
 
 # Arguments
 parser = argparse.ArgumentParser()
@@ -46,9 +47,11 @@ parser.add_argument('--host', type=str, required=True)
 parser.add_argument('--port', type=int, required=True)
 parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
 parser.add_argument('config', type=str)
+parser.add_argument('-j', type=str, required=True)
 
 args, unknown = parser.parse_known_args()
 
+YowConstatns.PATH_STORAGE='/var/lib/spectrum/' + args.j
 # Logging
 logging.basicConfig( \
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
