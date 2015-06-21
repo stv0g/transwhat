@@ -482,7 +482,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		messageContent = utils.softToUni(messageEntity.getBody())
 		timestamp = messageEntity.getTimestamp()
 
-		if messageEntity.isBroadCast():
+		if messageEntity.isBroadcast():
 			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
 					buddy, self.legacyName, messageContent, timestamp)
 			messageContent = "[Broadcast] " + messageContent
