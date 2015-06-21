@@ -175,7 +175,7 @@ class Session():
 			buddy = sender
 			if message == "\\lastseen":
 				self.presenceRequested.append(buddy)
-				self.call("presence_request", (buddy + "@s.whatsapp.net",))
+				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
 			else:
 				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
 
@@ -259,11 +259,6 @@ class Session():
 			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
-
-	def onDisconnected(self, reason):
-		self.logger.info("Disconnected from whatsapp: %s (%s)", self.legacyName, reason)
-		self.backend.handleDisconnected(self.user, 0, reason)
-
 
 	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
 		buddy = jid.split("@")[0]
@@ -434,7 +429,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			reason = layerEvent.getArg("reason")
 			self.logger.info("Disconnected: %s (%s)", self.user, reason)
-			self.backend.handleDisconnected(sefl.user, 0, reason)
+			self.backend.handleDisconnected(self.user, 0, reason)
 		elif layerEvent.getName() == 'presence_sendAvailable':
 			entity = AvailablePresenceProtocolEntity()
 			self.toLower(entity)
@@ -467,9 +462,14 @@ class SpectrumLayer(YowInterfaceLayer):
 					)
 			self.toLower(state)
 			retval = True
+		elif layerEvent.getName() == 'presence_request':
+			buddy = layerEvent.getArg('buddy')
+			sub = SubscribePresenceProtocolEntity(buddy)
+			self.toLower(sub)
 
 		self.logger.debug("EVENT %s", layerEvent.getName())
 		return retval
+
 
 	@ProtocolEntityCallback("success")
 	def onAuthSuccess(self, entity):
