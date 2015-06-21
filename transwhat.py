@@ -51,7 +51,7 @@ parser.add_argument('-j', type=str, required=True)
 
 args, unknown = parser.parse_known_args()
 
-YowConstatns.PATH_STORAGE='/var/lib/spectrum/' + args.j
+YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
 # Logging
 logging.basicConfig( \
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \

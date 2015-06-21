@@ -121,8 +121,12 @@ class Session():
 							YowConstants.DOMAIN)
 		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
 							env.CURRENT_ENV.getResource())
-		self.stack.broadcastEvent(
-				YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
+		try:
+			self.stack.broadcastEvent(
+					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
+		except TypeError as e: # Occurs when password is not correctly formated
+			self.logger.debug("Auth error -> user: %s; details: %s;",
+					self.user, e)
 		try:
 			self.stack.loop()
 		except AuthError as e: # For some reason Yowsup throws an exception
