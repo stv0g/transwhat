@@ -98,7 +98,8 @@ class Session():
 				backend = self.backend,
 				user = self.user,
 				db = self.db,
-				legacyName = self.legacyName
+				legacyName = self.legacyName,
+				session = self
 			)
 		)
 
@@ -175,6 +176,20 @@ class Session():
 				self.call("presence_request", (buddy + "@s.whatsapp.net",))
 			else:
 				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
+
+	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
+		if timestamp:
+			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
+
+		if self.initialized == False:
+			self.logger.debug("Message queued from %s to %s: %s",
+					buddy, self.legacyName, messageContent)
+			self.offlineQueue.append((buddy, messageContent, timestamp))
+		else:
+			self.logger.debug("Message sent from %s to %s: %s", buddy,
+					self.legacyName, messageContent)
+			self.backend.handleMessage(self.user, buddy, messageContent, "",
+					"", timestamp)
 
 	def sendGroupMessageToXMPP(self, room, buddy, messageContent, timestamp = ""):
 		if timestamp:
@@ -409,6 +424,7 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.user = layerEvent.getArg("user")
 			self.legacyName = layerEvent.getArg("legacyName")
 			self.db = layerEvent.getArg("db")
+			self.session = layerEvent.getArg("session")
 
 			self.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
@@ -490,17 +506,5 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 					buddy, self.legacyName, messageContent, timestamp)
 
-		self.sendMessageToXMPP(buddy, messageContent, timestamp)
+		self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
 		# if receiptRequested: self.call("message_ack", (jid, messageId))
-
-	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
-		if timestamp:
-			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
-
-		if self.initialized == False:
-			self.logger.debug("Message queued from %s to %s: %s", buddy, self.legacyName, messageContent)
-			self.offlineQueue.append((buddy, messageContent, timestamp))
-		else:
-			self.logger.debug("Message sent from %s to %s: %s", buddy, self.legacyName, messageContent)
-			self.backend.handleMessage(self.user, buddy, messageContent, "", "", timestamp)
-
