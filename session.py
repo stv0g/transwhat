@@ -44,6 +44,7 @@ from yowsup.common import YowConstants
 from yowsup import env
 from yowsup.layers.protocol_presence import *
 from yowsup.layers.protocol_presence.protocolentities import *
+from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 
 from Spectrum2 import protocol_pb2
 
@@ -173,7 +174,7 @@ class Session():
 				self.presenceRequested.append(buddy)
 				self.call("presence_request", (buddy + "@s.whatsapp.net",))
 			else:
-				self.call("message_send", (buddy + "@s.whatsapp.net", message))
+				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
 		if timestamp:
@@ -451,6 +452,11 @@ class SpectrumLayer(YowInterfaceLayer):
 			entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
 			self.toLower(entity)
 			retval = True
+		elif layerEvent.getName() == 'message_send':
+			to = layerEvent.getArg('to')
+			message = layerEvent.getMessage('message')
+			messageEntity = TextMessageProtocolEntity(message, to = to)
+			self.toLower(messageEntity)
 		self.logger.debug("EVENT %s", layerEvent.getName())
 		return retval
 
