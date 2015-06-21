@@ -32,7 +32,8 @@ from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
-from yowsup.layers.protocol_iq                 import YowIqProtocolLayer
+from yowsup.layers.protocol_iq import YowIqProtocolLayer
+from yowsup.layers.protocol_groups import YowGroupsProtocolLayer
 from yowsup.layers.coder import YowCoderLayer
 from yowsup.layers.network import YowNetworkLayer
 from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
@@ -87,7 +88,7 @@ class Session():
 					YowMessagesProtocolLayer,
 					YowReceiptProtocolLayer,
 					YowAckProtocolLayer,
-					YowMediaProtocolLayer, YowIqProtocolLayer)),
+					YowMediaProtocolLayer, YowIqProtocolLayer, YowGroupsProtocolLayer)),
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
@@ -124,6 +125,7 @@ class Session():
 							YowConstants.DOMAIN)
 		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
 							env.CURRENT_ENV.getResource())
+		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 		try:
 			self.stack.broadcastEvent(
 					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
