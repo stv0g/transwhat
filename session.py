@@ -297,41 +297,6 @@ class Session():
 		self.backend.handleBuddyTyped(self.user, jid.split("@")[0])
 		self.timer = Timer(3, self.backend.handleBuddyStoppedTyping, (self.user, buddy)).start()
 
-	def onPrecenceUpdated(self, jid, lastseen):
-		buddy = jid.split("@")[0]
-		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
-
-		if buddy in self.presenceRequested:
-			timestamp = time.localtime(time.time() - lastseen)
-			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
-			self.presenceRequested.remove(buddy)
-
-		if lastseen < 60:
-			self.onPrecenceAvailable(jid)
-		else:
-			self.onPrecenceUnavailable(jid)
-
-	def onPrecenceAvailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is available: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-
-	def onPrecenceUnavailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is unavailable: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-
 	def onGroupGotInfo(self, gjid, owner, subject, subjectOwner, subjectTimestamp, creationTimestamp):
 		room = gjid.split("@")[0]
 		owner = owner.split("@")[0]
@@ -528,3 +493,42 @@ class SpectrumLayer(YowInterfaceLayer):
 
 		self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
 		# if receiptRequested: self.call("message_ack", (jid, messageId))
+
+	@ProtocolEntityCallback("presence")
+	def onPrecenceUpdated(self, presence):
+		jid = presence.getFrom()
+		lastseen = presence.getLast()
+		buddy = jid.split("@")[0]
+		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+
+		if buddy in self.session.presenceRequested:
+			timestamp = time.localtime(time.time() - lastseen)
+			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+			self.session.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
+			self.session.presenceRequested.remove(buddy)
+
+		if lastseen < 60:
+			self.onPrecenceAvailable(jid)
+		else:
+			self.onPrecenceUnavailable(jid)
+
+	def onPrecenceAvailable(self, jid):
+		buddy = jid.split("@")[0]
+
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is available: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
+
+	def onPrecenceUnavailable(self, jid):
+		buddy = jid.split("@")[0]
+
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is unavailable: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
+
