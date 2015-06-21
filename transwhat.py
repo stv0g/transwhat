@@ -54,6 +54,7 @@ args, unknown = parser.parse_known_args()
 YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
 # Logging
 logging.basicConfig( \
+	filename='/var/log/spectrum2/' + args.j + '/backends/backend.log',\
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
 	level = logging.DEBUG if args.debug else logging.INFO \
 )
