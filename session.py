@@ -45,6 +45,7 @@ from yowsup import env
 from yowsup.layers.protocol_presence import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
+from yowsup.layers.protocol_chatstate.protocolentities import *
 
 from Spectrum2 import protocol_pb2
 
@@ -146,12 +147,12 @@ class Session():
 	def sendTypingStarted(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Started typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_send", (buddy + "@s.whatsapp.net",))
+			self.call("typing_send", buddy = (buddy + "@s.whatsapp.net",))
 
 	def sendTypingStopped(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_paused", (buddy + "@s.whatsapp.net",))
+			self.call("typing_paused", buddy = (buddy + "@s.whatsapp.net",))
 
 	def sendMessageToWA(self, sender, message):
 		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
@@ -450,6 +451,19 @@ class SpectrumLayer(YowInterfaceLayer):
 			message = layerEvent.getArg('message')
 			messageEntity = TextMessageProtocolEntity(message, to = to)
 			self.toLower(messageEntity)
+		elif layerEvent.getName() == 'typing_send':
+			buddy = layerEvent.getArg('buddy')
+			state = OutgoingChatstateProtocolEntity(
+					ChatstateProtocolEntity.STATE_TYPING, buddy
+					)
+			self.toLower(state)
+		elif layerEvent.getName() == 'typing_pause':
+			buddy = layerEvent.getArg('buddy')
+			state = OutgoingChatstateProtocolEntity(
+					ChatstateProtocolEntity.STATE_PAUSE, buddy
+					)
+			self.toLower(state)
+
 		self.logger.debug("EVENT %s", layerEvent.getName())
 		return retval
 
