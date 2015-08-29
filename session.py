@@ -30,6 +30,7 @@ import time
 from yowsup.stacks import YowStack
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
+from yowsup.layers.axolotl import YowAxolotlLayer
 from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
 								AuthError)
 from yowsup.layers.protocol_iq import YowIqProtocolLayer
@@ -94,6 +95,7 @@ class Session():
 					YowIqProtocolLayer,
 					YowGroupsProtocolLayer,
 					YowPresenceProtocolLayer)),
+				YowAxolotlLayer,
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
@@ -530,7 +532,8 @@ class SpectrumLayer(YowInterfaceLayer):
 		jid = presence.getFrom()
 		lastseen = presence.getLast()
 		buddy = jid.split("@")[0]
-		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+#		seems to be causing an error
+#		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
 
 		if buddy in self.session.presenceRequested:
 			timestamp = time.localtime(time.time() - lastseen)
