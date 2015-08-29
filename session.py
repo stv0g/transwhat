@@ -43,11 +43,13 @@ from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
 from yowsup.layers.protocol_acks import YowAckProtocolLayer
 from yowsup.layers.logger import YowLoggerLayer
 from yowsup.common import YowConstants
+from yowsup.layers.protocol_receipts.protocolentities    import *
 from yowsup import env
 from yowsup.layers.protocol_presence import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 from yowsup.layers.protocol_chatstate.protocolentities import *
+from yowsup.layers.protocol_acks.protocolentities    import *
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -415,7 +417,8 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.toLower(entity)
 			retval = True
 		elif layerEvent.getName() == 'profile_setStatus':
-			entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
+			# entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
+			entity = PresenceProtocolEntity(name = 'This status is non-empty')
 			self.toLower(entity)
 			retval = True
 		elif layerEvent.getName() == 'message_send':
@@ -453,6 +456,7 @@ class SpectrumLayer(YowInterfaceLayer):
 
 		self.backend.handleConnected(self.user)
 		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
+		self.session.initialized = True
 
 		self.updateRoster()
 
@@ -461,6 +465,20 @@ class SpectrumLayer(YowInterfaceLayer):
 		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
 		self.backend.handleDisconnected(self.user, 0, entity.getReason())
 		self.session.password = None
+
+	@ProtocolEntityCallback("receipt")
+	def onReceipt(self, entity):
+		self.logger.debug("received receipt, sending ack: " + str(entity.ack()))
+		ack = OutgoingAckProtocolEntity(entity.getId(), "receipt", entity.getType(), entity.getFrom())
+		self.toLower(ack)
+
+	@ProtocolEntityCallback("ack")
+	def onAck(self, entity):
+		self.logger.debug('received ack ' + str(entity))
+
+	@ProtocolEntityCallback("notification")
+	def onNotification(self, notification):
+		self.toLower(notification.ack())
 
 	def updateRoster(self):
 		self.logger.debug("Update roster")
@@ -492,6 +510,9 @@ class SpectrumLayer(YowInterfaceLayer):
 		messageContent = utils.softToUni(messageEntity.getBody())
 		timestamp = messageEntity.getTimestamp()
 
+		receipt = OutgoingReceiptProtocolEntity(messageEntity.getId(),messageEntity.getFrom(), 'read', messageEntity.getParticipant())
+		self.toLower(receipt)
+
 		if messageEntity.isBroadcast():
 			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
 					buddy, self.legacyName, messageContent, timestamp)
@@ -499,8 +520,9 @@ class SpectrumLayer(YowInterfaceLayer):
 		else:
 			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 					buddy, self.legacyName, messageContent, timestamp)
+			self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
 
-		self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
+
 		# if receiptRequested: self.call("message_ack", (jid, messageId))
 
 	@ProtocolEntityCallback("presence")
