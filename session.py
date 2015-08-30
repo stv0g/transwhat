@@ -83,6 +83,7 @@ from yowsupwrapper import YowsupApp
 class Session(YowsupApp):
 
 	def __init__(self, backend, user, legacyName, extra, db):
+		super(Session, self).__init__()
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
 

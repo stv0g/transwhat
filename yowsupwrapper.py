@@ -32,7 +32,7 @@ from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtoco
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_acks.protocolentities	 import *
 
-class YowsupApp:
+class YowsupApp(object):
 	def __init__(self):
 		env.CURRENT_ENV = env.S40YowsupEnv()
 
@@ -234,7 +234,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		self.caller.onReceipt(_id, _from, timestamp, type, participant, offline, items)
 
 	@ProtocolEntityCallback('ack')
-	def onAck(self, entity)
+	def onAck(self, entity):
 		# entity is IncomingAckProtocolEntity
 		self.caller.onAck(
 			entity._id,
