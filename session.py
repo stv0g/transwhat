@@ -51,6 +51,26 @@ from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_acks.protocolentities    import *
+from yowsup.layers import YowLayer
+from yowsup.layers.auth                        import YowCryptLayer, YowAuthenticationProtocolLayer
+from yowsup.layers.coder                       import YowCoderLayer
+from yowsup.layers.logger                      import YowLoggerLayer
+from yowsup.layers.network                     import YowNetworkLayer
+from yowsup.layers.protocol_messages           import YowMessagesProtocolLayer
+from yowsup.layers.stanzaregulator             import YowStanzaRegulator
+from yowsup.layers.protocol_media              import YowMediaProtocolLayer
+from yowsup.layers.protocol_acks               import YowAckProtocolLayer
+from yowsup.layers.protocol_receipts           import YowReceiptProtocolLayer
+from yowsup.layers.protocol_groups             import YowGroupsProtocolLayer
+from yowsup.layers.protocol_presence           import YowPresenceProtocolLayer
+from yowsup.layers.protocol_ib                 import YowIbProtocolLayer
+from yowsup.layers.protocol_notifications      import YowNotificationsProtocolLayer
+from yowsup.layers.protocol_iq                 import YowIqProtocolLayer
+from yowsup.layers.protocol_contacts           import YowContactsIqProtocolLayer
+from yowsup.layers.protocol_chatstate          import YowChatstateProtocolLayer
+from yowsup.layers.protocol_privacy            import YowPrivacyProtocolLayer
+from yowsup.layers.protocol_profiles           import YowProfilesProtocolLayer
+from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -92,7 +112,15 @@ class Session():
 					YowReceiptProtocolLayer,
 					YowAckProtocolLayer,
 					YowMediaProtocolLayer,
+                    YowIbProtocolLayer,
 					YowIqProtocolLayer,
+                    YowNotificationsProtocolLayer,
+                    YowContactsIqProtocolLayer,
+#                    YowChatstateProtocolLayer,
+                    YowCallsProtocolLayer,
+                    YowMediaProtocolLayer,
+                    YowPrivacyProtocolLayer,
+                    YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
 					YowPresenceProtocolLayer)),
 				YowAxolotlLayer,
@@ -400,16 +428,13 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.db = layerEvent.getArg("db")
 			self.session = layerEvent.getArg("session")
 
-			self.buddies = BuddyList(self.legacyName, self.db)
+			self.session.buddies = BuddyList(self.legacyName, self.db)
 			self.bot = Bot(self)
 			retval = True
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			reason = layerEvent.getArg("reason")
 			self.logger.info("Disconnected: %s (%s)", self.user, reason)
-			if not self.session.loggedin or self.session.password is None:
-				self.backend.handleDisconnected(self.user, 0, reason)
-			else:
-				self.session.login(self.session.password)
+			self.backend.handleDisconnected(self.user, 0, reason)
 		elif layerEvent.getName() == 'presence_sendAvailable':
 			entity = AvailablePresenceProtocolEntity()
 			self.toLower(entity)
@@ -439,7 +464,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		elif layerEvent.getName() == 'typing_paused':
 			buddy = layerEvent.getArg('buddy')
 			state = OutgoingChatstateProtocolEntity(
-					ChatstateProtocolEntity.STATE_PAUSE, buddy
+					ChatstateProtocolEntity.STATE_PAUSED, buddy
 					)
 			self.toLower(state)
 			retval = True
@@ -485,9 +510,9 @@ class SpectrumLayer(YowInterfaceLayer):
 	def updateRoster(self):
 		self.logger.debug("Update roster")
 
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
+		old = self.session.buddies.keys()
+		self.session.buddies.load()
+		new = self.session.buddies.keys()
 
 		add = set(new) - set(old)
 		remove = set(old) - set(new)
@@ -502,7 +527,7 @@ class SpectrumLayer(YowInterfaceLayer):
 			self.toLower(entity)
 
 		for number in add:
-			buddy = self.buddies[number]
+			buddy = self.session.buddies[number]
 			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
 			self.toLower(entity)
 
@@ -550,7 +575,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		buddy = jid.split("@")[0]
 
 		try:
-			buddy = self.buddies[buddy]
+			buddy = self.session.buddies[buddy]
 			self.logger.info("Is available: %s", buddy)
 			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
 		except KeyError:
@@ -560,7 +585,7 @@ class SpectrumLayer(YowInterfaceLayer):
 		buddy = jid.split("@")[0]
 
 		try:
-			buddy = self.buddies[buddy]
+			buddy = self.session.buddies[buddy]
 			self.logger.info("Is unavailable: %s", buddy)
 			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
 		except KeyError:
