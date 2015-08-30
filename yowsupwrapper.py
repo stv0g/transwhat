@@ -1,6 +1,8 @@
 
 from yowsup import env
 from yowsup.stacks import YowStack
+from yowsup.common import YowConstants
+from yowsup.layers import YowLayerEvent, YowParallelLayer
 
 # Layers
 from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
@@ -23,10 +25,15 @@ from yowsup.layers.protocol_privacy			   import YowPrivacyProtocolLayer
 from yowsup.layers.protocol_profiles		   import YowProfilesProtocolLayer
 from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 
+# ProtocolEntities
+
+from yowsup.layers.protocol_presence.protocolentities import *
+from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
+from yowsup.layers.protocol_chatstate.protocolentities import *
+from yowsup.layers.protocol_acks.protocolentities	 import *
+
 class YowsupApp:
 	def __init__(self):
-		self.logged_in = False
-
 		env.CURRENT_ENV = env.S40YowsupEnv()
 
 		layers = (SpectrumLayer,
@@ -56,6 +63,67 @@ class YowsupApp:
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
 		)
+
+	def login(self, username, password):
+		"""Login to yowsup
+
+		Should result in onAuthSuccess or onAuthFailure to be called.
+
+		Args:
+			- username: (str) username in the form of 1239482382 (country code
+				  and cellphone number)
+
+			- password: (str) base64 encoded password
+		  """
+		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
+							(username, password))
+		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
+							YowConstants.ENDPOINTS[0])
+		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
+							YowConstants.DOMAIN)
+		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
+							env.CURRENT_ENV.getResource())
+#		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
+
+		try:
+			self.stack.broadcastEvent(
+					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
+		except TypeError as e: # Occurs when password is not correctly formated
+			self.onAuthFailure('password not base64 encoded')
+		try:
+			self.stack.loop(timeout=0.5, discrete=0.5)
+		except AuthError as e: # For some reason Yowsup throws an exception
+			self.onAuthFailure("%s" % e)
+
+	def logout(self):
+		"""
+		Logout from whatsapp
+		"""
+		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
+	
+	def sendReceipt(self, _id, _from, read, participant):
+		"""
+		Send a receipt (delivered: double-tick, read: blue-ticks)
+
+		Args:
+			- _id: id of message received
+			- _from
+			- read: ('read' or something else)
+			- participant
+		"""
+		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
+		self.stack.toLower(receipt)
+
+	def sendTextMessage(self, to, message):
+		"""
+		Sends a text message
+
+		Args:
+			- to: (xxxxxxxxxx@s.whatsapp.net) who to send the message to
+			- message: (str) the body of the message
+		"""
+		messageEntity = TextMessageProtocolEntity(message, to = to)
+		self.stack.toLower(messageEntity)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
@@ -109,6 +177,11 @@ class YowsupApp:
 		"""
 		pass
 
+	def onDisconnect(self):
+		"""
+		Called when disconnected from whatsapp
+		"""
+
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 
 class YowsupAppLayer(YowInterfaceLayer):
@@ -121,17 +194,21 @@ class YowsupAppLayer(YowInterfaceLayer):
 		# return True otherwise
 		if layerEvent.getName() == YowsupAppLayer.EVENT_START:
 			self.caller = layerEvent.getArg('caller')
+			return True
+		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
+			self.caller.onDisconnect()
+			return True
 
 	@ProtocolEntityCallback('success')
 	def onAuthSuccess(self, entity):
 		# entity is SuccessProtocolEntity
-        status = entity.status
-        kind = entity.kind
-        creation = entity.creation
-        expiration = entity.expiration
-        props = entity.props
-        nonce = entity.nonce
-        t = entity.t # I don't know what this is
+		status = entity.status
+		kind = entity.kind
+		creation = entity.creation
+		expiration = entity.expiration
+		props = entity.props
+		nonce = entity.nonce
+		t = entity.t # I don't know what this is
 		self.caller.onAuthSuccess(status, kind, creation, expiration, props, nonce, t)
 
 	@ProtocolEntityCallback('failure')
@@ -150,8 +227,8 @@ class YowsupAppLayer(YowInterfaceLayer):
 		_id = entity._id
 		_from = entity._from
 		timestamp = entity.timestamp
-        type = entity.type
-        participant = entity.participant
+		type = entity.type
+		participant = entity.participant
 		offline = entity.offline
 		items = entity.items
 		self.caller.onReceipt(_id, _from, timestamp, type, participant, offline, items)

@@ -44,32 +44,32 @@ from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
 from yowsup.layers.protocol_acks import YowAckProtocolLayer
 from yowsup.layers.logger import YowLoggerLayer
 from yowsup.common import YowConstants
-from yowsup.layers.protocol_receipts.protocolentities    import *
+from yowsup.layers.protocol_receipts.protocolentities	 import *
 from yowsup import env
 from yowsup.layers.protocol_presence import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 from yowsup.layers.protocol_chatstate.protocolentities import *
-from yowsup.layers.protocol_acks.protocolentities    import *
+from yowsup.layers.protocol_acks.protocolentities	 import *
 from yowsup.layers import YowLayer
-from yowsup.layers.auth                        import YowCryptLayer, YowAuthenticationProtocolLayer
-from yowsup.layers.coder                       import YowCoderLayer
-from yowsup.layers.logger                      import YowLoggerLayer
-from yowsup.layers.network                     import YowNetworkLayer
-from yowsup.layers.protocol_messages           import YowMessagesProtocolLayer
-from yowsup.layers.stanzaregulator             import YowStanzaRegulator
-from yowsup.layers.protocol_media              import YowMediaProtocolLayer
-from yowsup.layers.protocol_acks               import YowAckProtocolLayer
-from yowsup.layers.protocol_receipts           import YowReceiptProtocolLayer
-from yowsup.layers.protocol_groups             import YowGroupsProtocolLayer
-from yowsup.layers.protocol_presence           import YowPresenceProtocolLayer
-from yowsup.layers.protocol_ib                 import YowIbProtocolLayer
-from yowsup.layers.protocol_notifications      import YowNotificationsProtocolLayer
-from yowsup.layers.protocol_iq                 import YowIqProtocolLayer
-from yowsup.layers.protocol_contacts           import YowContactsIqProtocolLayer
-from yowsup.layers.protocol_chatstate          import YowChatstateProtocolLayer
-from yowsup.layers.protocol_privacy            import YowPrivacyProtocolLayer
-from yowsup.layers.protocol_profiles           import YowProfilesProtocolLayer
+from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
+from yowsup.layers.coder					   import YowCoderLayer
+from yowsup.layers.logger					   import YowLoggerLayer
+from yowsup.layers.network					   import YowNetworkLayer
+from yowsup.layers.protocol_messages		   import YowMessagesProtocolLayer
+from yowsup.layers.stanzaregulator			   import YowStanzaRegulator
+from yowsup.layers.protocol_media			   import YowMediaProtocolLayer
+from yowsup.layers.protocol_acks			   import YowAckProtocolLayer
+from yowsup.layers.protocol_receipts		   import YowReceiptProtocolLayer
+from yowsup.layers.protocol_groups			   import YowGroupsProtocolLayer
+from yowsup.layers.protocol_presence		   import YowPresenceProtocolLayer
+from yowsup.layers.protocol_ib				   import YowIbProtocolLayer
+from yowsup.layers.protocol_notifications	   import YowNotificationsProtocolLayer
+from yowsup.layers.protocol_iq				   import YowIqProtocolLayer
+from yowsup.layers.protocol_contacts		   import YowContactsIqProtocolLayer
+from yowsup.layers.protocol_chatstate		   import YowChatstateProtocolLayer
+from yowsup.layers.protocol_privacy			   import YowPrivacyProtocolLayer
+from yowsup.layers.protocol_profiles		   import YowProfilesProtocolLayer
 from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 from Spectrum2 import protocol_pb2
 
@@ -78,8 +78,9 @@ from threading import Timer
 from group import Group
 from bot import Bot
 from constants import *
+from yowsupwrapper import YowsupApp
 
-class Session():
+class Session(YowsupApp):
 
 	def __init__(self, backend, user, legacyName, extra, db):
 		self.logger = logging.getLogger(self.__class__.__name__)
@@ -105,76 +106,22 @@ class Session():
 
 		self.bot = Bot(self)
 
-		env.CURRENT_ENV = env.S40YowsupEnv()
-		layers = (SpectrumLayer,
-				YowParallelLayer((YowAuthenticationProtocolLayer,
-					YowMessagesProtocolLayer,
-					YowReceiptProtocolLayer,
-					YowAckProtocolLayer,
-					YowMediaProtocolLayer,
-                    YowIbProtocolLayer,
-					YowIqProtocolLayer,
-                    YowNotificationsProtocolLayer,
-                    YowContactsIqProtocolLayer,
-#                    YowChatstateProtocolLayer,
-                    YowCallsProtocolLayer,
-                    YowMediaProtocolLayer,
-                    YowPrivacyProtocolLayer,
-                    YowProfilesProtocolLayer,
-					YowGroupsProtocolLayer,
-					YowPresenceProtocolLayer)),
-				YowAxolotlLayer,
-				YowCoderLayer,
-				YowCryptLayer,
-				YowStanzaRegulator,
-				YowNetworkLayer
-		)
-		self.stack = YowStack(layers)
-		self.stack.broadcastEvent(
-			YowLayerEvent(SpectrumLayer.EVENT_START,
-				backend = self.backend,
-				user = self.user,
-				db = self.db,
-				legacyName = self.legacyName,
-				session = self
-			)
-		)
-
 	def __del__(self): # handleLogoutRequest
 		self.logout()
 
 	def call(self, method, **kwargs):
 		self.logger.debug("%s(%s)", method,
 				", ".join(str(k) + ': ' + str(v) for k, v in kwargs.items()))
-		self.stack.broadcastEvent(YowLayerEvent(method, **kwargs))
+		##self.stack.broadcastEvent(YowLayerEvent(method, **kwargs))
 
 	def logout(self):
 		self.loggedin = False
-		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
+		super(Session, self).logout()
 
 	def login(self, password):
-		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
-							(self.legacyName, password))
-		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
-							YowConstants.ENDPOINTS[0])
-		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
-							YowConstants.DOMAIN)
-		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
-							env.CURRENT_ENV.getResource())
-		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 		self.loggedin = True
 		self.password = password
-		try:
-			self.stack.broadcastEvent(
-					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
-		except TypeError as e: # Occurs when password is not correctly formated
-			self.logger.debug("Auth error -> user: %s; details: %s;",
-					self.user, e)
-		try:
-			self.stack.loop(timeout=0.5, discrete=0.5)
-		except AuthError as e: # For some reason Yowsup throws an exception
-			self.logger.debug("Auth error -> user: %s; details: %s;",
-					self.user, e)
+		super(Session, self).login(self.legacyName, self.password)
 
 	def updateRoomList(self):
 		rooms = []
@@ -182,6 +129,86 @@ class Session():
 			rooms.append([room, group.subject])
 
 		self.backend.handleRoomList(rooms)
+
+	def updateRoster(self):
+		self.logger.debug("Update roster")
+
+		old = self.buddies.keys()
+		self.buddies.load()
+		new = self.buddies.keys()
+
+		add = set(new) - set(old)
+		remove = set(old) - set(new)
+
+		self.logger.debug("Roster remove: %s", str(list(remove)))
+		self.logger.debug("Roster add: %s", str(list(add)))
+
+		for number in remove:
+			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
+			self.backend.handleBuddyRemoved(self.user, number)
+			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+			self.toLower(entity)
+
+		for number in add:
+			buddy = self.buddies[number]
+			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+			self.toLower(entity)
+
+	# Called by superclass
+	def onAuthSuccess(self, status, kind, creation,
+			expiration, props, nonce, t):
+		self.logger.info("Auth success: %s", self.user)
+
+		self.backend.handleConnected(self.user)
+		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
+		self.initialized = True
+
+		self.updateRoster()
+
+	# Called by superclass
+	def onAuthFailed(self, reason):
+		self.logger.info("Auth failed: %s (%s)", self.user, reason)
+		self.backend.handleDisconnected(self.user, 0, reason)
+		self.password = None
+	
+	# Called by superclass
+	def onDisconnect(self):
+		self.backend.handleDisconnected(self.user, 0, 'Disconnected for unknown reasons')
+		self.loggedin = False
+
+	# Called by superclass
+	def onReceipt(self, _id, _from, timestamp, type, participant, offline, items):
+		self.logger.debug("received receipt, sending ack: " +
+				' '.join(map(str, [_id, _from, timestamp,
+					type, participant, offline, items]))
+		)
+
+	# Called by superclass
+	def onAck(self, _id,_class, _from, timestamp):
+		self.logger.debug('received ack ' + 
+				' '.join(map(str, [_id, _class, _from,timestamp,]))
+		)
+
+	# Called by superclass
+	def onMessageReceived(self, messageEntity):
+		self.logger.debug(str(messageEntity))
+		buddy = messageEntity.getFrom().split('@')[0]
+		messageContent = utils.softToUni(messageEntity.getBody())
+		timestamp = messageEntity.getTimestamp()
+
+		self.sendReceipt(messageEntity.getId(), messageEntity.getFrom(), 'read',
+				messageEntity.getParticipant())
+
+		if messageEntity.isBroadcast():
+			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
+					buddy, self.legacyName, messageContent, timestamp)
+			messageContent = "[Broadcast] " + messageContent
+		else:
+			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
+					buddy, self.legacyName, messageContent, timestamp)
+			self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
+
+		# if receiptRequested: self.call("message_ack", (jid, messageId))
 
 	# spectrum RequestMethods
 	def sendTypingStarted(self, buddy):
@@ -203,21 +230,21 @@ class Session():
 		elif "-" in sender: # group msg
 			if "/" in sender:
 				room, buddy = sender.split("/")
-				self.call("message_send", to = buddy + "@s.whatsapp.net",
-						message = message)
+				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
 			else:
 				room = sender
 				group = self.groups[room]
 
 				self.backend.handleMessage(self.user, room, message, group.nick)
-				self.call("message_send", to = room + "@g.us", message = message)
+				self.sendTextMessage(room + '@g.us', message)
+
 		else: # private msg
 			buddy = sender
 			if message == "\\lastseen":
 				self.presenceRequested.append(buddy)
 				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
 			else:
-				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
+				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
 		if timestamp:
@@ -448,12 +475,12 @@ class SpectrumLayer(YowInterfaceLayer):
 			entity = PresenceProtocolEntity(name = 'This status is non-empty')
 			self.toLower(entity)
 			retval = True
-		elif layerEvent.getName() == 'message_send':
-			to = layerEvent.getArg('to')
-			message = layerEvent.getArg('message')
-			messageEntity = TextMessageProtocolEntity(message, to = to)
-			self.toLower(messageEntity)
-			retval = True
+#		elif layerEvent.getName() == 'message_send':
+#			to = layerEvent.getArg('to')
+#			message = layerEvent.getArg('message')
+#			messageEntity = TextMessageProtocolEntity(message, to = to)
+#			self.toLower(messageEntity)
+#			retval = True
 		elif layerEvent.getName() == 'typing_send':
 			buddy = layerEvent.getArg('buddy')
 			state = OutgoingChatstateProtocolEntity(
@@ -475,82 +502,6 @@ class SpectrumLayer(YowInterfaceLayer):
 
 		self.logger.debug("EVENT %s", layerEvent.getName())
 		return retval
-
-
-	@ProtocolEntityCallback("success")
-	def onAuthSuccess(self, entity):
-		self.logger.info("Auth success: %s", self.user)
-
-		self.backend.handleConnected(self.user)
-		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
-		self.session.initialized = True
-
-		self.updateRoster()
-
-	@ProtocolEntityCallback("failure")
-	def onAuthFailed(self, entity):
-		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
-		self.backend.handleDisconnected(self.user, 0, entity.getReason())
-		self.session.password = None
-
-	@ProtocolEntityCallback("receipt")
-	def onReceipt(self, entity):
-		self.logger.debug("received receipt, sending ack: " + str(entity.ack()))
-		ack = OutgoingAckProtocolEntity(entity.getId(), "receipt", entity.getType(), entity.getFrom())
-		self.toLower(ack)
-
-	@ProtocolEntityCallback("ack")
-	def onAck(self, entity):
-		self.logger.debug('received ack ' + str(entity))
-
-	@ProtocolEntityCallback("notification")
-	def onNotification(self, notification):
-		self.toLower(notification.ack())
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.session.buddies.keys()
-		self.session.buddies.load()
-		new = self.session.buddies.keys()
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
-
-		for number in add:
-			buddy = self.session.buddies[number]
-			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
-
-	@ProtocolEntityCallback("message")
-	def onMessageReceived(self, messageEntity):
-		buddy = messageEntity.getFrom().split('@')[0]
-		messageContent = utils.softToUni(messageEntity.getBody())
-		timestamp = messageEntity.getTimestamp()
-
-		receipt = OutgoingReceiptProtocolEntity(messageEntity.getId(),messageEntity.getFrom(), 'read', messageEntity.getParticipant())
-		self.toLower(receipt)
-
-		if messageEntity.isBroadcast():
-			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
-					buddy, self.legacyName, messageContent, timestamp)
-			messageContent = "[Broadcast] " + messageContent
-		else:
-			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
-					buddy, self.legacyName, messageContent, timestamp)
-			self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
-
-
-		# if receiptRequested: self.call("message_ack", (jid, messageId))
 
 	@ProtocolEntityCallback("presence")
 	def onPrecenceUpdated(self, presence):
