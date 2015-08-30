@@ -91,6 +91,8 @@ class Session(YowsupApp):
 		self.backend = backend
 		self.user = user
 		self.legacyName = legacyName
+		self.buddies = BuddyList(self.legacyName, self.db)
+		self.bot = Bot(self)
 
 		self.status = protocol_pb2.STATUS_NONE
 		self.statusMessage = ''
@@ -191,7 +193,7 @@ class Session(YowsupApp):
 		)
 
 	# Called by superclass
-	def onMessageReceived(self, messageEntity):
+	def onMessage(self, messageEntity):
 		self.logger.debug(str(messageEntity))
 		buddy = messageEntity.getFrom().split('@')[0]
 		messageContent = utils.softToUni(messageEntity.getBody())
@@ -226,26 +228,26 @@ class Session(YowsupApp):
 		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
 		message = message.encode("utf-8")
 
-		if sender == "bot":
-			self.bot.parse(message)
-		elif "-" in sender: # group msg
-			if "/" in sender:
-				room, buddy = sender.split("/")
-				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
-			else:
-				room = sender
-				group = self.groups[room]
-
-				self.backend.handleMessage(self.user, room, message, group.nick)
-				self.sendTextMessage(room + '@g.us', message)
-
-		else: # private msg
-			buddy = sender
-			if message == "\\lastseen":
-				self.presenceRequested.append(buddy)
-				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
-			else:
-				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
+#		if sender == "bot":
+#			self.bot.parse(message)
+#		elif "-" in sender: # group msg
+#			if "/" in sender:
+#				room, buddy = sender.split("/")
+#				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
+#			else:
+#				room = sender
+#				group = self.groups[room]
+#
+#				self.backend.handleMessage(self.user, room, message, group.nick)
+#				self.sendTextMessage(room + '@g.us', message)
+#
+#		else: # private msg
+#			buddy = sender
+#			if message == "\\lastseen":
+#				self.presenceRequested.append(buddy)
+#				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
+#			else:
+		self.sendTextMessage(sender + '@s.whatsapp.net', message)
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
 		if timestamp:

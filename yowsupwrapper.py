@@ -3,8 +3,10 @@ from yowsup import env
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
+from yowsup.layers.auth import AuthError
 
 # Layers
+from yowsup.layers.axolotl					   import YowAxolotlLayer
 from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
 from yowsup.layers.coder					   import YowCoderLayer
 from yowsup.layers.logger					   import YowLoggerLayer
@@ -36,7 +38,7 @@ class YowsupApp(object):
 	def __init__(self):
 		env.CURRENT_ENV = env.S40YowsupEnv()
 
-		layers = (SpectrumLayer,
+		layers = (YowsupAppLayer,
 				YowParallelLayer((YowAuthenticationProtocolLayer,
 					YowMessagesProtocolLayer,
 					YowReceiptProtocolLayer,
@@ -123,7 +125,7 @@ class YowsupApp(object):
 			- message: (str) the body of the message
 		"""
 		messageEntity = TextMessageProtocolEntity(message, to = to)
-		self.stack.toLower(messageEntity)
+		self.sendEntity(messageEntity)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
@@ -181,11 +183,18 @@ class YowsupApp(object):
 		"""
 		Called when disconnected from whatsapp
 		"""
+	
+	def sendEntity(self, entity):
+		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
+		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
+			entity = entity
+		))
 
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 
 class YowsupAppLayer(YowInterfaceLayer):
-	EVENT_START = 'transwhat.event.SpectrumLayer.start'
+	EVENT_START = 'transwhat.event.YowsupAppLayer.start'
+	TO_LOWER_EVENT = 'transwhat.event.YowsupAppLayer.to_lower'
 
 	def onEvent(self, layerEvent):
 		# We cannot pass instance varaibles in through init, so we use an event
@@ -197,6 +206,9 @@ class YowsupAppLayer(YowInterfaceLayer):
 			return True
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			self.caller.onDisconnect()
+			return True
+		elif layerEvent.getName() == YowsupAppLayer.TO_LOWER_EVENT:
+			self.toLower(layerEvent.getArg('entity'))
 			return True
 
 	@ProtocolEntityCallback('success')
