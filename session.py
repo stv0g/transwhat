@@ -149,13 +149,13 @@ class Session(YowsupApp):
 		for number in remove:
 			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
-			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
+#			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+#			self.toLower(entity)
 
 		for number in add:
 			buddy = self.buddies[number]
-			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
+#			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
+#			self.toLower(entity)
 
 	# Called by superclass
 	def onAuthSuccess(self, status, kind, creation,
@@ -176,6 +176,7 @@ class Session(YowsupApp):
 	
 	# Called by superclass
 	def onDisconnect(self):
+		self.logger.debug('Disconnected')
 		self.backend.handleDisconnected(self.user, 0, 'Disconnected for unknown reasons')
 		self.loggedin = False
 
@@ -199,7 +200,7 @@ class Session(YowsupApp):
 		messageContent = utils.softToUni(messageEntity.getBody())
 		timestamp = messageEntity.getTimestamp()
 
-		self.sendReceipt(messageEntity.getId(), messageEntity.getFrom(), 'read',
+		self.sendReceipt(messageEntity.getId(), messageEntity.getFrom(), None,
 				messageEntity.getParticipant())
 
 		if messageEntity.isBroadcast():
@@ -209,7 +210,7 @@ class Session(YowsupApp):
 		else:
 			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 					buddy, self.legacyName, messageContent, timestamp)
-			self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
+			self.sendMessageToXMPP(buddy, messageContent, timestamp)
 
 		# if receiptRequested: self.call("message_ack", (jid, messageId))
 
@@ -284,14 +285,14 @@ class Session(YowsupApp):
 			self.status = status
 
 			if status == protocol_pb2.STATUS_ONLINE or status == protocol_pb2.STATUS_FFC:
-				self.call("presence_sendAvailable")
+				self.sendPresence(True)
 			else:
-				self.call("presence_sendUnavailable")
+				self.sendPresence(False)
 
 	def changeStatusMessage(self, statusMessage):
 		if (statusMessage != self.statusMessage) or (self.initialized == False):
 			self.statusMessage = statusMessage
-			self.call("profile_setStatus", message = statusMessage.encode("utf-8"))
+			self.setStatus(statusMessage.encode('utf-8'))
 			self.logger.info("Status message changed: %s", statusMessage)
 
 			if self.initialized == False:
@@ -465,19 +466,19 @@ class SpectrumLayer(YowInterfaceLayer):
 			reason = layerEvent.getArg("reason")
 			self.logger.info("Disconnected: %s (%s)", self.user, reason)
 			self.backend.handleDisconnected(self.user, 0, reason)
-		elif layerEvent.getName() == 'presence_sendAvailable':
-			entity = AvailablePresenceProtocolEntity()
-			self.toLower(entity)
-			retval = True
-		elif layerEvent.getName() == 'presence_sendUnavailable':
-			entity = UnavailablePresenceProtocolEntity()
-			self.toLower(entity)
-			retval = True
-		elif layerEvent.getName() == 'profile_setStatus':
-			# entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
-			entity = PresenceProtocolEntity(name = 'This status is non-empty')
-			self.toLower(entity)
-			retval = True
+#		elif layerEvent.getName() == 'presence_sendAvailable':
+#			entity = AvailablePresenceProtocolEntity()
+#			self.toLower(entity)
+#			retval = True
+#		elif layerEvent.getName() == 'presence_sendUnavailable':
+#			entity = UnavailablePresenceProtocolEntity()
+#			self.toLower(entity)
+#			retval = True
+#		elif layerEvent.getName() == 'profile_setStatus':
+#			# entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
+#			entity = PresenceProtocolEntity(name = 'This status is non-empty')
+#			self.toLower(entity)
+#			retval = True
 #		elif layerEvent.getName() == 'message_send':
 #			to = layerEvent.getArg('to')
 #			message = layerEvent.getArg('message')

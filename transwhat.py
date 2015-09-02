@@ -31,6 +31,7 @@ import sys, os
 import MySQLdb
 import e4u
 import threading
+import Queue
 
 sys.path.insert(0, os.getcwd())
 
@@ -39,6 +40,7 @@ from Spectrum2.iochannel import IOChannel
 from whatsappbackend import WhatsAppBackend
 from constants import *
 from yowsup.common import YowConstants
+from yowsup.stacks import YowStack
 
 # Arguments
 parser = argparse.ArgumentParser()
@@ -71,4 +73,10 @@ io = IOChannel(args.host, args.port, handleTransportData)
 
 plugin = WhatsAppBackend(io, db)
 
-asyncore.loop(1)
+while True:
+    asyncore.loop(timeout=1.0, count=10, use_poll = True)
+    try:
+        callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
+        callback()
+    except Queue.Empty:
+        pass

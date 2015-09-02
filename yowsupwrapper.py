@@ -33,6 +33,7 @@ from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_acks.protocolentities	 import *
+from yowsup.layers.protocol_receipts.protocolentities  import *
 
 class YowsupApp(object):
 	def __init__(self):
@@ -92,10 +93,10 @@ class YowsupApp(object):
 					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
 		except TypeError as e: # Occurs when password is not correctly formated
 			self.onAuthFailure('password not base64 encoded')
-		try:
-			self.stack.loop(timeout=0.5, discrete=0.5)
-		except AuthError as e: # For some reason Yowsup throws an exception
-			self.onAuthFailure("%s" % e)
+#		try:
+#			self.stack.loop(timeout=0.5, discrete=0.5)
+#		except AuthError as e: # For some reason Yowsup throws an exception
+#			self.onAuthFailure("%s" % e)
 
 	def logout(self):
 		"""
@@ -114,7 +115,7 @@ class YowsupApp(object):
 			- participant
 		"""
 		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
-		self.stack.toLower(receipt)
+		self.sendEntity(receipt)
 
 	def sendTextMessage(self, to, message):
 		"""
@@ -126,6 +127,28 @@ class YowsupApp(object):
 		"""
 		messageEntity = TextMessageProtocolEntity(message, to = to)
 		self.sendEntity(messageEntity)
+
+	def sendPresence(self, available):
+		"""
+		Send presence to whatsapp
+
+		Args:
+			- available: (boolean) True if available false otherwise
+		"""
+		if available:
+			self.sendEntity(AvailablePresenceProtocolEntity())
+		else:
+			self.sendEntity(UnavailablePresenceProtocolEntity())
+	
+	def setStatus(self, statusText):
+		"""
+		Send status to whatsapp
+
+		Args:
+			- statusTest: (str) Your whatsapp status
+		"""
+		entity = PresenceProtocolEntity(name = statusText if len(statusText) == 0 else 'this')
+		self.sendEntity(entity)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
@@ -165,7 +188,7 @@ class YowsupApp(object):
 			- offline: (True, False or None)
 			- items
 		"""
-	pass
+		pass
 
 	def onAck(self, _id,_class, _from, timestamp):
 		"""
