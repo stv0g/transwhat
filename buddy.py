@@ -125,10 +125,12 @@ class BuddyList(dict):
 		return Buddy.create(self.owner, Number(number, state, self.db), nick, groups, self.db)
 
 	def remove(self, number):
-		buddy = self[number]
-		buddy.delete()
-
-		return buddy
+		try:
+			buddy = self[number]
+			buddy.delete()
+			return buddy
+		except KeyError:
+			return None
 
 	def prune(self):
 		cur = self.db.cursor()

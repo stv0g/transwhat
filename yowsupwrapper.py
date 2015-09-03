@@ -49,7 +49,7 @@ class YowsupApp(object):
 					YowIqProtocolLayer,
 					YowNotificationsProtocolLayer,
 					YowContactsIqProtocolLayer,
-#					 YowChatstateProtocolLayer,
+					YowChatstateProtocolLayer,
 					YowCallsProtocolLayer,
 					YowMediaProtocolLayer,
 					YowPrivacyProtocolLayer,
@@ -139,6 +139,30 @@ class YowsupApp(object):
 			self.sendEntity(AvailablePresenceProtocolEntity())
 		else:
 			self.sendEntity(UnavailablePresenceProtocolEntity())
+
+	def subscribePresence(self, phone_number):
+		"""
+		Subscribe to presence updates from phone_number
+
+		Args:
+			- phone_number: (str) The cellphone number of the person to
+				subscribe to
+		"""
+		jid = phone_number + '@s.whatsapp.net'
+		entity = SubscribePresenceProtocolEntity(jid)
+		self.sendEntity(entity)
+
+	def unsubscribePresence(self, phone_number):
+		"""
+		Unsubscribe to presence updates from phone_number
+
+		Args:
+			- phone_number: (str) The cellphone number of the person to
+				unsubscribe from
+		"""
+		jid = phone_number + '@s.whatsapp.net'
+		entity = UnsubscribePresenceProtocolEntity(jid)
+		self.sendEntity(entity)
 	
 	def setStatus(self, statusText):
 		"""
@@ -149,6 +173,48 @@ class YowsupApp(object):
 		"""
 		entity = PresenceProtocolEntity(name = statusText if len(statusText) == 0 else 'this')
 		self.sendEntity(entity)
+	
+	def sendTyping(self, phoneNumber, typing):
+		"""
+		Notify buddy using phoneNumber that you are typing to him
+
+		Args:
+			- phoneNumber: (str) cellphone number of the buddy you are typing to.
+			- typing: (bool) True if you are typing, False if you are not
+		"""
+		jid = phoneNumber + '@s.whatsapp.net'
+		if typing:
+			state = OutgoingChatstateProtocolEntity(
+				ChatstateProtocolEntity.STATE_TYPING, jid
+			)
+		else:
+			state = OutgoingChatstateProtocolEntity(
+				ChatstateProtocolEntity.STATE_PAUSED, jid
+			)
+		self.sendEntity(state)
+	
+	def requestLastSeen(self, phoneNumber, success = None, failure = None):
+		"""
+		Requests when user was last seen.
+		Args:
+			- phone_number: (str) the phone number of the user
+			- success: (func) called when request is successfully processed.
+				The first argument is the number, second argument is the seconds
+				since last seen.
+			- failure: (func) called when request has failed
+		"""
+		iq = LastseenIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
+		self.stack.broadcastEvent(
+			YowLayerEvent(YowsupAppLayer.SEND_IQ,
+				iq = iq,
+				success = self._lastSeenSuccess(success),
+				failure = failure,
+				)
+		)
+	def _lastSeenSuccess(self, success):
+		def func(response, request):
+			success(response._from.split('@')[0], response.seconds)
+		return func
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
@@ -201,12 +267,43 @@ class YowsupApp(object):
 			- timestamp
 		"""
 		pass
+	
+	def onPresenceReceived(self, _type, name, _from, last):
+		"""
+		Called when presence (e.g. available, unavailable) is received
+		from whatsapp
+
+		Args:
+			- _type: (str) 'available' or 'unavailable'
+			- _name
+			- _from
+			- _last
+		"""
+		pass
 
 	def onDisconnect(self):
 		"""
 		Called when disconnected from whatsapp
 		"""
 	
+	def onContactTyping(self, number):
+		"""
+		Called when contact starts to type
+
+		Args:
+			- number: (str) cellphone number of contact
+		"""
+		pass
+
+	def onContactPaused(self, number):
+		"""
+		Called when contact stops typing
+
+		Args:
+			- number: (str) cellphone number of contact
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
@@ -217,7 +314,8 @@ from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 
 class YowsupAppLayer(YowInterfaceLayer):
 	EVENT_START = 'transwhat.event.YowsupAppLayer.start'
-	TO_LOWER_EVENT = 'transwhat.event.YowsupAppLayer.to_lower'
+	TO_LOWER_EVENT = 'transwhat.event.YowsupAppLayer.toLower'
+	SEND_IQ = 'transwhat.event.YowsupAppLayer.sendIq'
 
 	def onEvent(self, layerEvent):
 		# We cannot pass instance varaibles in through init, so we use an event
@@ -233,6 +331,13 @@ class YowsupAppLayer(YowInterfaceLayer):
 		elif layerEvent.getName() == YowsupAppLayer.TO_LOWER_EVENT:
 			self.toLower(layerEvent.getArg('entity'))
 			return True
+		elif layerEvent.getName() == YowsupAppLayer.SEND_IQ:
+			iq = layerEvent.getArg('iq')
+			success = layerEvent.getArg('success')
+			failure = layerEvent.getArg('failure')
+			self._sendIq(iq, success, failure)
+			return True
+		return False
 
 	@ProtocolEntityCallback('success')
 	def onAuthSuccess(self, entity):
@@ -283,8 +388,24 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
-		self.toLower(notification.ack())
+		self.toLower(entity.ack())
 	
-	@ProtocolEntityCallback("message")
+	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
 		self.caller.onMessage(entity)
+
+	@ProtocolEntityCallback('presence')
+	def onPresenceReceived(self, presence):
+		_type = presence.getType()
+		name = presence.getName()
+		_from = presence.getFrom()
+		last = presence.getLast()
+		self.caller.onPresenceReceived(_type, name, _from, last)
+	
+	@ProtocolEntityCallback('chatstate')
+	def onChatstate(self, chatstate):
+		number = chatstate._from.split('@')[0]
+		if chatstate.getState() == ChatstateProtocolEntity.STATE_TYPING:
+			self.caller.onContactTyping(number)
+		else:
+			self.caller.onContactPaused(number)

@@ -149,13 +149,19 @@ class Session(YowsupApp):
 		for number in remove:
 			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
-#			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-#			self.toLower(entity)
+			self.unsubscribePresence(number)
 
 		for number in add:
 			buddy = self.buddies[number]
-#			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-#			self.toLower(entity)
+			self.subscribePresence(number)
+			self.requestLastSeen(number, self._lastSeen)
+
+	def _lastSeen(self, number, seconds):
+		self.logger.debug("Last seen %s at %s seconds" % (number, str(seconds)))
+		if seconds < 60:
+			self.onPresenceAvailable(number)
+		else:
+			self.onPresenceUnavailable(number)
 
 	# Called by superclass
 	def onAuthSuccess(self, status, kind, creation,
@@ -165,6 +171,7 @@ class Session(YowsupApp):
 		self.backend.handleConnected(self.user)
 		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
 		self.initialized = True
+		self.sendPresence(True)
 
 		self.updateRoster()
 
@@ -186,9 +193,12 @@ class Session(YowsupApp):
 				' '.join(map(str, [_id, _from, timestamp,
 					type, participant, offline, items]))
 		)
+		buddy = self.buddies[_from.split('@')[0]]
+		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
 
 	# Called by superclass
-	def onAck(self, _id,_class, _from, timestamp):
+	def onAck(self, _id, _class, _from, timestamp):
 		self.logger.debug('received ack ' + 
 				' '.join(map(str, [_id, _class, _from,timestamp,]))
 		)
@@ -214,16 +224,68 @@ class Session(YowsupApp):
 
 		# if receiptRequested: self.call("message_ack", (jid, messageId))
 
+
+	# Called by superclass
+	def onContactTyping(self, buddy):
+		self.logger.info("Started typing: %s", buddy)
+		self.sendPresence(True)
+		self.backend.handleBuddyTyping(self.user, buddy)
+
+		if self.timer != None:
+			self.timer.cancel()
+
+	# Called by superclass
+	def onContactPaused(self, buddy):
+		self.logger.info("Paused typing: %s", buddy)
+		self.backend.handleBuddyTyped(self.user, buddy)
+		self.timer = Timer(3, self.backend.handleBuddyStoppedTyping, (self.user, buddy)).start()
+	def onPresenceReceived(self, _type, name, jid, lastseen):
+		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
+		buddy = jid.split("@")[0]
+#		seems to be causing an error
+#		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+
+		if buddy in self.presenceRequested:
+			timestamp = time.localtime(time.time() - lastseen)
+			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
+			self.presenceRequested.remove(buddy)
+
+		if lastseen < 60:
+			self.onPresenceAvailable(buddy)
+		else:
+			self.onPresenceUnavailable(buddy)
+
+	def onPresenceAvailable(self, buddy):
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is available: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
+
+	def onPresenceUnavailable(self, buddy):
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is unavailable: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
+
 	# spectrum RequestMethods
 	def sendTypingStarted(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Started typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_send", buddy = (buddy + "@s.whatsapp.net",))
+			self.sendTyping(buddy, True)
+		# If he is typing he is present
+		# I really don't know where else to put this.
+		# Ideally, this should be sent if the user is looking at his client
+		self.sendPresence(True)
 
 	def sendTypingStopped(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_paused", buddy = (buddy + "@s.whatsapp.net",))
+			self.sendTyping(buddy, False)
 
 	def sendMessageToWA(self, sender, message):
 		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
@@ -352,20 +414,6 @@ class Session(YowsupApp):
 		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
 		if receiptRequested: self.call("message_ack", (jid, messageId))
 
-	def onContactTyping(self, jid):
-		buddy = jid.split("@")[0]
-		self.logger.info("Started typing: %s", buddy)
-		self.backend.handleBuddyTyping(self.user, buddy)
-
-		if self.timer != None:
-			self.timer.cancel()
-
-	def onContactPaused(self, jid):
-		buddy = jid.split("@")[0]
-		self.logger.info("Paused typing: %s", buddy)
-		self.backend.handleBuddyTyped(self.user, jid.split("@")[0])
-		self.timer = Timer(3, self.backend.handleBuddyStoppedTyping, (self.user, buddy)).start()
-
 	def onGroupGotInfo(self, gjid, owner, subject, subjectOwner, subjectTimestamp, creationTimestamp):
 		room = gjid.split("@")[0]
 		owner = owner.split("@")[0]
@@ -423,7 +471,7 @@ class Session(YowsupApp):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
 
-		loggin.info("Added % to room %s", buddy, room)
+		logger.info("Added % to room %s", buddy, room)
 
 		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
 		if receiptRequested: self.call("notification_ack", (gjid, messageId))
@@ -444,105 +492,3 @@ class Session(YowsupApp):
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
-
-class SpectrumLayer(YowInterfaceLayer):
-	EVENT_START = "transwhat.event.SpectrumLayer.start"
-
-	def onEvent(self, layerEvent):
-		# We cannot use __init__, since it can take no arguments
-		retval = False
-		if layerEvent.getName() == SpectrumLayer.EVENT_START:
-			self.logger = logging.getLogger(self.__class__.__name__)
-			self.backend = layerEvent.getArg("backend")
-			self.user = layerEvent.getArg("user")
-			self.legacyName = layerEvent.getArg("legacyName")
-			self.db = layerEvent.getArg("db")
-			self.session = layerEvent.getArg("session")
-
-			self.session.buddies = BuddyList(self.legacyName, self.db)
-			self.bot = Bot(self)
-			retval = True
-		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
-			reason = layerEvent.getArg("reason")
-			self.logger.info("Disconnected: %s (%s)", self.user, reason)
-			self.backend.handleDisconnected(self.user, 0, reason)
-#		elif layerEvent.getName() == 'presence_sendAvailable':
-#			entity = AvailablePresenceProtocolEntity()
-#			self.toLower(entity)
-#			retval = True
-#		elif layerEvent.getName() == 'presence_sendUnavailable':
-#			entity = UnavailablePresenceProtocolEntity()
-#			self.toLower(entity)
-#			retval = True
-#		elif layerEvent.getName() == 'profile_setStatus':
-#			# entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
-#			entity = PresenceProtocolEntity(name = 'This status is non-empty')
-#			self.toLower(entity)
-#			retval = True
-#		elif layerEvent.getName() == 'message_send':
-#			to = layerEvent.getArg('to')
-#			message = layerEvent.getArg('message')
-#			messageEntity = TextMessageProtocolEntity(message, to = to)
-#			self.toLower(messageEntity)
-#			retval = True
-		elif layerEvent.getName() == 'typing_send':
-			buddy = layerEvent.getArg('buddy')
-			state = OutgoingChatstateProtocolEntity(
-					ChatstateProtocolEntity.STATE_TYPING, buddy
-					)
-			self.toLower(state)
-			retval = True
-		elif layerEvent.getName() == 'typing_paused':
-			buddy = layerEvent.getArg('buddy')
-			state = OutgoingChatstateProtocolEntity(
-					ChatstateProtocolEntity.STATE_PAUSED, buddy
-					)
-			self.toLower(state)
-			retval = True
-		elif layerEvent.getName() == 'presence_request':
-			buddy = layerEvent.getArg('buddy')
-			sub = SubscribePresenceProtocolEntity(buddy)
-			self.toLower(sub)
-
-		self.logger.debug("EVENT %s", layerEvent.getName())
-		return retval
-
-	@ProtocolEntityCallback("presence")
-	def onPrecenceUpdated(self, presence):
-		jid = presence.getFrom()
-		lastseen = presence.getLast()
-		buddy = jid.split("@")[0]
-#		seems to be causing an error
-#		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
-
-		if buddy in self.session.presenceRequested:
-			timestamp = time.localtime(time.time() - lastseen)
-			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.session.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
-			self.session.presenceRequested.remove(buddy)
-
-		if lastseen < 60:
-			self.onPrecenceAvailable(jid)
-		else:
-			self.onPrecenceUnavailable(jid)
-
-	def onPrecenceAvailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.session.buddies[buddy]
-			self.logger.info("Is available: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-
-	def onPrecenceUnavailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.session.buddies[buddy]
-			self.logger.info("Is unavailable: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-
