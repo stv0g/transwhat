@@ -36,6 +36,8 @@ class WhatsAppBackend(SpectrumBackend):
 		self.io = io
 		self.db = db
 		self.sessions = { }
+		# Used to prevent duplicate messages
+		self.lastMessage = {}
 
 		self.logger.debug("Backend started")
 
@@ -44,6 +46,9 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
 		if user not in self.sessions:
 			self.sessions[user] = Session(self, user, legacyName, extra, self.db)
+
+		if user not in self.lastMessage:
+			self.lastMessage[user] = {}
 
 		self.sessions[user].login(password)
 
@@ -54,8 +59,15 @@ class WhatsAppBackend(SpectrumBackend):
 			del self.sessions[user]
 
 	def handleMessageSendRequest(self, user, buddy, message, xhtml = ""):
-		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s)", user, buddy, message)
-		self.sessions[user].sendMessageToWA(buddy, message)
+		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml = %s)", user, buddy, message, xhtml)
+		# For some reason spectrum occasionally sends to identical messages to
+		# a buddy, one to the bare jid and one to /bot. This causes duplicate
+		# messages. Since it is unlikely a user wants to send the same message
+		# twice, we should just ignore the second message
+		usersMessage = self.lastMessage[user]
+		if buddy not in usersMessage or usersMessage[buddy] != message:
+			self.sessions[user].sendMessageToWA(buddy, message)
+			usersMessage[buddy] = message
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
 		self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)", user, room, nickname)
