@@ -110,6 +110,7 @@ class Session(YowsupApp):
 		for number in add:
 			buddy = self.buddies[number]
 			self.subscribePresence(number)
+			self.backend.handleBuddyChanged(self.user, number, buddy.nick, buddy.groups, protocol_pb2.STATUS_NONE, iconHash = buddy.image_hash if buddy.image_hash is not None else "")
 			self.requestLastSeen(number, self._lastSeen)
 
 	def _lastSeen(self, number, seconds):
@@ -368,9 +369,9 @@ class Session(YowsupApp):
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
 
 	# also for adding a new buddy
-	def updateBuddy(self, buddy, nick, groups):
+	def updateBuddy(self, buddy, nick, groups, image_hash =""):
 		if buddy != "bot":
-			self.buddies.update(buddy, nick, groups)
+			self.buddies.update(buddy, nick, groups, image_hash)
 			self.updateRoster()
 
 	def removeBuddy(self, buddy):
@@ -391,6 +392,20 @@ class Session(YowsupApp):
 			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
+	
+	def requestVCard(self, buddy, ID):
+
+		def onSuccess(response, request):
+			self.logger.debug('Sending VCard (%s) with image id %s',
+					ID, response.pictureId)
+			image_hash = utils.sha1hash(response.pictureData)
+			self.logger.debug('Image hash is %s', image_hash)
+			self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
+			obuddy = self.buddies[buddy]
+			self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
+
+		self.logger.debug('Requesting profile picture of %s', buddy)
+		self.requestProfilePicture(buddy, onSuccess = onSuccess)
 
 	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):

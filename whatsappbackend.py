@@ -101,14 +101,15 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleStoppedTypingRequest(user=%s, buddy=%s)", user, buddy)
 		self.sessions[user].sendTypingStopped(buddy)
 
+	def handleVCardRequest(self, user, buddy, ID):
+		self.logger.debug("handleVCardRequest(user=%s, buddy=%s, ID=%s)", user, buddy, ID)
+		self.sessions[user].requestVCard(buddy, ID)
+
 	# TODO
 	def handleBuddyBlockToggled(self, user, buddy, blocked):
 		pass
 
 	def handleLeaveRoomRequest(self, user, room):
-		pass
-
-	def handleVCardRequest(self, user, buddy, ID):
 		pass
 
 	def handleVCardUpdatedRequest(self, user, photo, nickname):

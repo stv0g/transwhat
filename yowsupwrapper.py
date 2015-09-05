@@ -206,12 +206,23 @@ class YowsupApp(object):
 			- failure: (func) called when request has failed
 		"""
 		iq = LastseenIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
-		self.sendIq(iq, self._lastSeenSuccess(success), failure)
+		self.sendIq(iq, onSuccess = self._lastSeenSuccess(success), onError = failure)
 
 	def _lastSeenSuccess(self, success):
 		def func(response, request):
 			success(response._from.split('@')[0], response.seconds)
 		return func
+
+	def requestProfilePicture(self, phoneNumber, onSuccess = None, onFailure = None):
+		"""
+		Requests profile picture of whatsapp user
+		Args:
+			- phoneNumber: (str) the phone number of the user
+			- success: (func) called when request is successfully processed.
+			- failure: (func) called when request has failed
+		"""
+		iq = GetPictureIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
+		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
