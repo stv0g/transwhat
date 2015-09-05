@@ -64,6 +64,9 @@ class WhatsAppBackend(SpectrumBackend):
 		# a buddy, one to the bare jid and one to /bot. This causes duplicate
 		# messages. Since it is unlikely a user wants to send the same message
 		# twice, we should just ignore the second message
+		#
+		# TODO Proper fix, this work around drops all duplicate messages even 
+		# intentional ones.
 		usersMessage = self.lastMessage[user]
 		if buddy not in usersMessage or usersMessage[buddy] != message:
 			self.sessions[user].sendMessageToWA(buddy, message)
@@ -115,7 +118,8 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
 	def handleFTStartRequest(self, user, buddy, fileName, size, ftID):
-		pass
+		self.logger.debug('File send request %s, for user %s, from %s, size: %s',
+				fileName, user, buddy, size)
 
 	def handleFTFinishRequest(self, user, buddy, fileName, size, ftID):
 		pass

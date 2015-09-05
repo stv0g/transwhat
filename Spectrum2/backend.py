@@ -204,7 +204,7 @@ class SpectrumBackend:
 
 	def handleFTData(self, ftID, data):
 		d = protocol_pb2.FileTransferData()
-		d.ftid = ftID
+		d.ftID = ftID
 		d.data = data
 
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);

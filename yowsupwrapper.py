@@ -30,7 +30,8 @@ from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 # ProtocolEntities
 
 from yowsup.layers.protocol_presence.protocolentities import *
-from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
+from yowsup.layers.protocol_messages.protocolentities  import *
+from yowsup.layers.protocol_media.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_acks.protocolentities	 import *
 from yowsup.layers.protocol_receipts.protocolentities  import *
@@ -110,8 +111,8 @@ class YowsupApp(object):
 
 		Args:
 			- _id: id of message received
-			- _from
-			- read: ('read' or something else)
+			- _from: jid of person who sent the message
+			- read: ('read' or None) None is just delivered, 'read' is read
 			- participant
 		"""
 		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
@@ -304,6 +305,67 @@ class YowsupApp(object):
 		"""
 		pass
 
+	def	onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+		"""
+		Called when text message is received
+
+		Args:
+			- _id:
+			- _from: (str) jid of of sender
+			- to:
+			- notify: (str) human readable name of _from (e.g. John Smith)
+			- timestamp:
+			- participant:
+			- offline:
+			- retry:
+			- body: The content of the message
+		"""
+		pass
+	
+	def onImage(self, entity):
+		"""
+		Called when image message is received
+
+		Args:
+			- entity: ImageDownloadableMediaMessageProtocolEntity
+		"""
+		pass
+
+	def onAudio(self, entity):
+		"""
+		Called when audio message is received
+
+		Args:
+			- entity: AudioDownloadableMediaMessageProtocolEntity
+		"""
+		pass
+	
+
+	def onVideo(self, entity):
+		"""
+		Called when video message is received
+
+		Args:
+			- entity: VideoDownloadableMediaMessageProtocolEntity
+		"""
+		pass
+	
+	def onVCard(self, _id, _from, name, card_data, to, notify, timestamp, participant):
+		"""
+		Called when VCard message is received
+
+		Args:
+			- _id: (str) id of entity
+			- _from:
+			- name:
+			- card_data:
+			- to:
+			- notify:
+			- timestamp:
+			- participant:
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
@@ -392,7 +454,38 @@ class YowsupAppLayer(YowInterfaceLayer):
 	
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
-		self.caller.onMessage(entity)
+		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
+			self.caller.onTextMessage(
+				entity._id,
+				entity._from,
+				entity.to,
+				entity.notify,
+				entity.timestamp,
+				entity.participant,
+				entity.offline,
+				entity.retry,
+				entity.body
+			)
+		elif entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_MEDIA:
+			if isinstance(entity, ImageDownloadableMediaMessageProtocolEntity):
+				# There is just way too many fields to pass them into the
+				# function
+				self.caller.onImage(entity)
+			elif isinstance(entity, AudioDownloadableMediaMessageProtocolEntity):
+				self.caller.onAudio(entity)
+			elif isinstance(entity, VideoDownloadableMediaMessageProtocolEntity):
+				self.caller.onVideo(entity)
+			elif isinstance(entity, VCardMediaMessageProtocolEntity):
+				self.caller.onVCard(
+					entity._id,
+					entity._from,
+					entity.name,
+					entity.card_data,
+					entity.to,
+					entity.notify,
+					entity.timestamp,
+					entity.participant
+				)
 
 	@ProtocolEntityCallback('presence')
 	def onPresenceReceived(self, presence):

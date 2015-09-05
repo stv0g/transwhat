@@ -204,26 +204,69 @@ class Session(YowsupApp):
 		)
 
 	# Called by superclass
-	def onMessage(self, messageEntity):
-		self.logger.debug(str(messageEntity))
-		buddy = messageEntity.getFrom().split('@')[0]
-		messageContent = utils.softToUni(messageEntity.getBody())
-		timestamp = messageEntity.getTimestamp()
+	def onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+		self.logger.debug('received TextMessage' + 
+			' '.join(map(str, [
+				_id, _from, to, notify, timestamp,
+				participant, offline, retry, body
+			]))
+		)
+		buddy = _from.split('@')[0]
+		messageContent = utils.softToUni(body)
+		self.sendReceipt(_id,  _from, None, participant)
+		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
+				buddy, self.legacyName, messageContent, timestamp)
+		self.sendMessageToXMPP(buddy, messageContent, timestamp)
+		# isBroadcast always returns false, I'm not sure how to get a broadcast
+		# message.
+		#if messageEntity.isBroadcast():
+		#	self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
+		#			buddy, self.legacyName, messageContent, timestamp)
+		#	messageContent = "[Broadcast] " + messageContent
 
-		self.sendReceipt(messageEntity.getId(), messageEntity.getFrom(), None,
-				messageEntity.getParticipant())
+	# Called by superclass
+	def onImage(self, image):
+		self.logger.debug('Received image message %s', str(image))
+		buddy = image._from.split('@')[0]
+		message = image.url + ' ' + image.caption
+		self.sendMessageToXMPP(buddy, message, image.timestamp)
+		self.sendReceipt(image._id,  image._from, None, image.participant)
 
-		if messageEntity.isBroadcast():
-			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
-					buddy, self.legacyName, messageContent, timestamp)
-			messageContent = "[Broadcast] " + messageContent
-		else:
-			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
-					buddy, self.legacyName, messageContent, timestamp)
-			self.sendMessageToXMPP(buddy, messageContent, timestamp)
+	# Called by superclass
+	def onAudio(self, audio):
+		self.logger.debug('Received audio message %s', str(audio))
+		buddy = audio._from.split('@')[0]
+		message = audio.url
+		self.sendMessageToXMPP(buddy, message, audio.timestamp)
+		self.sendReceipt(audio._id,  audio._from, None, audio.participant)
 
-		# if receiptRequested: self.call("message_ack", (jid, messageId))
+	# Called by superclass
+	def onVideo(self, video):
+		self.logger.debug('Received video message %s', str(video))
+		buddy = video._from.split('@')[0]
+		message = video.url
+		self.sendMessageToXMPP(buddy, message, video.timestamp)
+		self.sendReceipt(video._id,  video._from, None, video.participant)
 
+	# Called by superclass
+	def onVCard(self, _id, _from, name, card_data, to, notify, timestamp, participant):
+		self.logger.debug('received VCard' + 
+			' '.join(map(str, [
+				_id, _from, name, card_data, to, notify, timestamp, participant
+			]))
+		)
+		buddy = _from.split("@")[0]
+		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
+		self.sendMessageToXMPP(buddy, card_data)
+		self.transferFile(buddy, str(name), card_data)
+		self.sendReceipt(_id, _from, None, participant)
+	
+	def transferFile(self, buddy, name, data):
+		# Not working
+		self.logger.debug('transfering file %s', name)
+		self.backend.handleFTStart(self.user, buddy, name, len(data))
+		self.backend.handleFTData(0, data)
+		self.backend.handleFTFinish(self.user, buddy, name, len(data), 0)
 
 	# Called by superclass
 	def onContactTyping(self, buddy):
@@ -408,11 +451,6 @@ class Session(YowsupApp):
 		self.sendMessageToXMPP(buddy, utils.shorten(url))
 		if receiptRequested: self.call("message_ack", (jid, messageId))
 
-	def onVcardReceived(self, messageId, jid, name, data, receiptRequested, isBroadcast): # TODO
-		buddy = jid.split("@")[0]
-		self.logger.info("VCard received from %s", buddy)
-		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
-		if receiptRequested: self.call("message_ack", (jid, messageId))
 
 	def onGroupGotInfo(self, gjid, owner, subject, subjectOwner, subjectTimestamp, creationTimestamp):
 		room = gjid.split("@")[0]
@@ -471,7 +509,7 @@ class Session(YowsupApp):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
 
-		logger.info("Added % to room %s", buddy, room)
+		self.logger.info("Added %s to room %s", buddy, room)
 
 		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
 		if receiptRequested: self.call("notification_ack", (gjid, messageId))
