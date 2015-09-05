@@ -35,6 +35,7 @@ from yowsup.layers.protocol_media.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_acks.protocolentities	 import *
 from yowsup.layers.protocol_receipts.protocolentities  import *
+from yowsup.layers.protocol_profiles.protocolentities import *
 
 class YowsupApp(object):
 	def __init__(self):
@@ -172,8 +173,8 @@ class YowsupApp(object):
 		Args:
 			- statusTest: (str) Your whatsapp status
 		"""
-		entity = PresenceProtocolEntity(name = statusText if len(statusText) == 0 else 'this')
-		self.sendEntity(entity)
+		iq = SetStatusIqProtocolEntity(statusText)
+		self.sendIq(iq)
 	
 	def sendTyping(self, phoneNumber, typing):
 		"""
@@ -205,13 +206,8 @@ class YowsupApp(object):
 			- failure: (func) called when request has failed
 		"""
 		iq = LastseenIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
-		self.stack.broadcastEvent(
-			YowLayerEvent(YowsupAppLayer.SEND_IQ,
-				iq = iq,
-				success = self._lastSeenSuccess(success),
-				failure = failure,
-				)
-		)
+		self.sendIq(iq, self._lastSeenSuccess(success), failure)
+
 	def _lastSeenSuccess(self, success):
 		def func(response, request):
 			success(response._from.split('@')[0], response.seconds)
@@ -371,6 +367,16 @@ class YowsupApp(object):
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
 			entity = entity
 		))
+	
+	def sendIq(self, iq, onSuccess = None, onError = None):
+		self.stack.broadcastEvent(
+			YowLayerEvent(
+				YowsupAppLayer.SEND_IQ,
+				iq = iq,
+				success = onSuccess,
+				failure = onError,
+			)
+		)
 
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 

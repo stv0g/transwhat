@@ -27,50 +27,6 @@ import logging
 import urllib
 import time
 
-from yowsup.stacks import YowStack
-from yowsup.layers import YowLayerEvent, YowParallelLayer
-from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
-from yowsup.layers.axolotl import YowAxolotlLayer
-from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
-								AuthError)
-from yowsup.layers.protocol_iq import YowIqProtocolLayer
-from yowsup.layers.protocol_groups import YowGroupsProtocolLayer
-from yowsup.layers.coder import YowCoderLayer
-from yowsup.layers.network import YowNetworkLayer
-from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
-from yowsup.layers.protocol_media import YowMediaProtocolLayer
-from yowsup.layers.stanzaregulator import YowStanzaRegulator
-from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
-from yowsup.layers.protocol_acks import YowAckProtocolLayer
-from yowsup.layers.logger import YowLoggerLayer
-from yowsup.common import YowConstants
-from yowsup.layers.protocol_receipts.protocolentities	 import *
-from yowsup import env
-from yowsup.layers.protocol_presence import *
-from yowsup.layers.protocol_presence.protocolentities import *
-from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
-from yowsup.layers.protocol_chatstate.protocolentities import *
-from yowsup.layers.protocol_acks.protocolentities	 import *
-from yowsup.layers import YowLayer
-from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
-from yowsup.layers.coder					   import YowCoderLayer
-from yowsup.layers.logger					   import YowLoggerLayer
-from yowsup.layers.network					   import YowNetworkLayer
-from yowsup.layers.protocol_messages		   import YowMessagesProtocolLayer
-from yowsup.layers.stanzaregulator			   import YowStanzaRegulator
-from yowsup.layers.protocol_media			   import YowMediaProtocolLayer
-from yowsup.layers.protocol_acks			   import YowAckProtocolLayer
-from yowsup.layers.protocol_receipts		   import YowReceiptProtocolLayer
-from yowsup.layers.protocol_groups			   import YowGroupsProtocolLayer
-from yowsup.layers.protocol_presence		   import YowPresenceProtocolLayer
-from yowsup.layers.protocol_ib				   import YowIbProtocolLayer
-from yowsup.layers.protocol_notifications	   import YowNotificationsProtocolLayer
-from yowsup.layers.protocol_iq				   import YowIqProtocolLayer
-from yowsup.layers.protocol_contacts		   import YowContactsIqProtocolLayer
-from yowsup.layers.protocol_chatstate		   import YowChatstateProtocolLayer
-from yowsup.layers.protocol_privacy			   import YowPrivacyProtocolLayer
-from yowsup.layers.protocol_profiles		   import YowProfilesProtocolLayer
-from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -436,13 +392,7 @@ class Session(YowsupApp):
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
 
-	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
-		buddy = jid.split("@")[0]
-
-		self.logger.info("Media received from %s: %s", buddy, url)
-		self.sendMessageToXMPP(buddy, utils.shorten(url))
-		if receiptRequested: self.call("message_ack", (jid, messageId))
-
+	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
 		buddy = jid.split("@")[0]
 		self.logger.info("Location received from %s: %s, %s", buddy, latitude, longitude)
