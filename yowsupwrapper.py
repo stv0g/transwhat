@@ -1,4 +1,3 @@
-
 from yowsup import env
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
@@ -29,13 +28,16 @@ from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 
 # ProtocolEntities
 
-from yowsup.layers.protocol_presence.protocolentities import *
-from yowsup.layers.protocol_messages.protocolentities  import *
-from yowsup.layers.protocol_media.protocolentities import *
+from yowsup.layers.protocol_acks.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
-from yowsup.layers.protocol_acks.protocolentities	 import *
-from yowsup.layers.protocol_receipts.protocolentities  import *
+from yowsup.layers.protocol_groups.protocolentities import *
+from yowsup.layers.protocol_media.protocolentities import *
+from yowsup.layers.protocol_messages.protocolentities  import *
+from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_profiles.protocolentities import *
+from yowsup.layers.protocol_receipts.protocolentities  import *
+
+from functools import partial
 
 class YowsupApp(object):
 	def __init__(self):
@@ -206,12 +208,11 @@ class YowsupApp(object):
 			- failure: (func) called when request has failed
 		"""
 		iq = LastseenIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
-		self.sendIq(iq, onSuccess = self._lastSeenSuccess(success), onError = failure)
+		self.sendIq(iq, onSuccess = partial(self._lastSeenSuccess, success),
+				onError = failure)
 
-	def _lastSeenSuccess(self, success):
-		def func(response, request):
-			success(response._from.split('@')[0], response.seconds)
-		return func
+	def _lastSeenSuccess(self, success, response, request):
+		success(response._from.split('@')[0], response.seconds)
 
 	def requestProfilePicture(self, phoneNumber, onSuccess = None, onFailure = None):
 		"""
@@ -222,6 +223,10 @@ class YowsupApp(object):
 			- failure: (func) called when request has failed
 		"""
 		iq = GetPictureIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
+		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+	
+	def requestGroupsList(self, onSuccess = None, onFailure = None):
+		iq = ListGroupsIqProtocolEntity()
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
@@ -322,7 +327,7 @@ class YowsupApp(object):
 			- to:
 			- notify: (str) human readable name of _from (e.g. John Smith)
 			- timestamp:
-			- participant:
+			- participant: (str) jid of user who sent the message in a groupchat
 			- offline:
 			- retry:
 			- body: The content of the message

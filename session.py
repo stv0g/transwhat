@@ -86,7 +86,7 @@ class Session(YowsupApp):
 		rooms = []
 		for room, group in self.groups.iteritems():
 			rooms.append([room, group.subject])
-
+		self.logger.debug("Got rooms: %s", rooms)
 		self.backend.handleRoomList(rooms)
 
 	def updateRoster(self):
@@ -111,7 +111,44 @@ class Session(YowsupApp):
 			buddy = self.buddies[number]
 			self.subscribePresence(number)
 			self.backend.handleBuddyChanged(self.user, number, buddy.nick, buddy.groups, protocol_pb2.STATUS_NONE, iconHash = buddy.image_hash if buddy.image_hash is not None else "")
-			self.requestLastSeen(number, self._lastSeen)
+			#self.requestLastSeen(number, self._lastSeen)
+		self.logger.debug('Requesting groups list')
+		self.requestGroupsList(self._updateGroups)
+	
+	def _updateGroups(self, response, request):
+		self.logger.debug('Received groups list %s', response)
+		# This XMPP client is not receiving this for some reason. 
+		groups = response.getGroups()
+		for group in groups:
+			room = group.getId()
+			owner = group.getOwner()
+			subjectOwner = group.getSubjectOwner()
+			subject = group.getSubject()
+
+			if room in self.groups:
+				oroom = self.groups[room]
+				oroom.owner = owner
+				oroom.subjectOwner = subjectOwner
+				oroom.subject = subject
+			else:
+				self.groups[room] = Group(room, owner, subject, subjectOwner)
+			# A crude implemtation of groups that act like buddies
+
+			self.backend.handleBuddyChanged(self.user, room, subject, [], protocol_pb2.STATUS_NONE)
+		# This XMPP client is not receiving this for some reason. 
+#		self.updateRoomList()
+#		for group in groups:
+#			room = group.getId()
+#			subjectOwner = group.getSubjectOwner()
+#			subject = group.getSubject()
+#			self.backend.handleSubject(self.user, room, subject, subjectOwner)
+#			for participant in group.getParticipants():
+#				buddy = participant.split('@')[0]
+#				self.logger.debug("Added %s to room %s", buddy, room)
+#				self.backend.handleParticipantChanged(self.user, buddy, room,
+#					protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
+
+
 
 	def _lastSeen(self, number, seconds):
 		self.logger.debug("Last seen %s at %s seconds" % (number, str(seconds)))
@@ -173,7 +210,12 @@ class Session(YowsupApp):
 		self.sendReceipt(_id,  _from, None, participant)
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 				buddy, self.legacyName, messageContent, timestamp)
-		self.sendMessageToXMPP(buddy, messageContent, timestamp)
+		if participant is not None:
+			partname = participant.split('@')[0]
+			message = partname + ': ' + messageContent
+			self.sendMessageToXMPP(buddy, message, timestamp)
+		else:
+			self.sendMessageToXMPP(buddy, messageContent, timestamp)
 		# isBroadcast always returns false, I'm not sure how to get a broadcast
 		# message.
 		#if messageEntity.isBroadcast():
@@ -291,28 +333,27 @@ class Session(YowsupApp):
 		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
 		message = message.encode("utf-8")
 
-#		if sender == "bot":
-#			self.bot.parse(message)
-#		elif "-" in sender: # group msg
-#			if "/" in sender:
-#				room, buddy = sender.split("/")
-#				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
-#			else:
-#				room = sender
+		if sender == "bot":
+			self.bot.parse(message)
+		elif "-" in sender: # group msg
+			if "/" in sender:
+				room, buddy = sender.split("/")
+				self.sendTextMessage(buddy + '@s.whatsapp.net', message)
+			else:
+				room = sender
 #				group = self.groups[room]
-#
+
 #				self.backend.handleMessage(self.user, room, message, group.nick)
-#				self.sendTextMessage(room + '@g.us', message)
-#
-#		else: # private msg
-#			buddy = sender
+				self.sendTextMessage(room + '@g.us', message)
+
+		else: # private msg
+			buddy = sender
 #			if message == "\\lastseen":
-#				self.presenceRequested.append(buddy)
 #				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
 #			else:
-		self.sendTextMessage(sender + '@s.whatsapp.net', message)
+			self.sendTextMessage(sender + '@s.whatsapp.net', message)
 
-	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
+	def sendMessageToXMPP(self, buddy, messageContent, timestamp = "", nickname = ""):
 		if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
@@ -417,21 +458,6 @@ class Session(YowsupApp):
 		if receiptRequested: self.call("message_ack", (jid, messageId))
 
 
-	def onGroupGotInfo(self, gjid, owner, subject, subjectOwner, subjectTimestamp, creationTimestamp):
-		room = gjid.split("@")[0]
-		owner = owner.split("@")[0]
-		subjectOwner = subjectOwner.split("@")[0]
-
-		if room in self.groups:
-			room = self.groups[room]
-			room.owner = owner
-			room.subjectOwner = subjectOwner
-			room.subject = subject
-		else:
-			self.groups[room] = Group(room, owner, subject, subjectOwner)
-
-		self.updateRoomList()
-
 	def onGroupGotParticipants(self, gjid, jids):
 		room = gjid.split("@")[0]
 		group = self.groups[room]
@@ -470,15 +496,6 @@ class Session(YowsupApp):
 		if receiptRequested: self.call("subject_ack", (gjid, messageId))
 
 	# Yowsup Notifications
-	def onGroupParticipantAdded(self, gjid, jid, author, timestamp, messageId, receiptRequested):
-		room = gjid.split("@")[0]
-		buddy = jid.split("@")[0]
-
-		self.logger.info("Added %s to room %s", buddy, room)
-
-		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
-		if receiptRequested: self.call("notification_ack", (gjid, messageId))
-
 	def onGroupParticipantRemoved(self, gjid, jid, author, timestamp, messageId, receiptRequested):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
