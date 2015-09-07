@@ -17,10 +17,14 @@ is a XMPP transport
 
 Manual compile latest version from https://github.com/hanzz/libtransport.
 
-## Contribute
+## Contributors
 
-Pull requests, bug reports etc. are welcome.
-Help us to provide a open implementation of the WhatsApp protocol.
+Pull requests, bug reports etc. are welcome. Help us to provide a open implementation of the WhatsApp protocol.
+
+The following persons have contributed major parts of this code:
+
+  - **Steffen Vogel** (@stv0g): Idea and initial implementation based on Yowsup 1
+  - **Mohammed Yaseen Mowzer** (@moyamo): Port to Yowsup 2
 
 ## Documentation
 
