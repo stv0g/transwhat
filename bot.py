@@ -31,7 +31,7 @@ import os
 import utils
 
 from constants import *
-from googleclient import GoogleClient
+#from googleclient import GoogleClient
 
 from Yowsup.Contacts.contacts import WAContactsSyncRequest
 
@@ -40,10 +40,10 @@ class Bot():
 		self.session = session
 		self.name = name
 
-		self.google = GoogleClient()
+	#   self.google = GoogleClient()
 
 		self.commands = {
-			"import": self._import,
+#			"import": self._import,
 			"help": self._help,
 			"prune": self._prune,
 			"welcome": self._welcome,
@@ -79,40 +79,40 @@ class Bot():
 	def send(self, message):
 		self.session.backend.handleMessage(self.session.user, self.name, message)
 
-	def __do_import(self, token):
-		# Google
-		google = self.google.getContacts(token)
-		self.send("%d buddies imported from google" % len(google))
-
-		result = { }
-		for number, name in google.iteritems():
-			number = re.sub("[^0-9]", "", number)
-			number = number if number[0] == "0"  else "+" + number
-
-			result[number] = { 'nick': name, 'state': 0 }
-
-		# WhatsApp
-		user = self.session.legacyName
-		password = self.session.password
-		sync = WAContactsSyncRequest(user, password, result.keys())
-		whatsapp = sync.send()['c']
-
-		for w in whatsapp:
-			result[w['p']]['state'] = w['w']
-			result[w['p']]['number'] = w['n']
-
-		self.send("%d buddies are using whatsapp" % len(filter(lambda w: w['w'], whatsapp)))
-
-		for r in result.values():
-			if r['nick']:
-				self.session.buddies.add(
-					number = r['number'],
-					nick = r['nick'],
-					groups = [u'Google'],
-					state = r['state']
-				)
-
-		self.send("%d buddies imported" % len(whatsapp))
+#	def __do_import(self, token):
+#		# Google
+#		google = self.google.getContacts(token)
+#		self.send("%d buddies imported from google" % len(google))
+#
+#		result = { }
+#		for number, name in google.iteritems():
+#			number = re.sub("[^0-9]", "", number)
+#			number = number if number[0] == "0"  else "+" + number
+#
+#			result[number] = { 'nick': name, 'state': 0 }
+#
+#		# WhatsApp
+#		user = self.session.legacyName
+#		password = self.session.password
+#		sync = WAContactsSyncRequest(user, password, result.keys())
+#		whatsapp = sync.send()['c']
+#
+#		for w in whatsapp:
+#			result[w['p']]['state'] = w['w']
+#			result[w['p']]['number'] = w['n']
+#
+#		self.send("%d buddies are using whatsapp" % len(filter(lambda w: w['w'], whatsapp)))
+#
+#		for r in result.values():
+#			if r['nick']:
+#				self.session.buddies.add(
+#					number = r['number'],
+#					nick = r['nick'],
+#					groups = [u'Google'],
+#					state = r['state']
+#				)
+#
+#		self.send("%d buddies imported" % len(whatsapp))
 
 	def __get_token(self, filename, timeout = 30):
 		file = open(filename, 'r')
@@ -135,24 +135,24 @@ class Bot():
 		file.close()
 
 	# commands
-	def _import(self, token = None):
-		if not token:
-			token_url = self.google.getTokenUrl("http://whatsapp.0l.de/auth.py")
-			auth_url = "http://whatsapp.0l.de/auth.py?number=%s&auth_url=%s" % (self.session.legacyName, urllib.quote(token_url))
-			short_url = utils.shorten(auth_url)
-			self.send("please visit this url to auth: %s" % short_url)
-
-			self.send("waiting for authorization...")
-			token = self.__get_token(TOKEN_FILE)
-			if token:
-				self.send("got token: %s" % token)
-				self.__do_import(token)
-				self.session.updateRoster()
-			else:
-				self.send("timeout! please use \"\\import [token]\"")
-		else:
-			self.__do_import(token)
-			self.session.updateRoster()
+#	def _import(self, token = None):
+#		if not token:
+#			token_url = self.google.getTokenUrl("http://whatsapp.0l.de/auth.py")
+#			auth_url = "http://whatsapp.0l.de/auth.py?number=%s&auth_url=%s" % (self.session.legacyName, urllib.quote(token_url))
+#			short_url = utils.shorten(auth_url)
+#			self.send("please visit this url to auth: %s" % short_url)
+#
+#			self.send("waiting for authorization...")
+#			token = self.__get_token(TOKEN_FILE)
+#			if token:
+#				self.send("got token: %s" % token)
+#				self.__do_import(token)
+#				self.session.updateRoster()
+#			else:
+#				self.send("timeout! please use \"\\import [token]\"")
+#		else:
+#			self.__do_import(token)
+#			self.session.updateRoster()
 
 	def _sync(self):
 		user = self.session.legacyName

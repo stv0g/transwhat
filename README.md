@@ -22,6 +22,15 @@ Use my patched version at https://github.com/stv0g/yowsup
 #### Google Atom and GData Python wrappers
 required for Google contacts import
 
+#### MySQLdb
+required
+
+#### Google protobuf
+required
+
+#### date.util
+required
+
 ## Contribute
 
 Pull requests, bug reports etc. are welcome.

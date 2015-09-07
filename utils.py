@@ -26,6 +26,7 @@ import urllib
 import json
 import e4u
 import base64
+import hashlib
 
 def shorten(url):
 	url = urllib.urlopen("http://d.0l.de/add.json?type=URL&rdata=%s" % urllib.quote(url))
@@ -61,3 +62,6 @@ def softToUni(message):
 
 def decodePassword(password):
 	return base64.b64decode(bytes(password.encode("utf-8")))
+
+def sha1hash(data):
+    return hashlib.sha1(data).hexdigest()
