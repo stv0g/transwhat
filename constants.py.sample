@@ -32,9 +32,3 @@ BASE_PATH = "/opt/transwhat"
 TOKEN_FILE = BASE_PATH + "/logs/tokens"
 MOTD_FILE = BASE_PATH + "/conf/motd"
 REQUESTS_FILE = BASE_PATH + "/logs/requests"
-
-GOOGLE_CLIENT_ID = ""
-GOOGLE_CLIENT_SECRET = ""
-
-SIPGATE_USERNAME=""
-SIPGATE_PASSWORD=""
