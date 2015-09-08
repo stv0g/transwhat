@@ -28,6 +28,6 @@ The following persons have contributed major parts of this code:
 
 ## Documentation
 
-A project wiki is available [here](http://dev.0l.de/projects/transwhat/start).
+A project wiki is available [here](https://dev.0l.de/wiki/projects/transwhat/).
 
 An *outdated* writeup of this project is also availabe at my [blog](http://www.steffenvogel.de/2013/06/29/transwhat/).
