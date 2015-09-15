@@ -30,6 +30,7 @@ from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 
 from yowsup.layers.protocol_acks.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
+from yowsup.layers.protocol_contacts.protocolentities import *
 from yowsup.layers.protocol_groups.protocolentities import *
 from yowsup.layers.protocol_media.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import *
@@ -197,6 +198,26 @@ class YowsupApp(object):
 			)
 		self.sendEntity(state)
 	
+	def sendSync(self, contacts, delta = False, interactive = True):
+		"""
+		You need to sync new contacts before you interact with
+		them, failure to do so could result in a temporary ban.
+		
+		Args:
+			- contacts: ([str]) a list of phone numbers of the
+				contacts you wish to sync
+			- delta: (bool; default: False) If true only send new
+				contacts to sync, if false you should send your full
+				contact list.
+			- interactive: (bool; default: True) Set to false if you are
+				sure this is the first time registering
+		"""
+		# TODO: Implement callbacks
+		mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
+		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
+		iq = GetSyncIqProtocolEntity(contacts, mode, context)
+		self.sendIq(iq)
+
 	def requestLastSeen(self, phoneNumber, success = None, failure = None):
 		"""
 		Requests when user was last seen.
@@ -219,14 +240,26 @@ class YowsupApp(object):
 		Requests profile picture of whatsapp user
 		Args:
 			- phoneNumber: (str) the phone number of the user
-			- success: (func) called when request is successfully processed.
-			- failure: (func) called when request has failed
+			- onSuccess: (func) called when request is successfully processed.
+			- onFailure: (func) called when request has failed
 		"""
 		iq = GetPictureIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 	
 	def requestGroupsList(self, onSuccess = None, onFailure = None):
 		iq = ListGroupsIqProtocolEntity()
+		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+
+	def requestGroupInfo(self, group, onSuccess = None, onFailure = None):
+		"""
+		Request info on a specific group (includes participants, subject, owner etc.)
+
+		Args:
+			- group: (str) the group id in the form of xxxxxxxxx-xxxxxxxx
+			- onSuccess: (func) called when request is successfully processed.
+			- onFailure: (func) called when request is has failed
+		"""
+		iq = InfoGroupsIqProtocolEntity(group + '@g.us')
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
@@ -359,6 +392,15 @@ class YowsupApp(object):
 
 		Args:
 			- entity: VideoDownloadableMediaMessageProtocolEntity
+		"""
+		pass
+
+	def onLocation(self, entity):
+		"""
+		Called when location message is received
+
+		Args:
+			- entity: LocationMediaMessageProtocolEntity
 		"""
 		pass
 	
@@ -508,6 +550,8 @@ class YowsupAppLayer(YowInterfaceLayer):
 					entity.timestamp,
 					entity.participant
 				)
+			elif isinstance(entity, LocationMediaMessageProtocolEntity):
+				self.caller.onLocation(entity)
 
 	@ProtocolEntityCallback('presence')
 	def onPresenceReceived(self, presence):
