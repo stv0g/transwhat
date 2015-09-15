@@ -205,7 +205,7 @@ following user commands are available:
                         except KeyError:
                            nick = buddy
 
-			self.send(self.session.groups[group].id + " "  + self.session.groups[group].subject + " Owner: " + nick )
+			self.send(self.session.groups[group].id  + self.session.groups[group].subject + " Owner: " + nick )
 	def _getgroups(self):
 		self.session.call("group_getGroups", ("participating",))
 

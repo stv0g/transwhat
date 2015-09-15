@@ -26,7 +26,7 @@ from Spectrum2.backend import SpectrumBackend
 from Spectrum2 import protocol_pb2
 
 from session import Session
-
+import hashlib
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
@@ -124,7 +124,7 @@ class WhatsAppBackend(SpectrumBackend):
                 self.logger.info("VCard requested for %s !!",buddy)
 		if user not in self.sessions:
 			return;
-                self.sessions[user].call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
+                #self.sessions[user].call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
                 #sql = 'UPDATE numbers SET picture=%s WHERE number=%s'
                 #args = (blob_value,buddy, )
                 #self.logger.info("Insert Picture SQL: %s, args: %s", sql, args)
@@ -135,6 +135,14 @@ class WhatsAppBackend(SpectrumBackend):
                     (pic,) = cursor.fetchone()
                     #pic=file('/tmp/tmpJoMbLq','rb')
                     self.handleVCard(user,ID,buddy,"","",pic)
+		    m = hashlib.sha1()
+                    m.update(pic)
+		    try:
+		    	#self.sessions[user].call("presence_request", (buddy + "@s.whatsapp.net",))
+		    	buddy = self.sessions[user].buddies[buddy]
+		    	buddy.iconHash = m.hexdigest()
+		    except KeyError:
+			self.logger.error("VCard: User(%s) Buddy not found:  %s !!",user,buddy)
                 
 		
 
@@ -163,7 +171,9 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
 	def handleRawXmlRequest(self, xml):
-                self.logger.info("Raw XML request")
+                #self.logger.info("Raw XML request")
+
+		self.logger.info("Raw XML: %s", xml)
 		pass
 
 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
