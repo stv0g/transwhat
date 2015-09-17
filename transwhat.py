@@ -50,7 +50,18 @@ parser.add_argument('config', type=str)
 args, unknown = parser.parse_known_args()
 
 # Logging
+
+logger = logging.getLogger('Template Backend')
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.info("Started Backend")
 logging.basicConfig( \
+#        stream = sys.stdout, \
+        filename='/var/log/spectrum2/transwhat/backends/transwhat.log', \
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
 	level = logging.DEBUG if args.debug else logging.INFO \
 )

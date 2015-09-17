@@ -26,9 +26,21 @@ import utils
 import logging
 import urllib
 import time
+import MySQLdb
+
+import sys
+import os
+import hashlib 
+import base64
+from random import randint
+
+from PIL import Image
 
 from Yowsup.connectionmanager import YowsupConnectionManager
 from Spectrum2 import protocol_pb2
+
+from Yowsup.Media.downloader import MediaDownloader
+from Yowsup.Media.uploader import MediaUploader
 
 from buddy import BuddyList
 from threading import Timer
@@ -36,13 +48,20 @@ from group import Group
 from bot import Bot
 from constants import *
 
+class MsgIDs:
+	def __init__(self, xmppId, waId):
+		self.xmppId = xmppId
+		self.waId = waId
+		self.cnt = 0
+
+
 class Session:
 
 	def __init__(self, backend, user, legacyName, extra, db):
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
 
-		self.db = db
+		self.db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 		self.backend = backend
 		self.user = user
 		self.legacyName = legacyName
@@ -54,23 +73,35 @@ class Session:
 		self.presenceRequested = []
 		self.offlineQueue = []
 		self.groupOfflineQueue = { }
+		self.msgIDs = { }
+		self.shouldBeConnected = False
 
 		self.timer = None
 		self.password = None
 		self.initialized = False
+		self.lastMsgId = None
+		self.synced = False
 
 		self.buddies = BuddyList(legacyName, db)
 		self.frontend = YowsupConnectionManager()
+		self.frontend.setAutoPong(True)
 
 		self.bot = Bot(self)
+
+		self.imgMsgId = None
+		self.imgPath = ""
+		self.imgBuddy = None
+		self.imgType = ""
 
 		# Events
 		self.listen("auth_success", self.onAuthSuccess)
 		self.listen("auth_fail", self.onAuthFailed)
 		self.listen("disconnected", self.onDisconnected)
+		self.listen("ping", self.onPing)
 
 		self.listen("contact_typing", self.onContactTyping)
 		self.listen("contact_paused", self.onContactPaused)
+                self.listen("contact_gotProfilePicture", self.onContactGotProfilePicture)
 
 		self.listen("presence_updated", self.onPrecenceUpdated)
 		self.listen("presence_available", self.onPrecenceAvailable)
@@ -79,7 +110,7 @@ class Session:
 		self.listen("message_received", self.onMessageReceived)
 		self.listen("image_received", self.onMediaReceived)
 		self.listen("video_received", self.onMediaReceived)
-		self.listen("audio_received", self.onMediaReceived)
+		self.listen("audio_received", self.onAudioReceived)
 		self.listen("location_received", self.onLocationReceived)
 		self.listen("vcard_received", self.onVcardReceived)
 
@@ -87,11 +118,31 @@ class Session:
 		self.listen("group_gotInfo", self.onGroupGotInfo)
 		self.listen("group_gotParticipants", self.onGroupGotParticipants)
 		self.listen("group_subjectReceived", self.onGroupSubjectReceived)
+                self.listen("group_created", self.onGroupCreated)
+                self.listen("group_promote", self.onGroupPromote)
+
+
+                self.listen("group_imageReceived", self.onGroupMediaReceived)
+                self.listen("group_videoReceived", self.onGroupMediaReceived)
+                self.listen("group_audioReceived", self.onGroupAudioReceived)
+                self.listen("group_locationReceived", self.onGroupLocationReceived)
+
+                self.listen("receipt_messageDelivered", self.onReceiptMessageDeliverd)
+
 
 		self.listen("notification_groupParticipantAdded", self.onGroupParticipantAdded)
 		self.listen("notification_groupParticipantRemoved", self.onGroupParticipantRemoved)
 		self.listen("notification_contactProfilePictureUpdated", self.onContactProfilePictureUpdated)
 		self.listen("notification_groupPictureUpdated", self.onGroupPictureUpdated)
+		self.listen("notification_contactAdded", self.onContactAdded)
+		self.listen("notification_contactUpdated", self.onContactUpdated)
+		self.listen("notification_groupPictureRemoved", self.onGroupPictureRemoved)
+		self.listen("notification_contactProfilePictureRemoved", self.onContactProfilePictureRemoved)
+		self.listen("contact_statusReceived", self.onContactStatusReceived)
+
+		self.listen("media_uploadRequestSuccess", self.onmedia_uploadRequestSuccess)
+		self.listen("media_uploadRequestDuplicate", self.onmedia_uploadRequestDuplicate)
+		
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
@@ -99,16 +150,19 @@ class Session:
 	def call(self, method, args = ()):
 		args = [str(s) for s in args]
 		self.logger.debug("%s(%s)", method, ", ".join(args))
-		self.frontend.methodInterface.call(method, args)
+		return self.frontend.methodInterface.call(method, args)
 
 	def listen(self, event, callback):
 		self.frontend.signalInterface.registerListener(event, callback)
 
 	def logout(self):
 		self.call("disconnect", ("logout",))
+                self.logger.info("Logout")
+
 
 	def login(self, password):
 		self.password = utils.decodePassword(password)
+		self.shouldBeConnected = True;
 		self.call("auth_login", (self.legacyName, self.password))
 
 	def updateRoomList(self):
@@ -123,49 +177,106 @@ class Session:
 		if buddy != "bot":
 			self.logger.info("Started typing: %s to %s", self.legacyName, buddy)
 			self.call("typing_send", (buddy + "@s.whatsapp.net",))
-
 	def sendTypingStopped(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.call("typing_paused", (buddy + "@s.whatsapp.net",))
 
-	def sendMessageToWA(self, sender, message):
-		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
+	def sendMessageToWA(self, sender, message, ID):
+		ID = str(ID)
+		self.logger.info("Message (ID: %s) send from %s to %s: %s", ID, self.legacyName, sender, message)
 		message = message.encode("utf-8")
+		if ID == self.lastMsgId and ID != None and ID != "":
+			return
+		self.lastMsgId = ID
 
 		if sender == "bot":
 			self.bot.parse(message)
 		elif "-" in sender: # group msg
 			if "/" in sender:
-				room, buddy = sender.split("/")
-				self.call("message_send", (buddy + "@s.whatsapp.net", message))
+				room, nick2 = sender.split("/")
+                                buddy2 = nick2
+                                for buddy, buddy3 in self.buddies.iteritems():
+                                     self.logger.info("Group buddy=%s nick=%s", buddy, buddy3.nick)
+                                     if buddy3.nick == nick2:
+                                        buddy2 = buddy
+				self.call("message_send", (buddy2 + "@s.whatsapp.net", message))
 			else:
 				room = sender
 				group = self.groups[room]
+                                self.logger.info("Group Message from %s to %s Groups: %s", group.nick , group , self.groups)
+				self.backend.handleMessage(self.user, room, message.decode('utf-8'), group.nick)
+				if (".jpg" in message) or (".webp" in message):
+					if (".jpg" in message):
+                                                self.imgType = "jpg"
+                                        if (".webp" in message):
+                                                self.imgType = "webp"
+                                        downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
+                                        downloader.download(message)
+                                        self.imgMsgId = ID
+                                        self.imgBuddy = room + "@g.us"
+				elif "geo:" in message:
+                                        self.sendLocation(room + "@g.us", message, ID)
 
-				self.backend.handleMessage(self.user, room, message, group.nick)
-				self.call("message_send", (room + "@g.us", message))
+                                else:
+
+					self.call("message_send", (room + "@g.us", message))
 		else: # private msg
 			buddy = sender
 			if message == "\\lastseen":
 				self.presenceRequested.append(buddy)
 				self.call("presence_request", (buddy + "@s.whatsapp.net",))
+                        elif message == "\\gpp":
+                                self.logger.info("Get Profile Picture! ")
+                                self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
+                                self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
 			else:
-				self.call("message_send", (buddy + "@s.whatsapp.net", message))
+                    		if (".jpg" in message) or (".webp" in message):
+					#waId = self.call("message_imageSend", (buddy + "@s.whatsapp.net", message, None, 0, None))
+					#waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
+					if (".jpg" in message):
+						self.imgType = "jpg"
+					if (".webp" in message):
+                                                self.imgType = "webp"
+					downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
+					downloader.download(message)
+					self.imgMsgId = ID
+					self.imgBuddy = buddy + "@s.whatsapp.net"
+				elif "geo:" in message:
+					self.sendLocation(buddy + "@s.whatsapp.net", message, ID)
+				else: 
+					waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
+					self.msgIDs[waId] = MsgIDs( ID, waId) 
+
+					self.logger.info("WA Message send to %s with ID %s", buddy, waId)
+	def sendLocation(self, buddy, message, ID):
+		#with open('/opt/transwhat/map.jpg', 'rb') as imageFile:
+                #        raw = base64.b64encode(imageFile.read())
+		latitude,longitude = message.split(':')[1].split(',')
+		waId = self.call("message_locationSend", (buddy, float(latitude), float(longitude),None))
+                self.msgIDs[waId] = MsgIDs( ID, waId)
+                self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
+
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
 		if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
 		if self.initialized == False:
-			self.logger.debug("Message queued from %s to %s: %s", buddy, self.legacyName, messageContent)
+			self.logger.info("Message queued from %s to %s: %s", buddy, self.legacyName, messageContent)
 			self.offlineQueue.append((buddy, messageContent, timestamp))
 		else:
-			self.logger.debug("Message sent from %s to %s: %s", buddy, self.legacyName, messageContent)
+			self.logger.info("Message sent from %s to %s: %s", buddy, self.legacyName, messageContent)
 			self.backend.handleMessage(self.user, buddy, messageContent, "", "", timestamp)
 
 	def sendGroupMessageToXMPP(self, room, buddy, messageContent, timestamp = ""):
-		if timestamp:
+		try:
+                        nick = self.buddies[buddy].nick
+                except KeyError:
+                        nick = buddy
+                
+                buddyFull = buddy
+                if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
 		if self.initialized == False:
@@ -174,10 +285,18 @@ class Session:
 			if room not in self.groupOfflineQueue:
 				self.groupOfflineQueue[room] = [ ]
 
-			self.groupOfflineQueue[room].append((buddy, messageContent, timestamp))
+			self.groupOfflineQueue[room].append((nick,  messageContent, timestamp))
 		else:
 			self.logger.debug("Group message sent from %s to %s: %s", buddy, room, messageContent) 
-			self.backend.handleMessage(self.user, room, messageContent, buddy, "", timestamp)
+			self.backend.handleMessage(self.user, room,  messageContent, nick , "", timestamp)
+			if room in self.groups:
+                        	room = self.groups[room]
+                        	roomSub = room.subject
+                	else:
+				roomSub = room
+
+                        
+
 
 	def changeStatus(self, status):
 		if status != self.status:
@@ -190,15 +309,16 @@ class Session:
 				self.call("presence_sendUnavailable")
 
 	def changeStatusMessage(self, statusMessage):
-		if (statusMessage != self.statusMessage) or (self.initialized == False):
+		#if (statusMessage != self.statusMessage) or (self.initialized == False):
+		if (statusMessage != self.statusMessage) and (self.initialized == True):
 			self.statusMessage = statusMessage
-			self.call("profile_setStatus", (statusMessage.encode("utf-8"),))
+			self.call("profile_setStatus", (statusMessage.encode("utf-8"),))# FIXME
 			self.logger.info("Status message changed: %s", statusMessage)
 
-			if self.initialized == False:
-				self.sendOfflineMessages()
-				self.bot.call("welcome")
-				self.initialized = True
+			#if self.initialized == False:
+			#	self.sendOfflineMessages()
+			#	self.bot.call("welcome")
+			#	self.initialized = True
 
 	def sendOfflineMessages(self):
 		# Flush Queues
@@ -209,8 +329,10 @@ class Session:
 	# also for adding a new buddy
 	def updateBuddy(self, buddy, nick, groups):
 		if buddy != "bot":
+			self.logger.info("Buddy updated: %s", buddy)
 			self.buddies.update(buddy, nick, groups)
-			self.updateRoster()
+			if self.initialized == True:
+				self.updateRoster()
 
 	def removeBuddy(self, buddy):
 		if buddy != "bot":
@@ -218,16 +340,47 @@ class Session:
 			self.buddies.remove(buddy)
 			self.updateRoster()
 
-	def joinRoom(self, room, nick):
+	def joinRoom(self, room, nick, init):
 		if room in self.groups:
 			group = self.groups[room]
 
 			self.logger.info("Joining room: %s room=%s, nick=%s", self.legacyName, room, nick)
 
 			group.nick = nick
+                        try:
+                            ownerNick = self.buddies[group.subjectOwner].nick
+                        except KeyError:
+                            ownerNick = group.subjectOwner
 
-			self.call("group_getParticipants", (room + "@g.us",))
-			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
+                        #time.sleep(2)
+                        #if init == False:
+				#self.call("group_getParticipants", (room + "@g.us",)) #FIXME
+				#self.call("group_getGroups", ("participating",))
+			self.backend.handleSubject(self.user, room, group.subject, ownerNick)
+                        #self.backend.handleSubject(self.user, room, group.subject, self.user)
+                        self.backend.handleRoomNicknameChanged(self.user,room,group.subject)
+			for jid in group.participants:
+                        	buddy = jid.split("@")[0]
+                        	self.logger.info("Added %s to room %s", buddy, room)
+                        	try:
+                           		nick = self.buddies[buddy].nick
+                        	except KeyError:
+                           		nick = buddy
+                          	#nick = ""
+                        	#nick = ""
+                        	buddyFull = buddy 
+                        	if buddy == group.owner:
+                                	flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+                        	else:
+                                	flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+                        	if buddy == self.legacyName:
+                           		nick = group.nick
+                           		flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
+                           		buddyFull = self.user
+
+
+                        	self.backend.handleParticipantChanged(self.user, buddyFull, room, flags, protocol_pb2.STATUS_ONLINE, buddy, nick) # TODO check status
+
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
 
@@ -237,12 +390,18 @@ class Session:
 		old = self.buddies.keys()
 		self.buddies.load()
 		new = self.buddies.keys()
+		contacts = new
+		#self.logger.info("Roster: %s", str(list(new)))
 
+		if self.synced == False:
+			self.call("sync_sendSync", (contacts,))
+			self.synced = True
+		#self.call("sync_sendContacts", (contacts,))
 		add = set(new) - set(old)
 		remove = set(old) - set(new)
 
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
+		self.logger.info("Roster remove: %s", str(list(remove)))
+		self.logger.info("Roster add: %s", str(list(add)))
 
 		for number in remove:
 			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
@@ -250,9 +409,13 @@ class Session:
 			self.call("presence_unsubscribe", (number + "@s.whatsapp.net",))
 
 		for number in add:
-			buddy = self.buddies[number]
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick, buddy.groups, protocol_pb2.STATUS_NONE)
-			self.call("presence_request", (number + "@s.whatsapp.net",)) # includes presence_subscribe
+			try:
+				buddy = self.buddies[number]
+	                        self.backend.handleBuddyChanged(self.user, number, buddy.nick, buddy.groups, protocol_pb2.STATUS_NONE)
+			except KeyError:
+				self.logger.info("Error %s BuddyList: %s", number,  str(list(self.buddies.keys())))
+			#self.call("presence_subscribe", (number + "@s.whatsapp.net",))
+			self.call("presence_request", (number + "@s.whatsapp.net",)) # includes presence_subscribe FIXME
 
 
 	# yowsup Signals
@@ -266,17 +429,33 @@ class Session:
 
 		self.call("ready")
 		self.call("group_getGroups", ("participating",))
+		
+		if self.initialized == False:
+                                self.sendOfflineMessages()
+                                #self.bot.call("welcome")
+                                self.initialized = True
+
 
 	def onAuthFailed(self, user, reason):
 		self.logger.info("Auth failed: %s (%s)", user, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
 		self.password = None
+		self.shouldBeConnected = False;
+
 
 	def onDisconnected(self, reason):
 		self.logger.info("Disconnected from whatsapp: %s (%s)", self.legacyName, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
+		#if  self.shouldBeConnected == True:
+			#self.call("auth_login", (self.legacyName, self.password))
+
+	def onPing(pingId):
+		self.logger.info("Ping received")
+		self.call("pong", (pingId,))
 
 	def onMessageReceived(self, messageId, jid, messageContent, timestamp, receiptRequested, pushName, isBroadCast):
+		self.call("message_ack", (jid, messageId))
+
 		buddy = jid.split("@")[0]
 		messageContent = utils.softToUni(messageContent)
 
@@ -287,28 +466,91 @@ class Session:
 			self.logger.info("Message received from %s to %s: %s (at ts=%s)", buddy, self.legacyName, messageContent, timestamp)
 
 		self.sendMessageToXMPP(buddy, messageContent, timestamp)
-		if receiptRequested: self.call("message_ack", (jid, messageId))
+		#if receiptRequested: 
+		#self.call("message_ack", (jid, messageId))
 
-	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
+	def onMediaReceived(self, messageId, jid, preview, url, size, caption, timestamp, receiptRequested, pushName, isBroadcast):
+		self.call("message_ack", (jid, messageId))
+
 		buddy = jid.split("@")[0]
 
 		self.logger.info("Media received from %s: %s", buddy, url)
-		self.sendMessageToXMPP(buddy, utils.shorten(url))
-		if receiptRequested: self.call("message_ack", (jid, messageId))
+		# self.sendMessageToXMPP(buddy, utils.shorten(url))
+                self.sendMessageToXMPP(buddy, url)
+		#if receiptRequested: 
+		#self.call("message_ack", (jid, messageId))
 
-	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
+        def onGroupMediaReceived(self, messageId, gjid, jid,  preview, url, size, caption, timestamp,  receiptRequested, pushName):
+                self.call("message_ack", (gjid, messageId))
+		buddy = jid.split("@")[0]
+                room = gjid.split("@")[0]
+
+                self.logger.info("Group Media message received in  %s from %s: %s (%s)", room, buddy, url, preview)
+
+                self.sendGroupMessageToXMPP(room, buddy, url)
+                #if receiptRequested: 
+		#self.call("message_ack", (gjid, messageId))
+                
+	def onAudioReceived(self, messageId, jid,  url, size, timestamp, receiptRequested, pushName, isBroadcast):
+                self.call("message_ack", (jid, messageId))
+
+		buddy = jid.split("@")[0]
+
+                self.logger.info("Media received from %s: %s", buddy, url)
+                # self.sendMessageToXMPP(buddy, utils.shorten(url))
+                self.sendMessageToXMPP(buddy, url)
+                #if receiptRequested: 
+                #self.call("message_ack", (jid, messageId))
+
+        def onGroupAudioReceived(self, messageId, gjid, jid, url, size, timestamp,  receiptRequested, pushName):
+                self.call("message_ack", (gjid, messageId))
+		buddy = jid.split("@")[0]
+                room = gjid.split("@")[0]
+
+                self.logger.info("Group Media message received in  %s from %s: %s (%s)", room, buddy, url, preview)
+
+                self.sendGroupMessageToXMPP(room, buddy, url)
+                #if receiptRequested: 
+                #self.call("message_ack", (gjid, messageId))
+
+
+	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, timestamp, receiptRequested, pushName, isBroadcast):
+		self.call("message_ack", (jid, messageId))
 		buddy = jid.split("@")[0]
 		self.logger.info("Location received from %s: %s, %s", buddy, latitude, longitude)
 
 		url = "http://maps.google.de?%s" % urllib.urlencode({ "q": "%s %s" % (latitude, longitude) })
-		self.sendMessageToXMPP(buddy, utils.shorten(url))
-		if receiptRequested: self.call("message_ack", (jid, messageId))
+                geo = "geo:"+latitude+","+longitude
+		# self.sendMessageToXMPP(buddy, utils.shorten(url))
+                self.sendMessageToXMPP(buddy, url)
+		self.sendMessageToXMPP(buddy, geo)
+		#if receiptRequested: 
+		#self.call("message_ack", (jid, messageId))
 
-	def onVcardReceived(self, messageId, jid, name, data, receiptRequested, isBroadcast): # TODO
+
+        def onGroupLocationReceived(self, messageId, gjid, jid, name, preview, latitude, longitude, timestamp, receiptRequested, pushName):
+                self.call("message_ack", (gjid, messageId))
+		buddy = jid.split("@")[0]
+                room = gjid.split("@")[0]
+               
+                url = "http://maps.google.de?%s" % urllib.urlencode({ "q": "%s %s" % (latitude, longitude) })
+        	geo = "geo:"+latitude+","+longitude
+                # self.sendMessageToXMPP(buddy, utils.shorten(url))
+                self.sendGroupMessageToXMPP(room, buddy, url)
+		self.sendGroupMessageToXMPP(room, buddy, geo)
+                #if receiptRequested: 
+		#self.call("message_ack", (gjid, messageId))
+
+
+
+
+	def onVcardReceived(self, messageId, jid, name, data, timestamp, receiptRequested, pushName, isBroadcast): # TODO
+		self.call("message_ack", (jid, messageId))
 		buddy = jid.split("@")[0]
 		self.logger.info("VCard received from %s", buddy)
 		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
-		if receiptRequested: self.call("message_ack", (jid, messageId))
+		#if receiptRequested: 
+		#self.call("message_ack", (jid, messageId))
 
 	def onContactTyping(self, jid):
 		buddy = jid.split("@")[0]
@@ -326,18 +568,23 @@ class Session:
 
 	def onPrecenceUpdated(self, jid, lastseen):
 		buddy = jid.split("@")[0]
-		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+		if lastseen != None:
+			self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
 
-		if buddy in self.presenceRequested:
-			timestamp = time.localtime(time.time() - lastseen)
-			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
-			self.presenceRequested.remove(buddy)
+			if buddy in self.presenceRequested:
+				timestamp = time.localtime(time.time() - lastseen)
+				timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+				self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
+				self.presenceRequested.remove(buddy)
 
-		if lastseen < 60:
-			self.onPrecenceAvailable(jid)
+			if lastseen < 60:
+				self.onPrecenceAvailable(jid)
+			else:
+				self.onPrecenceUnavailable(jid, lastseen)
 		else:
-			self.onPrecenceUnavailable(jid)
+			if buddy in self.presenceRequested:
+                                self.sendMessageToXMPP(buddy, "Forbidden")
+
 
 	def onPrecenceAvailable(self, jid):
 		buddy = jid.split("@")[0]
@@ -345,17 +592,18 @@ class Session:
 		try:
 			buddy = self.buddies[buddy]
 			self.logger.info("Is available: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, buddy.statusMsg, buddy.iconHash)
 		except KeyError:
 			self.logger.error("Buddy not found: %s", buddy)
 
-	def onPrecenceUnavailable(self, jid):
+	def onPrecenceUnavailable(self, jid, lastseen=0):
 		buddy = jid.split("@")[0]
 
 		try:
 			buddy = self.buddies[buddy]
 			self.logger.info("Is unavailable: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
+                        statusmsg = buddy.statusMsg + "\n Last seen: " + utils.ago(lastseen)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.iconHash)
 		except KeyError:
 			self.logger.error("Buddy not found: %s", buddy)
 
@@ -363,6 +611,8 @@ class Session:
 		room = gjid.split("@")[0]
 		owner = owner.split("@")[0]
 		subjectOwner = subjectOwner.split("@")[0]
+                subject = utils.softToUni(subject)
+
 
 		if room in self.groups:
 			room = self.groups[room]
@@ -371,55 +621,102 @@ class Session:
 			room.subject = subject
 		else:
 			self.groups[room] = Group(room, owner, subject, subjectOwner)
+                        #time.sleep(2)
+                        self.joinRoom(room,self.user.split("@")[0],True)
 
 		self.updateRoomList()
 
 	def onGroupGotParticipants(self, gjid, jids):
 		room = gjid.split("@")[0]
 		group = self.groups[room]
+		group.participants = jids
+		#for jid in jids:
+		#	buddy = jid.split("@")[0]
+		#	self.logger.info("Added %s to room %s", buddy, room)
+                #        try:
+                #           nick = self.buddies[buddy].nick
+                #        except KeyError:
+                #           nick = buddy
+                #          #nick = ""
+                #        #nick = ""
+                #        buddyFull = buddy
+		#	if buddy == group.owner:
+		#		flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+		#	else:
+		#		flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+                #        if buddy == self.legacyName:
+                #           nick = group.nick
+                #           flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
+                #           buddyFull = self.user 
 
-		for jid in jids:
-			buddy = jid.split("@")[0]
-			self.logger.info("Added %s to room %s", buddy, room)
 
-			if buddy == group.owner:
-				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
-			else:
-				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-
-			self.backend.handleParticipantChanged(self.user, buddy, room, flags, protocol_pb2.STATUS_ONLINE) # TODO check status
-
-			if room in self.groupOfflineQueue:
-				while self.groupOfflineQueue[room]:
-					msg = self.groupOfflineQueue[room].pop(0)
-					self.backend.handleMessage(self.user, room, msg[1], msg[0], "", msg[2])
-					self.logger.debug("Send queued group message to: %s %s %s", msg[0],msg[1], msg[2])
+		#	self.backend.handleParticipantChanged(self.user, buddyFull, room, flags, protocol_pb2.STATUS_ONLINE, buddy, nick) # TODO check status
+                        #self.backend.handleParticipantChanged(self.user, buddy , room, flags, protocol_pb2.STATUS_ONLINE, buddy, nick) # TODO check sta
+		#	if room in self.groupOfflineQueue:
+		#		while self.groupOfflineQueue[room]:
+		#			msg = self.groupOfflineQueue[room].pop(0)
+		#			self.backend.handleMessage(self.user, room, msg[1], msg[0], "", msg[2])
+		#			self.logger.debug("Send queued group message to: %s %s %s", msg[0],msg[1], msg[2])
 
 	def onGroupMessageReceived(self, messageId, gjid, jid, messageContent, timestamp, receiptRequested, pushName):
-		buddy = jid.split("@")[0]
+                self.call("message_ack", (gjid, messageId))
+
+		if jid != None:
+
+		   buddy = jid.split("@")[0]
 		room = gjid.split("@")[0]
 
 		self.logger.info("Group message received in  %s from %s: %s", room, buddy, messageContent)
 
 		self.sendGroupMessageToXMPP(room, buddy, utils.softToUni(messageContent), timestamp)
-		if receiptRequested: self.call("message_ack", (gjid, messageId))
+		#if receiptRequested: 
+		#self.call("message_ack", (gjid, messageId))
 
 	def onGroupSubjectReceived(self, messageId, gjid, jid, subject, timestamp, receiptRequested):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
+                subject = utils.softToUni(subject)
 
 		self.backend.handleSubject(self.user, room, subject, buddy)
-		if receiptRequested: self.call("subject_ack", (gjid, messageId))
+		#if receiptRequested: 
+		self.call("notification_ack", (gjid, messageId))
+
+	def onGroupCreated(self, messageId, gjid, jid, subject, timestamp, receiptRequested):
+                self.call("notification_ack", (gjid, messageId))
+
+		room = gjid.split("@")[0]
+                buddy = jid.split("@")[0]
+                subject = utils.softToUni(subject)
+                self.sendMessageToXMPP(buddy, "Create Room: %s %s" % (subject, room))
+		self.call("group_getGroups", ("participating",))
+
+
+                #self.backend.handleSubject(self.user, room, subject, buddy)
+                #if receiptRequested: 
+                
+
 
 	# Yowsup Notifications
 	def onGroupParticipantAdded(self, gjid, jid, author, timestamp, messageId, receiptRequested):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
 
-		loggin.info("Added % to room %s", buddy, room)
+		self.logger.info("Added %s to room %s", buddy, room)
 
-		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
-		if receiptRequested: self.call("notification_ack", (gjid, messageId))
+		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_MODERATOR, protocol_pb2.STATUS_ONLINE)
+		#if receiptRequested: 
+		self.call("notification_ack", (gjid, messageId))
+
+	def onGroupPromote(self, messageId, gjid, jid,  receiptRequested):
+                room = gjid.split("@")[0]
+                buddy = jid.split("@")[0]
+
+                self.logger.info("Promote %s to room %s", buddy, room)
+
+                self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
+                #if receiptRequested: 
+                self.call("notification_ack", (gjid, messageId))
+
 
 	def onGroupParticipantRemoved(self, gjid, jid, author, timestamp, messageId, receiptRequested):
 		room = gjid.split("@")[0]
@@ -428,12 +725,167 @@ class Session:
 		self.logger.info("Removed %s from room %s", buddy, room)
 
 		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_NONE) # TODO
-		if receiptRequested: self.call("notification_ack", (gjid, messageId))
+		#if receiptRequested: 
+		self.call("notification_ack", (gjid, messageId))
 
 	def onContactProfilePictureUpdated(self, jid, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
-		if receiptRequested: self.call("notification_ack", (jid, messageId))
+                buddy = jid.split("@")[0]
+                #self.sendMessageToXMPP(buddy, "ProfilePictureUpdate %d" % pictureId)
+                self.call("contact_getProfilePicture", (jid,))
+		#if receiptRequested: 
+		self.call("notification_ack", (jid, messageId))
+
+        def onContactProfilePictureRemoved(self, jid, timestamp, messageId, receiptRequested):
+                # TODO
+                buddy = jid.split("@")[0]
+                self.call("notification_ack", (jid, messageId))
+
+
+	def onContactStatusReceived(self, jid, status, messageId):
+		buddy = jid.split("@")[0]
+		self.call("notification_ack", (jid, messageId))
+		try:
+                        buddy = self.buddies[buddy]
+                        self.logger.info("Received Status Msg from %s: %s", buddy, status.decode('utf-8'))
+                        buddy.statusMsg = utils.softToUni(status)
+                except KeyError:
+                        self.logger.error("Buddy not found: %s", buddy)
+
+ 	def onContactAdded(self, jid, contactJid, messageId):
+                buddy = contactJid.split("@")[0]
+                self.call("notification_ack", (jid, messageId))
+
+		self.sendMessageToXMPP(buddy, "%s has added you!" % buddy)
+
+	def onContactUpdated(self, jid, contactJid, messageId):
+                buddy = contactJid.split("@")[0]
+		self.logger.info("Contact %s Updated", buddy)
+
+                self.call("notification_ack", (jid, messageId))
+
+                #self.sendMessageToXMPP(buddy, "%s is updated!" % buddy)
+
+
 
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
-		if receiptRequested: self.call("notification_ack", (jid, messageId))
+		#if receiptRequested: 
+		self.call("notification_ack", (jid, messageId))
+
+	def onGroupPictureRemoved(self, jid, author, timestamp, messageId, receiptRequested):
+                # TODO
+                #if receiptRequested: 
+                self.call("notification_ack", (jid, messageId))
+
+
+        def onContactGotProfilePicture(self, jid, pictureid, filePath):
+                # TODO
+                buddy = jid.split("@")[0]
+                self.logger.info("Got Profile Picture (id %s) %s from  %s", pictureid, filePath, buddy)
+                pic=file(filePath,'rb')
+                blob_value = pic.read() 
+                sql = 'UPDATE numbers SET picture=%s WHERE number=%s'    
+                args = (blob_value,buddy, )
+                #self.logger.info("Insert Picture SQL: %s, args: %s", sql, args)
+                cursor=self.db.cursor()
+                cursor.execute(sql,args)
+                self.db.commit()
+		try:
+                        buddy = self.buddies[buddy]
+                        m = hashlib.sha1()
+                	m.update(blob_value)
+                	buddy.iconHash = m.hexdigest()
+
+                except KeyError:
+                        self.logger.error("Buddy not found: %s", buddy)
+
+                # if receiptRequested: self.call("notification_ack", (jid, messageId))
+
+        def onReceiptMessageDeliverd(self, jid, msgId):
+                buddy = jid.split("@")[0]
+
+                self.logger.info("Message Delivered Receipt (ID%s) received from %s", msgId, buddy)
+                # self.call("delivered_ack", (jid, msgId)) # maybe not valid in wauth-2
+		try:
+			self.backend.handleMessageAck(self.user, buddy, self.msgIDs[msgId].xmppId)
+			self.msgIDs[msgId].cnt = self.msgIDs[msgId].cnt +1
+			if self.msgIDs[msgId].cnt == 2:
+				del self.msgIDs[msgId]
+		except KeyError:
+			self.logger.info("Unkown WA Message ID: %s ", msgId)
+
+
+
+                # self.sendMessageToXMPP(buddy, utils.shorten(url))
+                # self.sendMessageToXMPP(buddy, "*")   
+                # self.backend.handleMessage(self.user, buddy, "*", self.user.split("@")[0])
+
+	def onDlsuccess(self, path):
+		self.logger.info("Success: Image downloaded to %s", path)
+		os.rename(path, path+"."+self.imgType)
+		if self.imgType != "jpg":
+			im = Image.open(path+"."+self.imgType)
+			im.save(path+".jpg")
+		self.imgPath = path+".jpg"			
+		statinfo = os.stat(self.imgPath)
+		name=os.path.basename(self.imgPath)
+		self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
+		mtype = "image"
+ 
+		sha1 = hashlib.sha256()
+		fp = open(self.imgPath, 'rb')
+		try:
+			sha1.update(fp.read())
+			hsh = base64.b64encode(sha1.digest())
+			self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
+		finally:
+			fp.close()
+ 
+ 
+	def onDlerror(self):
+		self.logger.info("Download Error")
+	
+	def onmedia_uploadRequestSuccess(self,_hash, url, resumeFrom):
+		self.logger.info("Request Succ: to %s path %s hash: %s url: %s resume: %s", self.imgBuddy + "@s.whatsapp.net", self.imgPath, _hash, url, resumeFrom)
+		uploader = MediaUploader(self.imgBuddy, self.legacyName, self.onUploadSuccess, self.onUploadError)
+		uploader.upload(self.imgPath,url)
+		 
+	def onmedia_uploadRequestDuplicate(self,_hash, url):
+		self.logger.info("Request Dublicate: hash: %s url: %s ", _hash, url)
+		self.doSendImage(url)
+
+	def onUploadSuccess(self, url):
+		self.logger.info("Upload Succ: url: %s ", url)
+		self.doSendImage(url)
+ 
+	def onUploadError(self):
+		self.logger.info("Upload Fail:")
+			
+
+	def doSendImage(self, url):
+		self.logger.info("Sending message_image")
+		statinfo = os.stat(self.imgPath)
+		name=os.path.basename(self.imgPath)
+		waId = self.call("message_imageSend", (self.imgBuddy, url, name, str(statinfo.st_size), self.createThumb()))
+		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+	def createThumb(self, size=100, raw=False):
+        	img = Image.open(self.imgPath)  
+        	width, height = img.size
+        	img_thumbnail = self.imgPath + '_thumbnail'
+
+        	if width > height:
+            		nheight = float(height) / width * size
+            		nwidth = size
+        	else:
+            		nwidth = float(width) / height * size
+            		nheight = size
+
+        	img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
+        	img.save(img_thumbnail, 'JPEG')
+
+        	with open(img_thumbnail, 'rb') as imageFile:
+            		raw = base64.b64encode(imageFile.read())
+
+        	return raw	 

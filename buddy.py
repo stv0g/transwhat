@@ -24,8 +24,9 @@ __status__ = "Prototype"
 
 from Spectrum2 import protocol_pb2
 from Yowsup.Contacts.contacts import WAContactsSyncRequest
-
+import hashlib
 import logging
+import threading
 
 class Number():
 
@@ -48,7 +49,7 @@ class Number():
 
 
 class Buddy():
-	def __init__(self, owner, number, nick, groups, id, db):
+	def __init__(self, owner, number, nick, groups, id, db, pic):
 		self.id = id
 		self.db = db
 
@@ -56,7 +57,18 @@ class Buddy():
 		self.owner = owner
 		self.number = number
 		self.groups = groups
+		self.statusMsg = ""
+		#self.iconHash = ""
 
+		#cursor=self.db.cursor()
+                #cursor.execute('SELECT picture FROM numbers WHERE number=%s', (number,))
+                #self.db.commit()
+                #if not (cursor.rowcount == 0):
+                    #(pic,) = cursor.fetchone()
+                m = hashlib.sha1()
+                m.update(pic)
+                self.iconHash = m.hexdigest()
+		
 	def update(self, nick, groups):
 		self.nick = nick
 		self.groups = groups
@@ -79,7 +91,7 @@ class Buddy():
 		cur.execute("REPLACE buddies (owner_id, buddy_id, nick, groups) VALUES (%s, %s, %s, %s)", (owner.id, number.id, nick, groups))
 		db.commit()
 
-		return Buddy(owner, number, nick, groups, cur.lastrowid, db)
+		return Buddy(owner, number, nick, groups, cur.lastrowid, db, "")
 
 	def __str__(self):
 		return "%s (nick=%s, id=%s)" % (self.number, self.nick, self.id)
@@ -89,17 +101,19 @@ class BuddyList(dict):
 	def __init__(self, owner, db):
 		self.db = db
 		self.owner = Number(owner, 1, db)
+		self.lock = threading.Lock()
 
 	def load(self):
 		self.clear()
-
+		self.lock.acquire()
 		cur = self.db.cursor()
 		cur.execute("""SELECT
 					b.id AS id,
 					n.number AS number,
 					b.nick AS nick,
 					b.groups AS groups,
-					n.state AS state
+					n.state AS state,
+					n.picture AS picture
 				FROM buddies AS b
 				LEFT JOIN numbers AS n
 					ON b.buddy_id = n.id
@@ -109,33 +123,44 @@ class BuddyList(dict):
 				ORDER BY b.owner_id DESC""", self.owner.id)
 
 		for i in range(cur.rowcount):
-			id, number, nick, groups, state = cur.fetchone()
-			self[number] = Buddy(self.owner, Number(number, state, self.db), nick.decode('latin1'), groups.split(","), id, self.db)
+			id, number, nick, groups, state, picture = cur.fetchone()
+			self[number] = Buddy(self.owner, Number(number, state, self.db), nick.decode('latin1'), groups.split(","), id, self.db, picture)
+		self.lock.release()
 
 	def update(self, number, nick, groups):
+		self.lock.acquire()
 		if number in self:
 			buddy = self[number]
 			buddy.update(nick, groups)
 		else:
 			buddy = self.add(number, nick, groups, 1)
 
+		self.lock.release()
 		return buddy
 
 	def add(self, number, nick, groups = [], state = 0):
+		#self.lock.acquire()
 		return Buddy.create(self.owner, Number(number, state, self.db), nick, groups, self.db)
+		#self.lock.release()
+		#return buddy
 
 	def remove(self, number):
 		buddy = self[number]
+		self.lock.acquire()
 		buddy.delete()
-
+		self.lock.release()
 		return buddy
 
 	def prune(self):
+		self.lock.acquire()
 		cur = self.db.cursor()
 		cur.execute("DELETE FROM buddies WHERE owner_id = %s", self.owner.id)
 		self.db.commit()
+		self.lock.release()
+
 
 	def sync(self, user, password):
+		self.lock.acquire()
 		cur = self.db.cursor()
 		cur.execute("""SELECT
 					n.number AS number,
@@ -161,4 +186,5 @@ class BuddyList(dict):
 			self.db.commit()
 			using += number['w']
 
+		self.lock.release()
 		return using
