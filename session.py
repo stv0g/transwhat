@@ -458,7 +458,7 @@ class Session(YowsupApp):
 			else:
 				room = sender
 				try:
-					group = self.groups[room]
+					group = self.groups[self._lengthenGroupId(room)]
 					self.logger.info("Group Message from %s to %s Groups: %s",
 									 group.nick , group , self.groups)
 					self.backend.handleMessage(
