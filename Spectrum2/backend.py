@@ -27,7 +27,7 @@ class SpectrumBackend:
 		self.m_init_res = 0
 		self.logger = logging.getLogger(self.__class__.__name__)
 
-	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = "", pm = True):
+	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = ""):
 		m = protocol_pb2.ConversationMessage()
 		m.userName = user
 		m.buddyName = legacyName
@@ -35,7 +35,6 @@ class SpectrumBackend:
 		m.nickname = nickname
 		m.xhtml = xhtml
 		m.timestamp = str(timestamp)
-                m.pm = pm
 
 		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE)
 		self.send(message)
