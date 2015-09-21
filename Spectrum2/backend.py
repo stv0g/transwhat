@@ -4,7 +4,6 @@ import struct
 import sys
 import os
 import logging
-
 import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
