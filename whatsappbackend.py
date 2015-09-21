@@ -67,6 +67,7 @@ class WhatsAppBackend(SpectrumBackend):
 		#
 		# TODO Proper fix, this work around drops all duplicate messages even 
 		# intentional ones.
+                # IDEA there is an ID field in ConvMessage. If it is extracted it will work
 		usersMessage = self.lastMessage[user]
 		if buddy not in usersMessage or usersMessage[buddy] != message:
 			self.sessions[user].sendMessageToWA(buddy, message)
@@ -104,6 +105,7 @@ class WhatsAppBackend(SpectrumBackend):
 	def handleVCardRequest(self, user, buddy, ID):
 		self.logger.debug("handleVCardRequest(user=%s, buddy=%s, ID=%s)", user, buddy, ID)
 		self.sessions[user].requestVCard(buddy, ID)
+
 
 	# TODO
 	def handleBuddyBlockToggled(self, user, buddy, blocked):

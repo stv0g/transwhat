@@ -23,7 +23,6 @@ __status__ = "Prototype"
 """
 
 from Spectrum2 import protocol_pb2
-from Yowsup.Contacts.contacts import WAContactsSyncRequest
 
 import logging
 
@@ -61,7 +60,8 @@ class Buddy():
 	def update(self, nick, groups, image_hash):
 		self.nick = nick
 		self.groups = groups
-		self.image_hash = image_hash
+		if image_hash is not None:
+			self.image_hash = image_hash
 
 		groups = u",".join(groups).encode("latin-1")
 		cur = self.db.cursor()
