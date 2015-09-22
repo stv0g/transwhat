@@ -54,7 +54,6 @@ class Session(YowsupApp):
 		self.groups = {}
 		self.presenceRequested = []
 		self.offlineQueue = []
-		self.msgIDs = { }
 		self.groupOfflineQueue = { }
 		self.shouldBeConnected = False
 
@@ -170,10 +169,12 @@ class Session(YowsupApp):
 			except KeyError:
 				ownerNick = group.subjectOwner
 
-			self.backend.handleSubject(self.user, room, group.subject,
+			self.backend.handleSubject(self.user, self._shortenGroupId(room),
+									   group.subject,
 									   ownerNick)
-			self.backend.handleRoomNicknameChanged(self.user, room,
-												   group.subject)
+			self.backend.handleRoomNicknameChanged(
+				self.user, self._shortenGroupId(room), group.subject
+			)
 			self._refreshParticipants(room)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
@@ -225,8 +226,10 @@ class Session(YowsupApp):
 					flags = protocol_pb2.PARTICIPANT_FLAG_ME
 					buddyFull = self.user
 
-			self.backend.handleParticipantChanged(self.user, buddyFull,
-				self._shortenGroupId(room), flags, protocol_pb2.STATUS_ONLINE, buddy, nick)
+			self.backend.handleParticipantChanged(
+				self.user, buddyFull, self._shortenGroupId(room), flags,
+				protocol_pb2.STATUS_ONLINE, buddy, nick
+			)
 
 
 	def _lastSeen(self, number, seconds):
@@ -296,11 +299,22 @@ class Session(YowsupApp):
 		)
 		buddy = _from.split('@')[0]
 		messageContent = utils.softToUni(body)
-		self.sendReceipt(_id,  _from, None, participant)
+		self.sendReceipt(_id, _from, None, participant)
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 				buddy, self.legacyName, messageContent, timestamp)
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
+			try:
+				part = self.buddies[partname]
+				if part.nick == "":
+					part.nick = notify
+					self.backend.handleParticipantChanged(
+						self.user, partname, buddy,
+						protocol_pb2.PARTICIPANT_FLAG_NONE,
+						protocol_pb2.STATUS_NONE, "", part.nick
+					) # TODO
+			except KeyError:
+				self.updateBuddy(partname, notify, [])
 			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
 										timestamp)
 		else:
