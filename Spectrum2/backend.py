@@ -3,6 +3,7 @@ import socket
 import struct
 import sys
 import os
+import logging
 
 import google.protobuf
 
@@ -24,6 +25,7 @@ class SpectrumBackend:
 		self.m_pingReceived = False
 		self.m_data = ""
 		self.m_init_res = 0
+		self.logger = logging.getLogger(self.__class__.__name__)
 
 	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = ""):
 		m = protocol_pb2.ConversationMessage()
@@ -347,12 +349,20 @@ class SpectrumBackend:
 			else:
 				return
 
-
+			packet = self.m_data[4:4+expected_size]
 			wrapper = protocol_pb2.WrapperMessage()
-			if (wrapper.ParseFromString(self.m_data[4:]) == False):
+			try:
+				parseFromString = wrapper.ParseFromString(packet)
+			except:
 				self.m_data = self.m_data[expected_size+4:]
+				self.logger.error("Parse from String exception")
 				return
-		
+
+			if parseFromString == False:
+				self.m_data = self.m_data[expected_size+4:]
+				self.logger.error("Parse from String failed")
+				return
+
 			self.m_data = self.m_data[4+expected_size:]
 
 			if wrapper.type == protocol_pb2.WrapperMessage.TYPE_LOGIN:
