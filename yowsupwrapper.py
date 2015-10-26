@@ -1,3 +1,5 @@
+import logging
+
 from yowsup import env
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
@@ -67,6 +69,7 @@ class YowsupApp(object):
 				YowStanzaRegulator,
 				YowNetworkLayer
 		)
+		self.logger = logging.getLogger(self.__class__.__name__)
 		self.stack = YowStack(layers)
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
@@ -108,7 +111,7 @@ class YowsupApp(object):
 		Logout from whatsapp
 		"""
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
-	
+
 	def sendReceipt(self, _id, _from, read, participant):
 		"""
 		Send a receipt (delivered: double-tick, read: blue-ticks)
@@ -168,7 +171,7 @@ class YowsupApp(object):
 		jid = phone_number + '@s.whatsapp.net'
 		entity = UnsubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
-	
+
 	def setStatus(self, statusText):
 		"""
 		Send status to whatsapp
@@ -313,7 +316,7 @@ class YowsupApp(object):
 			- timestamp
 		"""
 		pass
-	
+
 	def onPresenceReceived(self, _type, name, _from, last):
 		"""
 		Called when presence (e.g. available, unavailable) is received
@@ -331,7 +334,7 @@ class YowsupApp(object):
 		"""
 		Called when disconnected from whatsapp
 		"""
-	
+
 	def onContactTyping(self, number):
 		"""
 		Called when contact starts to type
@@ -366,7 +369,7 @@ class YowsupApp(object):
 			- body: The content of the message
 		"""
 		pass
-	
+
 	def onImage(self, entity):
 		"""
 		Called when image message is received
@@ -384,7 +387,7 @@ class YowsupApp(object):
 			- entity: AudioDownloadableMediaMessageProtocolEntity
 		"""
 		pass
-	
+
 
 	def onVideo(self, entity):
 		"""
@@ -403,7 +406,7 @@ class YowsupApp(object):
 			- entity: LocationMediaMessageProtocolEntity
 		"""
 		pass
-	
+
 	def onVCard(self, _id, _from, name, card_data, to, notify, timestamp, participant):
 		"""
 		Called when VCard message is received
@@ -420,12 +423,20 @@ class YowsupApp(object):
 		"""
 		pass
 
+	def onAddedToGroup(self, entity):
+		"""Called when the user has been added to a new group"""
+		pass
+
+	def onParticipantsAddedToGroup(self, entity):
+		"""Called when participants have been added to a group"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
 			entity = entity
 		))
-	
+
 	def sendIq(self, iq, onSuccess = None, onError = None):
 		self.stack.broadcastEvent(
 			YowLayerEvent(
@@ -450,6 +461,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		# return True otherwise
 		if layerEvent.getName() == YowsupAppLayer.EVENT_START:
 			self.caller = layerEvent.getArg('caller')
+			self.logger = logging.getLogger(self.__class__.__name__)
 			return True
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			self.caller.onDisconnect()
@@ -514,8 +526,13 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
+		self.logger.debug("Received notification: %s", entity)
 		self.toLower(entity.ack())
-	
+		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
+			self.caller.onAddedToGroup(entity)
+		elif isinstance(entity, AddGroupsNotificationProtocolEntity):
+			self.caller.onParticipantsAddedToGroup(entity)
+
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
@@ -560,7 +577,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		_from = presence.getFrom()
 		last = presence.getLast()
 		self.caller.onPresenceReceived(_type, name, _from, last)
-	
+
 	@ProtocolEntityCallback('chatstate')
 	def onChatstate(self, chatstate):
 		number = chatstate._from.split('@')[0]
