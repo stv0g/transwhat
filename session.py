@@ -318,6 +318,8 @@ class Session(YowsupApp):
 	def onImage(self, image):
 		self.logger.debug('Received image message %s', str(image))
 		buddy = image._from.split('@')[0]
+		if image.caption is None:
+			image.caption = ''
 		message = image.url + ' ' + image.caption
 		self.sendMessageToXMPP(buddy, message, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)

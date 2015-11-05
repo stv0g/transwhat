@@ -7,7 +7,7 @@ import logging
 import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
- 	wrap = protocol_pb2.WrapperMessage()
+	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
 	wrap.payload = MESSAGE
 	return wrap.SerializeToString()
