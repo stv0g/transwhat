@@ -22,21 +22,9 @@ __status__ = "Prototype"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import urllib
-import json
 import e4u
 import base64
-
-def shorten(url):
-	url = urllib.urlopen("http://d.0l.de/add.json?type=URL&rdata=%s" % urllib.quote(url))
-	response = url.read()
-	response = json.loads(response)
-
-	for entry in response:
-		if entry['type'] == 'success':
-			host = entry['data'][0]['host']
-			return "http://s.%s/%s" % (host['zone']['name'], host['punycode'])
-
+import hashlib
 
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
@@ -61,3 +49,6 @@ def softToUni(message):
 
 def decodePassword(password):
 	return base64.b64decode(bytes(password.encode("utf-8")))
+
+def sha1hash(data):
+    return hashlib.sha1(data).hexdigest()

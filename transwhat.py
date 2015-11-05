@@ -25,12 +25,14 @@ __status__ = "Prototype"
 """
 
 import argparse
+import traceback
 import logging
 import asyncore
 import sys, os
 import MySQLdb
 import e4u
 import threading
+import Queue
 
 sys.path.insert(0, os.getcwd())
 
@@ -39,6 +41,7 @@ from Spectrum2.iochannel import IOChannel
 from whatsappbackend import WhatsAppBackend
 from constants import *
 from yowsup.common import YowConstants
+from yowsup.stacks import YowStack
 
 # Arguments
 parser = argparse.ArgumentParser()
@@ -52,9 +55,10 @@ parser.add_argument('-j', type=str, required=True)
 args, unknown = parser.parse_known_args()
 
 YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
+loggingfile = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
 # Logging
 logging.basicConfig( \
-	filename='/var/log/spectrum2/' + args.j + '/backends/backend.log',\
+	filename=loggingfile,\
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
 	level = logging.DEBUG if args.debug else logging.INFO \
 )
@@ -65,10 +69,31 @@ def handleTransportData(data):
 
 e4u.load()
 
+closed = False
+def connectionClosed():
+	global closed
+	closed = True
+
 # Main
 db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
-io = IOChannel(args.host, args.port, handleTransportData)
+io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
 plugin = WhatsAppBackend(io, db)
 
-asyncore.loop(1)
+while True:
+	try:
+		asyncore.loop(timeout=1.0, count=10, use_poll = True)
+		try:
+			callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
+			callback()
+		except Queue.Empty:
+			pass
+		else:
+			break
+		if closed:
+			break
+	except SystemExit:
+		break
+	except:
+		logger = logging.getLogger('transwhat')
+		logger.error(traceback.format_exc())

@@ -27,27 +27,6 @@ import logging
 import urllib
 import time
 
-from yowsup.stacks import YowStack
-from yowsup.layers import YowLayerEvent, YowParallelLayer
-from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
-from yowsup.layers.auth import (YowCryptLayer, YowAuthenticationProtocolLayer,
-								AuthError)
-from yowsup.layers.protocol_iq import YowIqProtocolLayer
-from yowsup.layers.protocol_groups import YowGroupsProtocolLayer
-from yowsup.layers.coder import YowCoderLayer
-from yowsup.layers.network import YowNetworkLayer
-from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
-from yowsup.layers.protocol_media import YowMediaProtocolLayer
-from yowsup.layers.stanzaregulator import YowStanzaRegulator
-from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
-from yowsup.layers.protocol_acks import YowAckProtocolLayer
-from yowsup.layers.logger import YowLoggerLayer
-from yowsup.common import YowConstants
-from yowsup import env
-from yowsup.layers.protocol_presence import *
-from yowsup.layers.protocol_presence.protocolentities import *
-from yowsup.layers.protocol_messages.protocolentities  import TextMessageProtocolEntity
-from yowsup.layers.protocol_chatstate.protocolentities import *
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -55,10 +34,12 @@ from threading import Timer
 from group import Group
 from bot import Bot
 from constants import *
+from yowsupwrapper import YowsupApp
 
-class Session():
+class Session(YowsupApp):
 
 	def __init__(self, backend, user, legacyName, extra, db):
+		super(Session, self).__init__()
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
 
@@ -73,121 +54,428 @@ class Session():
 		self.groups = {}
 		self.presenceRequested = []
 		self.offlineQueue = []
+		self.msgIDs = { }
 		self.groupOfflineQueue = { }
+		self.shouldBeConnected = False
 
 		self.timer = None
 		self.password = None
 		self.initialized = False
-		self.loggedin = False
+		self.synced = False
 
+		self.buddies = BuddyList(self.legacyName, self.db)
 		self.bot = Bot(self)
-
-		env.CURRENT_ENV = env.S40YowsupEnv()
-		layers = (SpectrumLayer,
-				YowParallelLayer((YowAuthenticationProtocolLayer,
-					YowMessagesProtocolLayer,
-					YowReceiptProtocolLayer,
-					YowAckProtocolLayer,
-					YowMediaProtocolLayer,
-					YowIqProtocolLayer,
-					YowGroupsProtocolLayer,
-					YowPresenceProtocolLayer)),
-				YowCoderLayer,
-				YowCryptLayer,
-				YowStanzaRegulator,
-				YowNetworkLayer
-		)
-		self.stack = YowStack(layers)
-		self.stack.broadcastEvent(
-			YowLayerEvent(SpectrumLayer.EVENT_START,
-				backend = self.backend,
-				user = self.user,
-				db = self.db,
-				legacyName = self.legacyName,
-				session = self
-			)
-		)
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
 
-	def call(self, method, **kwargs):
-		self.logger.debug("%s(%s)", method,
-				", ".join(str(k) + ': ' + str(v) for k, v in kwargs.items()))
-		self.stack.broadcastEvent(YowLayerEvent(method, **kwargs))
-
 	def logout(self):
-		self.loggedin = False
-		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
+		self.logger.info("%s logged out", self.user)
+		super(Session, self).logout()
 
 	def login(self, password):
-		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
-							(self.legacyName, password))
-		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
-							YowConstants.ENDPOINTS[0])
-		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
-							YowConstants.DOMAIN)
-		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
-							env.CURRENT_ENV.getResource())
-		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
-		self.loggedin = True
+		self.logger.info("%s attempting login", self.user)
 		self.password = password
-		try:
-			self.stack.broadcastEvent(
-					YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
-		except TypeError as e: # Occurs when password is not correctly formated
-			self.logger.debug("Auth error -> user: %s; details: %s;",
-					self.user, e)
-		try:
-			self.stack.loop(timeout=0.5, discrete=0.5)
-		except AuthError as e: # For some reason Yowsup throws an exception
-			self.logger.debug("Auth error -> user: %s; details: %s;",
-					self.user, e)
+		self.shouldBeConncted = True
+		super(Session, self).login(self.legacyName, self.password)
+
+	def _shortenGroupId(self, gid):
+		# FIXME: will have problems if number begins with 0
+		return '-'.join(hex(int(s))[2:] for s in gid.split('-'))
+	
+	def _lengthenGroupId(self, gid):
+		# FIXME: will have problems if number begins with 0
+		return '-'.join(str(int(s, 16)) for s in gid.split('-'))
 
 	def updateRoomList(self):
 		rooms = []
 		for room, group in self.groups.iteritems():
-			rooms.append([room, group.subject])
+			rooms.append([self._shortenGroupId(room), group.subject])
 
+		self.logger.debug("Got rooms: %s", rooms)
 		self.backend.handleRoomList(rooms)
+
+	def updateRoster(self):
+		self.logger.debug("Update roster")
+
+		old = self.buddies.keys()
+		self.buddies.load()
+		new = self.buddies.keys()
+		contacts = new
+
+		if self.synced == False:
+			self.sendSync(contacts, delta = False, interactive = True)
+			self.synced = True
+
+		add = set(new) - set(old)
+		remove = set(old) - set(new)
+
+		self.logger.debug("Roster remove: %s", str(list(remove)))
+		self.logger.debug("Roster add: %s", str(list(add)))
+
+		for number in remove:
+			self.backend.handleBuddyChanged(self.user, number, "", [],
+											protocol_pb2.STATUS_NONE)
+			self.backend.handleBuddyRemoved(self.user, number)
+			self.unsubscribePresence(number)
+
+		for number in add:
+			buddy = self.buddies[number]
+			self.subscribePresence(number)
+			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
+				buddy.groups, protocol_pb2.STATUS_NONE,
+				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+
+			#self.requestLastSeen(number, self._lastSeen)
+
+	def _updateGroups(self, response, request):
+		self.logger.debug('Received groups list %s', response)
+		groups = response.getGroups()
+		for group in groups:
+			room = group.getId()
+			owner = group.getOwner().split('@')[0]
+			subjectOwner = group.getSubjectOwner().split('@')[0]
+			subject = utils.softToUni(group.getSubject())
+
+			if room in self.groups:
+				oroom = self.groups[room]
+				oroom.owner = owner
+				oroom.subjectOwner = subjectOwner
+				oroom.subject = subject
+			else:
+				self.groups[room] = Group(room, owner, subject, subjectOwner)
+				self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+
+			self._addParticipantsToRoom(room, group.getParticipants())
+
+			if room in self.groupOfflineQueue:
+				while self.groupOfflineQueue[room]:
+					msg = self.groupOfflineQueue[room].pop(0)
+					self.backend.handleMessage(self.user, room, msg[1],
+											   msg[0], "", msg[2])
+					self.logger.debug("Send queued group message to: %s %s %s",
+									  msg[0],msg[1], msg[2])
+		self.updateRoomList()
+
+	def joinRoom(self, room, nick):
+		room = self._lengthenGroupId(room)
+		if room in self.groups:
+			self.logger.info("Joining room: %s room=%s, nick=%s",
+							 self.legacyName, room, nick)
+
+			group = self.groups[room]
+			group.nick = nick
+			try:
+				ownerNick = self.buddies[group.subjectOwner].nick
+			except KeyError:
+				ownerNick = group.subjectOwner
+
+			self.backend.handleSubject(self.user, room, group.subject,
+									   ownerNick)
+			self.backend.handleRoomNicknameChanged(self.user, room,
+												   group.subject)
+			self._refreshParticipants(room)
+		else:
+			self.logger.warn("Room doesn't exist: %s", room)
+
+	def _refreshParticipants(self, room):
+		group = self.groups[room]
+		for jid in group.participants:
+			buddy = jid.split("@")[0]
+			self.logger.info("Added %s to room %s", buddy, room)
+			try:
+				nick = self.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
+			if nick == "":
+				nick = buddy
+
+			buddyFull = buddy 
+			if buddy == group.owner:
+				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+			else:
+				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+			if buddy == self.legacyName:
+				nick = group.nick
+				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
+				buddyFull = self.user
+			self.backend.handleParticipantChanged(
+				self.user, buddyFull, self._shortenGroupId(room), flags,
+				protocol_pb2.STATUS_ONLINE, buddy, nick)
+
+	def _addParticipantsToRoom(self, room, participants):
+		group = self.groups[room]
+		group.participants = participants
+
+		for jid, _type in participants.iteritems():
+			buddy = jid.split("@")[0]
+			buddyFull = buddy
+			self.logger.info("Added %s to room %s", buddy, room)
+			try:
+				nick = self.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
+				buddyFull = buddy
+			if _type == 'admin':
+				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+			else:
+				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+				if buddy == self.legacyName:
+					nick = group.nick
+					flags = protocol_pb2.PARTICIPANT_FLAG_ME
+					buddyFull = self.user
+
+			self.backend.handleParticipantChanged(self.user, buddyFull,
+				self._shortenGroupId(room), flags, protocol_pb2.STATUS_ONLINE, buddy, nick)
+
+
+	def _lastSeen(self, number, seconds):
+		self.logger.debug("Last seen %s at %s seconds" % (number, str(seconds)))
+		if seconds < 60:
+			self.onPresenceAvailable(number)
+		else:
+			self.onPresenceUnavailable(number)
+
+	# Called by superclass
+	def onAuthSuccess(self, status, kind, creation,
+			expiration, props, nonce, t):
+		self.logger.info("Auth success: %s", self.user)
+
+		self.backend.handleConnected(self.user)
+		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name,
+										["Admin"], protocol_pb2.STATUS_ONLINE)
+		if self.initialized == False:
+			self.sendOfflineMessages()
+			self.bot.call("welcome")
+			self.initialized = True
+		self.sendPresence(True)
+		self.updateRoster()
+
+		self.logger.debug('Requesting groups list')
+		self.requestGroupsList(self._updateGroups)
+
+	# Called by superclass
+	def onAuthFailed(self, reason):
+		self.logger.info("Auth failed: %s (%s)", self.user, reason)
+		self.backend.handleDisconnected(self.user, 0, reason)
+		self.password = None
+		self.shouldBeConnected = False
+
+	# Called by superclass
+	def onDisconnect(self):
+		self.logger.debug('Disconnected')
+		self.backend.handleDisconnected(self.user, 0, 'Disconnected for unknown reasons')
+
+	# Called by superclass
+	def onReceipt(self, _id, _from, timestamp, type, participant, offline, items):
+		self.logger.debug("received receipt, sending ack: " +
+				' '.join(map(str, [_id, _from, timestamp,
+					type, participant, offline, items]))
+		)
+		try:
+			buddy = self.buddies[_from.split('@')[0]]
+			self.backend.handleBuddyChanged(self.user, buddy.number.number,
+					buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+		except KeyError:
+			pass
+
+	# Called by superclass
+	def onAck(self, _id, _class, _from, timestamp):
+		self.logger.debug('received ack ' + 
+				' '.join(map(str, [_id, _class, _from,timestamp,]))
+		)
+
+	# Called by superclass
+	def onTextMessage(self, _id, _from, to, notify, timestamp, participant,
+					  offline, retry, body):
+		self.logger.debug('received TextMessage' +
+			' '.join(map(str, [
+				_id, _from, to, notify, timestamp,
+				participant, offline, retry, body
+			]))
+		)
+		buddy = _from.split('@')[0]
+		messageContent = utils.softToUni(body)
+		self.sendReceipt(_id,  _from, None, participant)
+		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
+				buddy, self.legacyName, messageContent, timestamp)
+		if participant is not None: # Group message
+			partname = participant.split('@')[0]
+			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
+										timestamp)
+		else:
+			self.sendMessageToXMPP(buddy, messageContent, timestamp)
+		# isBroadcast always returns false, I'm not sure how to get a broadcast
+		# message.
+		#if messageEntity.isBroadcast():
+		#	self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
+		#			buddy, self.legacyName, messageContent, timestamp)
+		#	messageContent = "[Broadcast] " + messageContent
+
+	# Called by superclass
+	def onImage(self, image):
+		self.logger.debug('Received image message %s', str(image))
+		buddy = image._from.split('@')[0]
+		message = image.url + ' ' + image.caption
+		self.sendMessageToXMPP(buddy, message, image.timestamp)
+		self.sendReceipt(image._id,	 image._from, None, image.participant)
+
+	# Called by superclass
+	def onAudio(self, audio):
+		self.logger.debug('Received audio message %s', str(audio))
+		buddy = audio._from.split('@')[0]
+		message = audio.url
+		self.sendMessageToXMPP(buddy, message, audio.timestamp)
+		self.sendReceipt(audio._id,	 audio._from, None, audio.participant)
+
+	# Called by superclass
+	def onVideo(self, video):
+		self.logger.debug('Received video message %s', str(video))
+		buddy = video._from.split('@')[0]
+		message = video.url
+		self.sendMessageToXMPP(buddy, message, video.timestamp)
+		self.sendReceipt(video._id,	 video._from, None, video.participant)
+
+	def onLocation(self, location):
+		buddy = location._from.split('@')[0]
+		latitude = location.getLatitude()
+		longitude = location.getLongitude()
+		url = location.getLocationUrl()
+
+		self.logger.debug("Location received from %s: %s, %s",
+						  buddy, latitude, longitude)
+
+		self.sendMessageToXMPP(buddy, url, location.timestamp)
+		self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
+							   location.timestamp)
+
+
+	# Called by superclass
+	def onVCard(self, _id, _from, name, card_data, to, notify, timestamp, participant):
+		self.logger.debug('received VCard' +
+			' '.join(map(str, [
+				_id, _from, name, card_data, to, notify, timestamp, participant
+			]))
+		)
+		buddy = _from.split("@")[0]
+		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
+#		self.sendMessageToXMPP(buddy, card_data)
+		self.transferFile(buddy, str(name), card_data)
+		self.sendReceipt(_id, _from, None, participant)
+
+	def transferFile(self, buddy, name, data):
+		# Not working
+		self.logger.debug('transfering file %s', name)
+		self.backend.handleFTStart(self.user, buddy, name, len(data))
+		self.backend.handleFTData(0, data)
+		self.backend.handleFTFinish(self.user, buddy, name, len(data), 0)
+
+	# Called by superclass
+	def onContactTyping(self, buddy):
+		self.logger.info("Started typing: %s", buddy)
+		if buddy != 'bot':
+			self.sendPresence(True)
+			self.backend.handleBuddyTyping(self.user, buddy)
+
+			if self.timer != None:
+				self.timer.cancel()
+
+	# Called by superclass
+	def onContactPaused(self, buddy):
+		self.logger.info("Paused typing: %s", buddy)
+		if buddy != 'bot':
+			self.backend.handleBuddyTyped(self.user, buddy)
+			self.timer = Timer(3, self.backend.handleBuddyStoppedTyping,
+							   (self.user, buddy)).start()
+
+	def onPresenceReceived(self, _type, name, jid, lastseen):
+		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
+		buddy = jid.split("@")[0]
+#		seems to be causing an error
+#		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+
+		if buddy in self.presenceRequested:
+			timestamp = time.localtime(time.time() - lastseen)
+			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
+			self.presenceRequested.remove(buddy)
+
+		if lastseen < 60:
+			self.onPresenceAvailable(buddy)
+		else:
+			self.onPresenceUnavailable(buddy)
+
+	def onPresenceAvailable(self, buddy):
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is available: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number,
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
+
+	def onPresenceUnavailable(self, buddy):
+		try:
+			buddy = self.buddies[buddy]
+			self.logger.info("Is unavailable: %s", buddy)
+			self.backend.handleBuddyChanged(self.user, buddy.number.number,
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
+		except KeyError:
+			self.logger.error("Buddy not found: %s", buddy)
 
 	# spectrum RequestMethods
 	def sendTypingStarted(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Started typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_send", buddy = (buddy + "@s.whatsapp.net",))
+			self.sendTyping(buddy, True)
+		# If he is typing he is present
+		# I really don't know where else to put this.
+		# Ideally, this should be sent if the user is looking at his client
+		self.sendPresence(True)
 
 	def sendTypingStopped(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
-			self.call("typing_paused", buddy = (buddy + "@s.whatsapp.net",))
+			self.sendTyping(buddy, False)
 
 	def sendMessageToWA(self, sender, message):
-		self.logger.info("Message sent from %s to %s: %s", self.legacyName, sender, message)
+		self.logger.info("Message sent from %s to %s: %s",
+						 self.legacyName, sender, message)
+
 		message = message.encode("utf-8")
 
 		if sender == "bot":
 			self.bot.parse(message)
 		elif "-" in sender: # group msg
-			if "/" in sender:
-				room, buddy = sender.split("/")
-				self.call("message_send", to = buddy + "@s.whatsapp.net",
-						message = message)
+			if "/" in sender: # directed at single user
+				room, nick = sender.split("/")
+				for buddy, buddy3 in self.buddies.iteritems():
+						self.logger.info("Group buddy=%s nick=%s", buddy,
+										 buddy3.nick)
+						if buddy3.nick == nick:
+							nick = buddy
+				self.sendTextMessage(nick + '@s.whatsapp.net', message)
 			else:
 				room = sender
-				group = self.groups[room]
+				try:
+					group = self.groups[self._lengthenGroupId(room)]
+					self.logger.info("Group Message from %s to %s Groups: %s",
+									 group.nick , group , self.groups)
+					self.backend.handleMessage(
+						self.user, room, message.decode('utf-8'), group.nick
+					)
+				except KeyError:
+					self.logger.error('Group not found: %s', room)
+				self.sendTextMessage(self._lengthenGroupId(room) + '@g.us', message)
 
-				self.backend.handleMessage(self.user, room, message, group.nick)
-				self.call("message_send", to = room + "@g.us", message = message)
 		else: # private msg
 			buddy = sender
-			if message == "\\lastseen":
-				self.presenceRequested.append(buddy)
-				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
-			else:
-				self.call("message_send", to=buddy + "@s.whatsapp.net", message=message)
+#			if message == "\\lastseen":
+#				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
+#			else:
+			self.sendTextMessage(sender + '@s.whatsapp.net', message)
 
-	def sendMessageToXMPP(self, buddy, messageContent, timestamp = ""):
+	def sendMessageToXMPP(self, buddy, messageContent, timestamp = "", nickname = ""):
 		if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
@@ -202,34 +490,48 @@ class Session():
 					"", timestamp)
 
 	def sendGroupMessageToXMPP(self, room, buddy, messageContent, timestamp = ""):
+		self._refreshParticipants(room)
+		try:
+			nick = self.buddies[buddy].nick
+		except KeyError:
+			nick = buddy
+		if nick == "":
+			nick = buddy
+
 		if timestamp:
 			timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
 		if self.initialized == False:
-			self.logger.debug("Group message queued from %s to %s: %s", buddy, room, messageContent)
+			self.logger.debug("Group message queued from %s to %s: %s",
+							  buddy, room, messageContent)
 
 			if room not in self.groupOfflineQueue:
 				self.groupOfflineQueue[room] = [ ]
 
-			self.groupOfflineQueue[room].append((buddy, messageContent, timestamp))
+			self.groupOfflineQueue[room].append(
+				(buddy, messageContent, timestamp)
+			)
 		else:
-			self.logger.debug("Group message sent from %s to %s: %s", buddy, room, messageContent) 
-			self.backend.handleMessage(self.user, room, messageContent, buddy, "", timestamp)
+			self.logger.debug("Group message sent from %s (%s) to %s: %s",
+							  buddy, nick, room, messageContent)
+			self.backend.handleMessage(self.user, self._shortenGroupId(room),
+									   messageContent, nick, "", timestamp)
 
 	def changeStatus(self, status):
 		if status != self.status:
 			self.logger.info("Status changed: %s", status)
 			self.status = status
 
-			if status == protocol_pb2.STATUS_ONLINE or status == protocol_pb2.STATUS_FFC:
-				self.call("presence_sendAvailable")
+			if status == protocol_pb2.STATUS_ONLINE \
+					or status == protocol_pb2.STATUS_FFC:
+				self.sendPresence(True)
 			else:
-				self.call("presence_sendUnavailable")
+				self.sendPresence(False)
 
 	def changeStatusMessage(self, statusMessage):
 		if (statusMessage != self.statusMessage) or (self.initialized == False):
 			self.statusMessage = statusMessage
-			self.call("profile_setStatus", message = statusMessage.encode("utf-8"))
+			self.setStatus(statusMessage.encode('utf-8'))
 			self.logger.info("Status message changed: %s", statusMessage)
 
 			if self.initialized == False:
@@ -244,9 +546,9 @@ class Session():
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
 
 	# also for adding a new buddy
-	def updateBuddy(self, buddy, nick, groups):
+	def updateBuddy(self, buddy, nick, groups, image_hash = None):
 		if buddy != "bot":
-			self.buddies.update(buddy, nick, groups)
+			self.buddies.update(buddy, nick, groups, image_hash)
 			self.updateRoster()
 
 	def removeBuddy(self, buddy):
@@ -255,26 +557,21 @@ class Session():
 			self.buddies.remove(buddy)
 			self.updateRoster()
 
-	def joinRoom(self, room, nick):
-		if room in self.groups:
-			group = self.groups[room]
 
-			self.logger.info("Joining room: %s room=%s, nick=%s", self.legacyName, room, nick)
+	def requestVCard(self, buddy, ID):
+		def onSuccess(response, request):
+			self.logger.debug('Sending VCard (%s) with image id %s',
+					ID, response.pictureId)
+			image_hash = utils.sha1hash(response.pictureData)
+			self.logger.debug('Image hash is %s', image_hash)
+			self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
+			obuddy = self.buddies[buddy]
+			self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
 
-			group.nick = nick
+		self.logger.debug('Requesting profile picture of %s', buddy)
+		self.requestProfilePicture(buddy, onSuccess = onSuccess)
 
-			self.call("group_getParticipants", (room + "@g.us",))
-			self.backend.handleSubject(self.user, room, group.subject, group.subjectOwner)
-		else:
-			self.logger.warn("Room doesn't exist: %s", room)
-
-	def onMediaReceived(self, messageId, jid, preview, url, size,  receiptRequested, isBroadcast):
-		buddy = jid.split("@")[0]
-
-		self.logger.info("Media received from %s: %s", buddy, url)
-		self.sendMessageToXMPP(buddy, utils.shorten(url))
-		if receiptRequested: self.call("message_ack", (jid, messageId))
-
+	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
 		buddy = jid.split("@")[0]
 		self.logger.info("Location received from %s: %s, %s", buddy, latitude, longitude)
@@ -283,70 +580,6 @@ class Session():
 		self.sendMessageToXMPP(buddy, utils.shorten(url))
 		if receiptRequested: self.call("message_ack", (jid, messageId))
 
-	def onVcardReceived(self, messageId, jid, name, data, receiptRequested, isBroadcast): # TODO
-		buddy = jid.split("@")[0]
-		self.logger.info("VCard received from %s", buddy)
-		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
-		if receiptRequested: self.call("message_ack", (jid, messageId))
-
-	def onContactTyping(self, jid):
-		buddy = jid.split("@")[0]
-		self.logger.info("Started typing: %s", buddy)
-		self.backend.handleBuddyTyping(self.user, buddy)
-
-		if self.timer != None:
-			self.timer.cancel()
-
-	def onContactPaused(self, jid):
-		buddy = jid.split("@")[0]
-		self.logger.info("Paused typing: %s", buddy)
-		self.backend.handleBuddyTyped(self.user, jid.split("@")[0])
-		self.timer = Timer(3, self.backend.handleBuddyStoppedTyping, (self.user, buddy)).start()
-
-	def onGroupGotInfo(self, gjid, owner, subject, subjectOwner, subjectTimestamp, creationTimestamp):
-		room = gjid.split("@")[0]
-		owner = owner.split("@")[0]
-		subjectOwner = subjectOwner.split("@")[0]
-
-		if room in self.groups:
-			room = self.groups[room]
-			room.owner = owner
-			room.subjectOwner = subjectOwner
-			room.subject = subject
-		else:
-			self.groups[room] = Group(room, owner, subject, subjectOwner)
-
-		self.updateRoomList()
-
-	def onGroupGotParticipants(self, gjid, jids):
-		room = gjid.split("@")[0]
-		group = self.groups[room]
-
-		for jid in jids:
-			buddy = jid.split("@")[0]
-			self.logger.info("Added %s to room %s", buddy, room)
-
-			if buddy == group.owner:
-				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
-			else:
-				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-
-			self.backend.handleParticipantChanged(self.user, buddy, room, flags, protocol_pb2.STATUS_ONLINE) # TODO check status
-
-			if room in self.groupOfflineQueue:
-				while self.groupOfflineQueue[room]:
-					msg = self.groupOfflineQueue[room].pop(0)
-					self.backend.handleMessage(self.user, room, msg[1], msg[0], "", msg[2])
-					self.logger.debug("Send queued group message to: %s %s %s", msg[0],msg[1], msg[2])
-
-	def onGroupMessageReceived(self, messageId, gjid, jid, messageContent, timestamp, receiptRequested, pushName):
-		buddy = jid.split("@")[0]
-		room = gjid.split("@")[0]
-
-		self.logger.info("Group message received in  %s from %s: %s", room, buddy, messageContent)
-
-		self.sendGroupMessageToXMPP(room, buddy, utils.softToUni(messageContent), timestamp)
-		if receiptRequested: self.call("message_ack", (gjid, messageId))
 
 	def onGroupSubjectReceived(self, messageId, gjid, jid, subject, timestamp, receiptRequested):
 		room = gjid.split("@")[0]
@@ -356,15 +589,6 @@ class Session():
 		if receiptRequested: self.call("subject_ack", (gjid, messageId))
 
 	# Yowsup Notifications
-	def onGroupParticipantAdded(self, gjid, jid, author, timestamp, messageId, receiptRequested):
-		room = gjid.split("@")[0]
-		buddy = jid.split("@")[0]
-
-		loggin.info("Added % to room %s", buddy, room)
-
-		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_ONLINE)
-		if receiptRequested: self.call("notification_ack", (gjid, messageId))
-
 	def onGroupParticipantRemoved(self, gjid, jid, author, timestamp, messageId, receiptRequested):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
@@ -381,163 +605,3 @@ class Session():
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
-
-class SpectrumLayer(YowInterfaceLayer):
-	EVENT_START = "transwhat.event.SpectrumLayer.start"
-
-	def onEvent(self, layerEvent):
-		# We cannot use __init__, since it can take no arguments
-		retval = False
-		if layerEvent.getName() == SpectrumLayer.EVENT_START:
-			self.logger = logging.getLogger(self.__class__.__name__)
-			self.backend = layerEvent.getArg("backend")
-			self.user = layerEvent.getArg("user")
-			self.legacyName = layerEvent.getArg("legacyName")
-			self.db = layerEvent.getArg("db")
-			self.session = layerEvent.getArg("session")
-
-			self.buddies = BuddyList(self.legacyName, self.db)
-			self.bot = Bot(self)
-			retval = True
-		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
-			reason = layerEvent.getArg("reason")
-			self.logger.info("Disconnected: %s (%s)", self.user, reason)
-			if not self.session.loggedin or self.session.password is None:
-				self.backend.handleDisconnected(self.user, 0, reason)
-			else:
-				self.session.login(self.session.password)
-		elif layerEvent.getName() == 'presence_sendAvailable':
-			entity = AvailablePresenceProtocolEntity()
-			self.toLower(entity)
-			retval = True
-		elif layerEvent.getName() == 'presence_sendUnavailable':
-			entity = UnavailablePresenceProtocolEntity()
-			self.toLower(entity)
-			retval = True
-		elif layerEvent.getName() == 'profile_setStatus':
-			entity = PresenceProtocolEntity(name = layerEvent.getArg('message'))
-			self.toLower(entity)
-			retval = True
-		elif layerEvent.getName() == 'message_send':
-			to = layerEvent.getArg('to')
-			message = layerEvent.getArg('message')
-			messageEntity = TextMessageProtocolEntity(message, to = to)
-			self.toLower(messageEntity)
-			retval = True
-		elif layerEvent.getName() == 'typing_send':
-			buddy = layerEvent.getArg('buddy')
-			state = OutgoingChatstateProtocolEntity(
-					ChatstateProtocolEntity.STATE_TYPING, buddy
-					)
-			self.toLower(state)
-			retval = True
-		elif layerEvent.getName() == 'typing_paused':
-			buddy = layerEvent.getArg('buddy')
-			state = OutgoingChatstateProtocolEntity(
-					ChatstateProtocolEntity.STATE_PAUSE, buddy
-					)
-			self.toLower(state)
-			retval = True
-		elif layerEvent.getName() == 'presence_request':
-			buddy = layerEvent.getArg('buddy')
-			sub = SubscribePresenceProtocolEntity(buddy)
-			self.toLower(sub)
-
-		self.logger.debug("EVENT %s", layerEvent.getName())
-		return retval
-
-
-	@ProtocolEntityCallback("success")
-	def onAuthSuccess(self, entity):
-		self.logger.info("Auth success: %s", self.user)
-
-		self.backend.handleConnected(self.user)
-		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name, ["Admin"], protocol_pb2.STATUS_ONLINE)
-
-		self.updateRoster()
-
-	@ProtocolEntityCallback("failure")
-	def onAuthFailed(self, entity):
-		self.logger.info("Auth failed: %s (%s)", self.user, entity.getReason())
-		self.backend.handleDisconnected(self.user, 0, entity.getReason())
-		self.session.password = None
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [], protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			entity = UnsubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
-
-		for number in add:
-			buddy = self.buddies[number]
-			entity = SubscribePresenceProtocolEntity(number + "@s.whatsapp.net")
-			self.toLower(entity)
-
-	@ProtocolEntityCallback("message")
-	def onMessageReceived(self, messageEntity):
-		buddy = messageEntity.getFrom().split('@')[0]
-		messageContent = utils.softToUni(messageEntity.getBody())
-		timestamp = messageEntity.getTimestamp()
-
-		if messageEntity.isBroadcast():
-			self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
-					buddy, self.legacyName, messageContent, timestamp)
-			messageContent = "[Broadcast] " + messageContent
-		else:
-			self.logger.info("Message received from %s to %s: %s (at ts=%s)",
-					buddy, self.legacyName, messageContent, timestamp)
-
-		self.session.sendMessageToXMPP(buddy, messageContent, timestamp)
-		# if receiptRequested: self.call("message_ack", (jid, messageId))
-
-	@ProtocolEntityCallback("presence")
-	def onPrecenceUpdated(self, presence):
-		jid = presence.getFrom()
-		lastseen = presence.getLast()
-		buddy = jid.split("@")[0]
-		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
-
-		if buddy in self.session.presenceRequested:
-			timestamp = time.localtime(time.time() - lastseen)
-			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.session.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
-			self.session.presenceRequested.remove(buddy)
-
-		if lastseen < 60:
-			self.onPrecenceAvailable(jid)
-		else:
-			self.onPrecenceUnavailable(jid)
-
-	def onPrecenceAvailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is available: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-
-	def onPrecenceUnavailable(self, jid):
-		buddy = jid.split("@")[0]
-
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is unavailable: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number, buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
-

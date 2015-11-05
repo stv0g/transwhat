@@ -1,9 +1,11 @@
 Welcome to transWhat!
+
 ===== NEWS ====
 - 03.06.13 transWhat service is born
-- 10.06.13 added bot user to import contacts and adjust settings, see http://2p.0l.de
-- 14.06.13 finally enable password sniffing, see http://2o.0l.de
 - 18.06.13 major deployment of development version
+- 07.09.15 transWhat is alive again. Now running with new Yowsup 2 library
 
 Type "\help" for a list of available commands.
-Visit http://whatsapp.0l.de for the full documentation.
+
+Visit http://github.com/stv0g/transwhat/ for more details.
+Join xmpp://transwhat@conference.jabber.ccc.de to hangout and discuss.

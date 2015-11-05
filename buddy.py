@@ -23,7 +23,6 @@ __status__ = "Prototype"
 """
 
 from Spectrum2 import protocol_pb2
-from Yowsup.Contacts.contacts import WAContactsSyncRequest
 
 import logging
 
@@ -48,7 +47,7 @@ class Number():
 
 
 class Buddy():
-	def __init__(self, owner, number, nick, groups, id, db):
+	def __init__(self, owner, number, nick, groups, image_hash, id, db):
 		self.id = id
 		self.db = db
 
@@ -56,14 +55,17 @@ class Buddy():
 		self.owner = owner
 		self.number = number
 		self.groups = groups
+		self.image_hash = image_hash
 
-	def update(self, nick, groups):
+	def update(self, nick, groups, image_hash):
 		self.nick = nick
 		self.groups = groups
+		if image_hash is not None:
+			self.image_hash = image_hash
 
 		groups = u",".join(groups).encode("latin-1")
 		cur = self.db.cursor()
-		cur.execute("UPDATE buddies SET nick = %s, groups = %s WHERE owner_id = %s AND buddy_id = %s", (self.nick, groups, self.owner.id, self.number.id))
+		cur.execute("UPDATE buddies SET nick = %s, groups = %s, image_hash = %s WHERE owner_id = %s AND buddy_id = %s", (self.nick, groups, image_hash, self.owner.id, self.number.id))
 		self.db.commit()
 
 	def delete(self):
@@ -73,13 +75,13 @@ class Buddy():
 		self.id = None
 
 	@staticmethod
-	def create(owner, number, nick, groups, db):
+	def create(owner, number, nick, groups, image_hash, db):
 		groups = u",".join(groups).encode("latin-1")
 		cur = db.cursor()
-		cur.execute("REPLACE buddies (owner_id, buddy_id, nick, groups) VALUES (%s, %s, %s, %s)", (owner.id, number.id, nick, groups))
+		cur.execute("REPLACE buddies (owner_id, buddy_id, nick, groups, image_hash) VALUES (%s, %s, %s, %s, %s)", (owner.id, number.id, nick, groups, image_hash))
 		db.commit()
 
-		return Buddy(owner, number, nick, groups, cur.lastrowid, db)
+		return Buddy(owner, number, nick, groups, image_hash, cur.lastrowid, db)
 
 	def __str__(self):
 		return "%s (nick=%s, id=%s)" % (self.number, self.nick, self.id)
@@ -99,7 +101,8 @@ class BuddyList(dict):
 					n.number AS number,
 					b.nick AS nick,
 					b.groups AS groups,
-					n.state AS state
+					n.state AS state,
+					b.image_hash AS image_hash
 				FROM buddies AS b
 				LEFT JOIN numbers AS n
 					ON b.buddy_id = n.id
@@ -109,26 +112,28 @@ class BuddyList(dict):
 				ORDER BY b.owner_id DESC""", self.owner.id)
 
 		for i in range(cur.rowcount):
-			id, number, nick, groups, state = cur.fetchone()
-			self[number] = Buddy(self.owner, Number(number, state, self.db), nick.decode('latin1'), groups.split(","), id, self.db)
+			id, number, nick, groups, state, image_hash = cur.fetchone()
+			self[number] = Buddy(self.owner, Number(number, state, self.db), nick.decode('latin1'), groups.split(","), image_hash, id, self.db)
 
-	def update(self, number, nick, groups):
+	def update(self, number, nick, groups, image_hash):
 		if number in self:
 			buddy = self[number]
-			buddy.update(nick, groups)
+			buddy.update(nick, groups, image_hash)
 		else:
-			buddy = self.add(number, nick, groups, 1)
+			buddy = self.add(number, nick, groups, 1, image_hash)
 
 		return buddy
 
-	def add(self, number, nick, groups = [], state = 0):
-		return Buddy.create(self.owner, Number(number, state, self.db), nick, groups, self.db)
+	def add(self, number, nick, groups = [], state = 0, image_hash = ""):
+		return Buddy.create(self.owner, Number(number, state, self.db), nick, groups, image_hash, self.db)
 
 	def remove(self, number):
-		buddy = self[number]
-		buddy.delete()
-
-		return buddy
+		try:
+			buddy = self[number]
+			buddy.delete()
+			return buddy
+		except KeyError:
+			return None
 
 	def prune(self):
 		cur = self.db.cursor()
