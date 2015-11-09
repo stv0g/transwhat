@@ -27,6 +27,15 @@ import logging
 import urllib
 import time
 
+from PIL import Image
+import MySQLdb
+import sys
+import os
+
+from yowsup.common.tools import TimeTools
+from yowsup.layers.protocol_media.mediauploader import MediaUploader
+from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
+
 from Spectrum2 import protocol_pb2
 
 from buddy import BuddyList
@@ -36,6 +45,16 @@ from bot import Bot
 from constants import *
 from yowsupwrapper import YowsupApp
 
+
+class MsgIDs:
+        def __init__(self, xmppId, waId):
+                self.xmppId = xmppId
+                self.waId = waId
+                self.cnt = 0
+
+
+
+
 class Session(YowsupApp):
 
 	def __init__(self, backend, user, legacyName, extra, db):
@@ -43,7 +62,9 @@ class Session(YowsupApp):
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
 
-		self.db = db
+		#self.db = db
+		self.db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
+
 		self.backend = backend
 		self.user = user
 		self.legacyName = legacyName
@@ -61,10 +82,17 @@ class Session(YowsupApp):
 		self.timer = None
 		self.password = None
 		self.initialized = False
+		self.lastMsgId = None
 		self.synced = False
 
 		self.buddies = BuddyList(self.legacyName, self.db)
 		self.bot = Bot(self)
+
+		self.imgMsgId = None
+                self.imgPath = ""
+                self.imgBuddy = None
+                self.imgType = ""
+
 
 	def __del__(self): # handleLogoutRequest
 		self.logout()
@@ -81,11 +109,13 @@ class Session(YowsupApp):
 
 	def _shortenGroupId(self, gid):
 		# FIXME: will have problems if number begins with 0
-		return '-'.join(hex(int(s))[2:] for s in gid.split('-'))
-	
+		#return '-'.join(hex(int(s))[2:] for s in gid.split('-'))
+		return gid	
+
 	def _lengthenGroupId(self, gid):
 		# FIXME: will have problems if number begins with 0
-		return '-'.join(str(int(s, 16)) for s in gid.split('-'))
+		#return '-'.join(str(int(s, 16)) for s in gid.split('-'))
+		return gid
 
 	def updateRoomList(self):
 		rooms = []
@@ -144,7 +174,7 @@ class Session(YowsupApp):
 				oroom.subject = subject
 			else:
 				self.groups[room] = Group(room, owner, subject, subjectOwner)
-				self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+				#self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
 
 			self._addParticipantsToRoom(room, group.getParticipants())
 
@@ -159,6 +189,10 @@ class Session(YowsupApp):
 
 	def joinRoom(self, room, nick):
 		room = self._lengthenGroupId(room)
+		if room not in self.groups:
+                        time.sleep(5)
+
+
 		if room in self.groups:
 			self.logger.info("Joining room: %s room=%s, nick=%s",
 							 self.legacyName, room, nick)
@@ -206,6 +240,7 @@ class Session(YowsupApp):
 	def _addParticipantsToRoom(self, room, participants):
 		group = self.groups[room]
 		group.participants = participants
+		group.nick = self.user.split("@")[0]
 
 		for jid, _type in participants.iteritems():
 			buddy = jid.split("@")[0]
@@ -220,10 +255,10 @@ class Session(YowsupApp):
 				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 			else:
 				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-				if buddy == self.legacyName:
-					nick = group.nick
-					flags = protocol_pb2.PARTICIPANT_FLAG_ME
-					buddyFull = self.user
+			if buddy == self.legacyName:
+				nick = group.nick
+				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
+				buddyFull = self.user
 
 			self.backend.handleParticipantChanged(self.user, buddyFull,
 				self._shortenGroupId(room), flags, protocol_pb2.STATUS_ONLINE, buddy, nick)
@@ -246,7 +281,7 @@ class Session(YowsupApp):
 										["Admin"], protocol_pb2.STATUS_ONLINE)
 		if self.initialized == False:
 			self.sendOfflineMessages()
-			self.bot.call("welcome")
+			#self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
 		self.updateRoster()
@@ -274,8 +309,13 @@ class Session(YowsupApp):
 		)
 		try:
 			buddy = self.buddies[_from.split('@')[0]]
-			self.backend.handleBuddyChanged(self.user, buddy.number.number,
-					buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
+			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+			self.backend.handleMessageAck(self.user, buddy.number.number, self.msgIDs[_id].xmppId)
+                        self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
+                        if self.msgIDs[_id].cnt == 2:
+                                del self.msgIDs[_id]
+
 		except KeyError:
 			pass
 
@@ -316,24 +356,43 @@ class Session(YowsupApp):
 	def onImage(self, image):
 		self.logger.debug('Received image message %s', str(image))
 		buddy = image._from.split('@')[0]
+		participant = image.participant
 		message = image.url + ' ' + image.caption
-		self.sendMessageToXMPP(buddy, message, image.timestamp)
+		if participant is not None: # Group message
+                        partname = participant.split('@')[0]
+                        self.sendGroupMessageToXMPP(buddy, partname, message, image.timestamp)
+                else:
+
+			self.sendMessageToXMPP(buddy, message, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)
 
 	# Called by superclass
 	def onAudio(self, audio):
 		self.logger.debug('Received audio message %s', str(audio))
 		buddy = audio._from.split('@')[0]
+                participant = audio.participant
 		message = audio.url
-		self.sendMessageToXMPP(buddy, message, audio.timestamp)
+		if participant is not None: # Group message
+                        partname = participant.split('@')[0]
+                        self.sendGroupMessageToXMPP(buddy, partname, message, audio.timestamp)
+                else:
+
+			self.sendMessageToXMPP(buddy, message, audio.timestamp)
 		self.sendReceipt(audio._id,	 audio._from, None, audio.participant)
 
 	# Called by superclass
 	def onVideo(self, video):
 		self.logger.debug('Received video message %s', str(video))
 		buddy = video._from.split('@')[0]
+                participant = video.participant
+
 		message = video.url
-		self.sendMessageToXMPP(buddy, message, video.timestamp)
+		if participant is not None: # Group message
+                        partname = participant.split('@')[0]
+                        self.sendGroupMessageToXMPP(buddy, partname, message, video.timestamp)
+                else:
+
+			self.sendMessageToXMPP(buddy, message, video.timestamp)
 		self.sendReceipt(video._id,	 video._from, None, video.participant)
 
 	def onLocation(self, location):
@@ -341,13 +400,22 @@ class Session(YowsupApp):
 		latitude = location.getLatitude()
 		longitude = location.getLongitude()
 		url = location.getLocationUrl()
+                participant = location.participant
 
 		self.logger.debug("Location received from %s: %s, %s",
 						  buddy, latitude, longitude)
 
-		self.sendMessageToXMPP(buddy, url, location.timestamp)
-		self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
+		if participant is not None: # Group message
+                        partname = participant.split('@')[0]
+                        self.sendGroupMessageToXMPP(buddy, partname, url, location.timestamp)
+			self.sendGroupMessageToXMPP(buddy, partname, 'geo:' + latitude + ',' + longitude,
+                                                           location.timestamp)
+                else:
+
+			self.sendMessageToXMPP(buddy, url, location.timestamp)
+			self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
 							   location.timestamp)
+                self.sendReceipt(location._id,      location._from, None, location.participant)
 
 
 	# Called by superclass
@@ -358,9 +426,14 @@ class Session(YowsupApp):
 			]))
 		)
 		buddy = _from.split("@")[0]
-		self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
+		if participant is not None: # Group message
+                        partname = participant.split('@')[0]
+                        self.sendGroupMessageToXMPP(buddy, partname, "Received VCard (not implemented yet)", timestamp)
+                else:
+
+			self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
 #		self.sendMessageToXMPP(buddy, card_data)
-		self.transferFile(buddy, str(name), card_data)
+		#self.transferFile(buddy, str(name), card_data)
 		self.sendReceipt(_id, _from, None, participant)
 
 	def transferFile(self, buddy, name, data):
@@ -393,6 +466,15 @@ class Session(YowsupApp):
 		buddy = jid.split("@")[0]
 #		seems to be causing an error
 #		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
+		if lastseen != None and lastseen != "deny":
+                        #lastseen = int(TimeTools.utcTimestamp()) - int(lastseen)
+			try:
+
+				lastseen=time.time() - int(lastseen)
+			except ValueError:
+				lastseen = -1
+                else:
+                        lastseen = -1
 
 		if buddy in self.presenceRequested:
 			timestamp = time.localtime(time.time() - lastseen)
@@ -400,26 +482,27 @@ class Session(YowsupApp):
 			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
 			self.presenceRequested.remove(buddy)
 
-		if lastseen < 60:
+		if (lastseen < 60) and (lastseen >= 0):
 			self.onPresenceAvailable(buddy)
 		else:
-			self.onPresenceUnavailable(buddy)
+			self.onPresenceUnavailable(buddy, lastseen)
 
 	def onPresenceAvailable(self, buddy):
 		try:
 			buddy = self.buddies[buddy]
 			self.logger.info("Is available: %s", buddy)
 			self.backend.handleBuddyChanged(self.user, buddy.number.number,
-				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, buddy.statusMsg, buddy.image_hash)
 		except KeyError:
 			self.logger.error("Buddy not found: %s", buddy)
 
-	def onPresenceUnavailable(self, buddy):
+	def onPresenceUnavailable(self, buddy, lastseen):
 		try:
 			buddy = self.buddies[buddy]
 			self.logger.info("Is unavailable: %s", buddy)
+			statusmsg = buddy.statusMsg + "\n Last seen: " + utils.ago(lastseen)
 			self.backend.handleBuddyChanged(self.user, buddy.number.number,
-				buddy.nick, buddy.groups, protocol_pb2.STATUS_XA)
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
 		except KeyError:
 			self.logger.error("Buddy not found: %s", buddy)
 
@@ -438,7 +521,7 @@ class Session(YowsupApp):
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, False)
 
-	def sendMessageToWA(self, sender, message):
+	def sendMessageToWA(self, sender, message, ID):
 		self.logger.info("Message sent from %s to %s: %s",
 						 self.legacyName, sender, message)
 
@@ -466,14 +549,83 @@ class Session(YowsupApp):
 					)
 				except KeyError:
 					self.logger.error('Group not found: %s', room)
-				self.sendTextMessage(self._lengthenGroupId(room) + '@g.us', message)
+				
+				if (".jpg" in message) or (".webp" in message):
+                                        if (".jpg" in message):
+                                                self.imgType = "jpg"
+                                        if (".webp" in message):
+                                                self.imgType = "webp"
+                                        self.imgMsgId = ID
+                                        self.imgBuddy = room + "@g.us"
 
+                                        downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
+                                        downloader.download(message)
+                                        #self.imgMsgId = ID
+                                        #self.imgBuddy = room + "@g.us"
+                                elif "geo:" in message:
+                                        self._sendLocation(room + "@g.us", message, ID)
+
+                                else:
+
+                                        self.sendTextMessage(self._lengthenGroupId(room) + '@g.us', message)
 		else: # private msg
 			buddy = sender
 #			if message == "\\lastseen":
 #				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
 #			else:
-			self.sendTextMessage(sender + '@s.whatsapp.net', message)
+			if message == "\\lastseen":
+                                self.presenceRequested.append(buddy)
+                                #self.call("presence_request", (buddy + "@s.whatsapp.net",))
+                                self._requestLastSeen(buddy)
+                        elif message == "\\gpp":
+                                self.logger.info("Get Profile Picture! ")
+                                self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
+                                #self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
+                                self.requestVCard(buddy)
+                        else:
+                                if (".jpg" in message) or (".webp" in message):
+                                        #waId = self.call("message_imageSend", (buddy + "@s.whatsapp.net", message, None, 0, None))
+                                        #waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
+                                        if (".jpg" in message):
+                                                self.imgType = "jpg"
+                                        if (".webp" in message):
+                                                self.imgType = "webp"
+                                        self.imgMsgId = ID
+                                        self.imgBuddy = buddy + "@s.whatsapp.net"
+
+					downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
+                                        downloader.download(message)
+                                        #self.imgMsgId = ID
+                                        #self.imgBuddy = buddy + "@s.whatsapp.net"
+                                elif "geo:" in message:
+                                        self._sendLocation(buddy + "@s.whatsapp.net", message, ID)
+                                else:
+                                        waId = self.sendTextMessage(sender + '@s.whatsapp.net', message)
+                                        self.msgIDs[waId] = MsgIDs( ID, waId)
+
+                                        self.logger.info("WA Message send to %s with ID %s", buddy, waId)
+			#self.sendTextMessage(sender + '@s.whatsapp.net', message)
+
+	def _requestLastSeen(self, buddy):
+		
+            	def onSuccess(buddy, lastseen):
+			timestamp = time.localtime(time.time()-(lastseen/60))
+                        timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+                        self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, utils.ago(lastseen),str(lastseen)))
+            	def onError(errorIqEntity, originalIqEntity):
+                	self.sendMessageToXMPP(errorIqEntity.getFrom(), "LastSeen Error")
+
+		self.requestLastSeen(buddy, onSuccess, onError)
+
+	def _sendLocation(self, buddy, message, ID):
+                #with open('/opt/transwhat/map.jpg', 'rb') as imageFile:
+                #        raw = base64.b64encode(imageFile.read())
+                latitude,longitude = message.split(':')[1].split(',')
+                waId = self.sendLocation(buddy, float(latitude), float(longitude))
+                self.msgIDs[waId] = MsgIDs( ID, waId)
+                self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
+
+
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = "", nickname = ""):
 		if timestamp:
@@ -534,10 +686,10 @@ class Session(YowsupApp):
 			self.setStatus(statusMessage.encode('utf-8'))
 			self.logger.info("Status message changed: %s", statusMessage)
 
-			if self.initialized == False:
-				self.sendOfflineMessages()
-				self.bot.call("welcome")
-				self.initialized = True
+			#if self.initialized == False:
+			#	self.sendOfflineMessages()
+			#	self.bot.call("welcome")
+			#	self.initialized = True
 
 	def sendOfflineMessages(self):
 		# Flush Queues
@@ -549,7 +701,8 @@ class Session(YowsupApp):
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):
 		if buddy != "bot":
 			self.buddies.update(buddy, nick, groups, image_hash)
-			self.updateRoster()
+			if self.initialized == True:
+				self.updateRoster()
 
 	def removeBuddy(self, buddy):
 		if buddy != "bot":
@@ -558,13 +711,14 @@ class Session(YowsupApp):
 			self.updateRoster()
 
 
-	def requestVCard(self, buddy, ID):
+	def requestVCard(self, buddy, ID=None):
 		def onSuccess(response, request):
 			self.logger.debug('Sending VCard (%s) with image id %s',
 					ID, response.pictureId)
 			image_hash = utils.sha1hash(response.pictureData)
 			self.logger.debug('Image hash is %s', image_hash)
-			self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
+			if ID != None:
+				self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
 			obuddy = self.buddies[buddy]
 			self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
 
@@ -605,3 +759,66 @@ class Session(YowsupApp):
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
+
+
+
+	def onDlsuccess(self, path):
+                self.logger.info("Success: Image downloaded to %s", path)
+                os.rename(path, path+"."+self.imgType)
+                if self.imgType != "jpg":
+                        im = Image.open(path+"."+self.imgType)
+                        im.save(path+".jpg")
+                self.imgPath = path+".jpg"
+                statinfo = os.stat(self.imgPath)
+                name=os.path.basename(self.imgPath)
+		self.logger.info("Buddy %s",self.imgBuddy)
+		self.image_send(self.imgBuddy, self.imgPath)
+		
+                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
+                #mtype = "image"
+
+                #sha1 = hashlib.sha256()
+                #fp = open(self.imgPath, 'rb')
+                #try:
+                #        sha1.update(fp.read())
+                #        hsh = base64.b64encode(sha1.digest())
+                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
+                #finally:
+                #        fp.close()
+
+
+        def onDlerror(self):
+                self.logger.info("Download Error")
+
+
+	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
+		waId = self.doSendImage(filePath, url, to, ip, caption)
+		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
+                waId = self.doSendAudio(filePath, url, to, ip, caption)
+                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+
+
+   
+	def createThumb(self, size=100, raw=False):
+                img = Image.open(self.imgPath)
+                width, height = img.size
+                img_thumbnail = self.imgPath + '_thumbnail'
+
+                if width > height:
+                        nheight = float(height) / width * size
+                        nwidth = size
+                else:
+                        nwidth = float(width) / height * size
+                        nheight = size
+
+                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
+                img.save(img_thumbnail, 'JPEG')
+
+                with open(img_thumbnail, 'rb') as imageFile:
+                        raw = base64.b64encode(imageFile.read())
+
+                return raw
+

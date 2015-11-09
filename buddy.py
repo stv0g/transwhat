@@ -25,6 +25,8 @@ __status__ = "Prototype"
 from Spectrum2 import protocol_pb2
 
 import logging
+import threading
+
 
 class Number():
 
@@ -56,6 +58,8 @@ class Buddy():
 		self.number = number
 		self.groups = groups
 		self.image_hash = image_hash
+		self.statusMsg = ""
+
 
 	def update(self, nick, groups, image_hash):
 		self.nick = nick
@@ -65,7 +69,7 @@ class Buddy():
 
 		groups = u",".join(groups).encode("latin-1")
 		cur = self.db.cursor()
-		cur.execute("UPDATE buddies SET nick = %s, groups = %s, image_hash = %s WHERE owner_id = %s AND buddy_id = %s", (self.nick, groups, image_hash, self.owner.id, self.number.id))
+		cur.execute("UPDATE buddies SET nick = %s, groups = %s, image_hash = %s WHERE owner_id = %s AND buddy_id = %s", (self.nick, groups, self.image_hash, self.owner.id, self.number.id))
 		self.db.commit()
 
 	def delete(self):
@@ -91,9 +95,12 @@ class BuddyList(dict):
 	def __init__(self, owner, db):
 		self.db = db
 		self.owner = Number(owner, 1, db)
+		self.lock = threading.Lock()
+
 
 	def load(self):
 		self.clear()
+		self.lock.acquire()
 
 		cur = self.db.cursor()
 		cur.execute("""SELECT
@@ -114,13 +121,17 @@ class BuddyList(dict):
 		for i in range(cur.rowcount):
 			id, number, nick, groups, state, image_hash = cur.fetchone()
 			self[number] = Buddy(self.owner, Number(number, state, self.db), nick.decode('latin1'), groups.split(","), image_hash, id, self.db)
+		self.lock.release()
+
 
 	def update(self, number, nick, groups, image_hash):
+		self.lock.acquire()
 		if number in self:
 			buddy = self[number]
 			buddy.update(nick, groups, image_hash)
 		else:
 			buddy = self.add(number, nick, groups, 1, image_hash)
+		self.lock.release()
 
 		return buddy
 
@@ -130,17 +141,24 @@ class BuddyList(dict):
 	def remove(self, number):
 		try:
 			buddy = self[number]
+			self.lock.acquire()
 			buddy.delete()
+			self.lock.release()
 			return buddy
 		except KeyError:
 			return None
 
 	def prune(self):
+		self.lock.acquire()
+
 		cur = self.db.cursor()
 		cur.execute("DELETE FROM buddies WHERE owner_id = %s", self.owner.id)
 		self.db.commit()
+		self.lock.release()
+
 
 	def sync(self, user, password):
+		self.lock.acquire()
 		cur = self.db.cursor()
 		cur.execute("""SELECT
 					n.number AS number,
@@ -165,5 +183,5 @@ class BuddyList(dict):
 			cur.execute("UPDATE numbers SET state = %s WHERE number = %s", (number['w'], number['n']))
 			self.db.commit()
 			using += number['w']
-
+		self.lock.release()
 		return using

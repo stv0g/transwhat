@@ -31,20 +31,26 @@ import os
 import utils
 
 from constants import *
+#from googleclient import GoogleClient
 
-from Yowsup.Contacts.contacts import WAContactsSyncRequest
+#from Yowsup.Contacts.contacts import WAContactsSyncRequest
 
 class Bot():
 	def __init__(self, session, name = "Bot"):
 		self.session = session
 		self.name = name
 
+		#self.google = GoogleClient()
+
 		self.commands = {
+			"import": self._import,
 			"help": self._help,
 			"prune": self._prune,
 			"welcome": self._welcome,
 			"fortune": self._fortune,
-			"sync": self._sync
+			"sync": self._sync,
+                        "groups": self._groups,
+			"getgroups": self._getgroups
 		}
 
 	def parse(self, message):
@@ -75,6 +81,41 @@ class Bot():
 	def send(self, message):
 		self.session.backend.handleMessage(self.session.user, self.name, message)
 
+	def __do_import(self, token):
+		# Google
+		google = self.google.getContacts(token)
+		self.send("%d buddies imported from google" % len(google))
+
+		result = { }
+		for number, name in google.iteritems():
+			number = re.sub("[^0-9]", "", number)
+			number = number if number[0] == "0"  else "+" + number
+
+			result[number] = { 'nick': name, 'state': 0 }
+
+		# WhatsApp
+		user = self.session.legacyName
+		password = self.session.password
+		sync = WAContactsSyncRequest(user, password, result.keys())
+		whatsapp = sync.send()['c']
+
+		for w in whatsapp:
+			result[w['p']]['state'] = w['w']
+			result[w['p']]['number'] = w['n']
+
+		self.send("%d buddies are using whatsapp" % len(filter(lambda w: w['w'], whatsapp)))
+
+		for r in result.values():
+			if r['nick']:
+				self.session.buddies.add(
+					number = r['number'],
+					nick = r['nick'],
+					groups = [u'Google'],
+					state = r['state']
+				)
+
+		self.send("%d buddies imported" % len(whatsapp))
+
 	def __get_token(self, filename, timeout = 30):
 		file = open(filename, 'r')
 		file.seek(-1, 2) # look at the end
@@ -96,6 +137,25 @@ class Bot():
 		file.close()
 
 	# commands
+	def _import(self, token = None):
+		if not token:
+			token_url = self.google.getTokenUrl("http://whatsapp.0l.de/auth.py")
+			auth_url = "http://whatsapp.0l.de/auth.py?number=%s&auth_url=%s" % (self.session.legacyName, urllib.quote(token_url))
+			short_url = utils.shorten(auth_url)
+			self.send("please visit this url to auth: %s" % short_url)
+
+			self.send("waiting for authorization...")
+			token = self.__get_token(TOKEN_FILE)
+			if token:
+				self.send("got token: %s" % token)
+				self.__do_import(token)
+				self.session.updateRoster()
+			else:
+				self.send("timeout! please use \"\\import [token]\"")
+		else:
+			self.__do_import(token)
+			self.session.updateRoster()
+
 	def _sync(self):
 		user = self.session.legacyName
 		password = self.session.password
@@ -112,15 +172,18 @@ class Bot():
 		self.send("""following bot commands are available:
 \\help				show this message
 \\prune			clear your buddylist
+\\import [token]		import buddies from Google
 \\sync			sync your imported contacts with WhatsApp
 \\fortune [database]		give me a quote
+\\groups		print all attended groups
+\\getgroups		get current groups from WA
 
 following user commands are available:
 \\lastseen			request last online timestamp from buddy""")
 
 	def _fortune(self, database = '', prefix=''):
-		if os.path.exists("/usr/share/games/fortunes/%s" % database):
-			fortune = os.popen('/usr/games/fortune %s' % database).read()
+		if os.path.exists("/usr/share/fortune/%s" % database):
+			fortune = os.popen('/usr/bin/fortune %s' % database).read()
 			self.send(prefix + fortune[:-1])
 		else:
 			self.send("invalid database")
@@ -134,3 +197,16 @@ following user commands are available:
 		self.session.buddies.prune()
 		self.session.updateRoster()
 		self.send("buddy list cleared")
+	def _groups(self):
+		for group in self.session.groups:
+			buddy = self.session.groups[group].owner
+			try:
+                           nick = self.session.buddies[buddy].nick
+                        except KeyError:
+                           nick = buddy
+
+			self.send(self.session.groups[group].id + "@transwhat.xmpp.ewg.2y.net " + self.session.groups[group].subject + " Owner: " + nick )
+	def _getgroups(self):
+		#self.session.call("group_getGroups", ("participating",))
+		self.session.requestGroupsList(self.session._updateGroups)
+

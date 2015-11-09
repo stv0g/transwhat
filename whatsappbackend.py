@@ -58,7 +58,7 @@ class WhatsAppBackend(SpectrumBackend):
 			self.sessions[user].logout()
 			del self.sessions[user]
 
-	def handleMessageSendRequest(self, user, buddy, message, xhtml = ""):
+	def handleMessageSendRequest(self, user, buddy, message, xhtml = "", ID =  0):
 		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml = %s)", user, buddy, message, xhtml)
 		# For some reason spectrum occasionally sends to identical messages to
 		# a buddy, one to the bare jid and one to /bot. This causes duplicate
@@ -70,7 +70,7 @@ class WhatsAppBackend(SpectrumBackend):
                 # IDEA there is an ID field in ConvMessage. If it is extracted it will work
 		usersMessage = self.lastMessage[user]
 		if buddy not in usersMessage or usersMessage[buddy] != message:
-			self.sessions[user].sendMessageToWA(buddy, message)
+			self.sessions[user].sendMessageToWA(buddy, message, ID)
 			usersMessage[buddy] = message
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
@@ -135,6 +135,9 @@ class WhatsAppBackend(SpectrumBackend):
 
 	def handleRawXmlRequest(self, xml):
 		pass
+
+ 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+                self.logger.info("Meassage ACK request for %s !!",leagcyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)
