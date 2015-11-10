@@ -484,47 +484,41 @@ class Session(YowsupApp):
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
 		buddy = jid.split("@")[0]
-#		seems to be causing an error
-#		self.logger.info("Lastseen: %s %s", buddy, utils.ago(lastseen))
-		if lastseen != None and lastseen != "deny":
-                        #lastseen = int(TimeTools.utcTimestamp()) - int(lastseen)
-			try:
+                try:
+                        buddy = self.buddies[buddy]
+		except KeyError:
+                        self.logger.error("Buddy not found: %s", buddy)
+			return
 
-				lastseen=time.time() - int(lastseen)
-			except ValueError:
-				lastseen = -1
-                else:
-                        lastseen = -1
+		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
+			return
+		
+		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")):  
+			buddy.lastseen = int(lastseen)
+		if (_type == None):
+			buddy.lastseen = time.time()
 
-		if buddy in self.presenceRequested:
-			timestamp = time.localtime(time.time() - lastseen)
-			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.sendMessageToXMPP(buddy, "%s (%s)" % (timestring, utils.ago(lastseen)))
-			self.presenceRequested.remove(buddy)
+		buddy.presence = _type
 
-		if (lastseen < 60) and (lastseen >= 0):
-			self.onPresenceAvailable(buddy)
+		timestamp = time.localtime(buddy.lastseen)
+                statusmsg = buddy.statusMsg + time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
+		
+		if _type == "unavailable":
+			self.onPresenceUnavailable(buddy, statusmsg)
 		else:
-			self.onPresenceUnavailable(buddy, lastseen)
+			self.onPresenceAvailable(buddy, statusmsg)
 
-	def onPresenceAvailable(self, buddy):
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is available: %s", buddy)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number,
-				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, buddy.statusMsg, buddy.image_hash)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
 
-	def onPresenceUnavailable(self, buddy, lastseen):
-		try:
-			buddy = self.buddies[buddy]
-			self.logger.info("Is unavailable: %s", buddy)
-			statusmsg = buddy.statusMsg + "\n Last seen: " + utils.ago(lastseen)
-			self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		
+	def onPresenceAvailable(self, buddy, statusmsg): 
+		self.logger.info("Is available: %s", buddy)
+		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
+
+	def onPresenceUnavailable(self, buddy, statusmsg):
+		self.logger.info("Is unavailable: %s", buddy)
+		self.backend.handleBuddyChanged(self.user, buddy.number.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
-		except KeyError:
-			self.logger.error("Buddy not found: %s", buddy)
 
 	# spectrum RequestMethods
 	def sendTypingStarted(self, buddy):
@@ -557,7 +551,8 @@ class Session(YowsupApp):
 										 buddy3.nick)
 						if buddy3.nick == nick:
 							nick = buddy
-				self.sendTextMessage(nick + '@s.whatsapp.net', message)
+				waId = self.sendTextMessage(nick + '@s.whatsapp.net', message)
+				self.msgIDs[waId] = MsgIDs( ID, waId)
 			else:
 				room = sender
 				try:
@@ -570,10 +565,10 @@ class Session(YowsupApp):
 				except KeyError:
 					self.logger.error('Group not found: %s', room)
 				
-				if (".jpg" in message) or (".webp" in message):
-                                        if (".jpg" in message):
+				if (".jpg" in message.lower()) or (".webp" in message.lower()):
+                                        if (".jpg" in message.lower()):
                                                 self.imgType = "jpg"
-                                        if (".webp" in message):
+                                        if (".webp" in message.lower()):
                                                 self.imgType = "webp"
                                         self.imgMsgId = ID
                                         self.imgBuddy = room + "@g.us"
@@ -582,7 +577,7 @@ class Session(YowsupApp):
                                         downloader.download(message)
                                         #self.imgMsgId = ID
                                         #self.imgBuddy = room + "@g.us"
-                                elif "geo:" in message:
+                                elif "geo:" in message.lower():
                                         self._sendLocation(room + "@g.us", message, ID)
 
                                 else:
@@ -593,22 +588,22 @@ class Session(YowsupApp):
 #			if message == "\\lastseen":
 #				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
 #			else:
-			if message == "\\lastseen":
+			if message.split(" ").pop(0) == "\\lastseen":
                                 self.presenceRequested.append(buddy)
                                 #self.call("presence_request", (buddy + "@s.whatsapp.net",))
                                 self._requestLastSeen(buddy)
-                        elif message == "\\gpp":
+                        elif message.split(" ").pop(0) == "\\gpp":
                                 self.logger.info("Get Profile Picture! ")
                                 self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
                                 #self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
                                 self.requestVCard(buddy)
                         else:
-                                if (".jpg" in message) or (".webp" in message):
+                                if (".jpg" in message.lower()) or (".webp" in message.lower()):
                                         #waId = self.call("message_imageSend", (buddy + "@s.whatsapp.net", message, None, 0, None))
                                         #waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
-                                        if (".jpg" in message):
+                                        if (".jpg" in message.lower()):
                                                 self.imgType = "jpg"
-                                        if (".webp" in message):
+                                        if (".webp" in message.lower()):
                                                 self.imgType = "webp"
                                         self.imgMsgId = ID
                                         self.imgBuddy = buddy + "@s.whatsapp.net"
@@ -617,7 +612,7 @@ class Session(YowsupApp):
                                         downloader.download(message)
                                         #self.imgMsgId = ID
                                         #self.imgBuddy = buddy + "@s.whatsapp.net"
-                                elif "geo:" in message:
+                                elif "geo:" in message.lower():
                                         self._sendLocation(buddy + "@s.whatsapp.net", message, ID)
                                 else:
                                         waId = self.sendTextMessage(sender + '@s.whatsapp.net', message)
@@ -629,7 +624,7 @@ class Session(YowsupApp):
 	def _requestLastSeen(self, buddy):
 		
             	def onSuccess(buddy, lastseen):
-			timestamp = time.localtime(time.time()-(lastseen/60))
+			timestamp = time.localtime(time.localtime()-lastseen)
                         timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
                         self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, utils.ago(lastseen),str(lastseen)))
             	def onError(errorIqEntity, originalIqEntity):

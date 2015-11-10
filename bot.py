@@ -72,7 +72,7 @@ class Bot():
 		spec = inspect.getargspec(func)
 		maxs = len(spec.args) - 1
 		reqs = maxs - len(spec.defaults or [])
-		if reqs > len(args) > maxs:
+		if (reqs > len(args)) or (len(args) > maxs):
 			raise TypeError()
 
 		thread = threading.Thread(target=func, args=tuple(args))
@@ -205,7 +205,7 @@ following user commands are available:
                         except KeyError:
                            nick = buddy
 
-			self.send(self.session.groups[group].id + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
+			self.send(self.session.groups[group].id + "@" + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
 	def _getgroups(self):
 		#self.session.call("group_getGroups", ("participating",))
 		self.session.requestGroupsList(self.session._updateGroups)

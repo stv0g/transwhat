@@ -59,6 +59,8 @@ class Buddy():
 		self.groups = groups
 		self.image_hash = image_hash
 		self.statusMsg = ""
+		self.lastseen = 0
+		self.presence = 0
 
 
 	def update(self, nick, groups, image_hash):
