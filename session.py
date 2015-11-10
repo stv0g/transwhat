@@ -130,7 +130,7 @@ class Session(YowsupApp):
 		self.backend.handleRoomList(rooms)
 		message = "Note, you are a participant of the following groups:\n" +\
 		          '\n'.join(text) + '\nIf you do not join them you will lose messages'
-		self.bot.send(message)
+		#self.bot.send(message)
 
 	def updateRoster(self):
 		self.logger.debug("Update roster")
@@ -267,7 +267,6 @@ class Session(YowsupApp):
 		if self.initialized == False:
 			self.sendOfflineMessages()
 			#self.bot.call("welcome")
-			self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
 		self.updateRoster()
@@ -414,8 +413,7 @@ class Session(YowsupApp):
 			self.sendMessageToXMPP(buddy, url, location.timestamp)
 			self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
 							   location.timestamp)
-                self.sendReceipt(location._id,      location._from, None, location.participant)
-							   location.timestamp)
+                self.sendReceipt(location._id, location._from, None, location.participant, location.timestamp)
 
 
 	# Called by superclass
