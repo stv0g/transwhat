@@ -73,6 +73,8 @@ class Session(YowsupApp):
 		self.statusMessage = ''
 
 		self.groups = {}
+		self.gotGroupList = False
+		self.joinRoomQueue = []
 		self.presenceRequested = []
 		self.offlineQueue = []
 		self.msgIDs = { }
@@ -108,22 +110,27 @@ class Session(YowsupApp):
 		super(Session, self).login(self.legacyName, self.password)
 
 	def _shortenGroupId(self, gid):
-		# FIXME: will have problems if number begins with 0
-		#return '-'.join(hex(int(s))[2:] for s in gid.split('-'))
-		return gid	
+		# FIXME: might have problems if number begins with 0
+		return gid
+#		return '-'.join(hex(int(s))[2:] for s in gid.split('-'))
 
 	def _lengthenGroupId(self, gid):
-		# FIXME: will have problems if number begins with 0
-		#return '-'.join(str(int(s, 16)) for s in gid.split('-'))
 		return gid
+		# FIXME: might have problems if number begins with 0
+#		return '-'.join(str(int(s, 16)) for s in gid.split('-'))
 
 	def updateRoomList(self):
 		rooms = []
+		text = []
 		for room, group in self.groups.iteritems():
 			rooms.append([self._shortenGroupId(room), group.subject])
+			text.append(self._shortenGroupId(room) + '@' + self.backend.spectrum_jid + ' :' + group.subject)
 
 		self.logger.debug("Got rooms: %s", rooms)
 		self.backend.handleRoomList(rooms)
+		message = "Note, you are a participant of the following groups:\n" +\
+		          '\n'.join(text) + '\nIf you do not join them you will lose messages'
+		self.bot.send(message)
 
 	def updateRoster(self):
 		self.logger.debug("Update roster")
@@ -174,9 +181,10 @@ class Session(YowsupApp):
 				oroom.subject = subject
 			else:
 				self.groups[room] = Group(room, owner, subject, subjectOwner)
-				#self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+#				self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+			self.groups[room].participants = group.getParticipants().keys()
 
-			self._addParticipantsToRoom(room, group.getParticipants())
+			#self._addParticipantsToRoom(room, group.getParticipants())
 
 			if room in self.groupOfflineQueue:
 				while self.groupOfflineQueue[room]:
@@ -185,14 +193,17 @@ class Session(YowsupApp):
 											   msg[0], "", msg[2])
 					self.logger.debug("Send queued group message to: %s %s %s",
 									  msg[0],msg[1], msg[2])
+		self.gotGroupList = True
+		for room, nick in self.joinRoomQueue:
+			self.joinRoom(room, nick)
+		self.joinRoomQueue = []
 		self.updateRoomList()
 
 	def joinRoom(self, room, nick):
+		if not self.gotGroupList:
+			self.joinRoomQueue.append((room, nick))
+			return
 		room = self._lengthenGroupId(room)
-		if room not in self.groups:
-                        time.sleep(5)
-
-
 		if room in self.groups:
 			self.logger.info("Joining room: %s room=%s, nick=%s",
 							 self.legacyName, room, nick)
@@ -204,11 +215,14 @@ class Session(YowsupApp):
 			except KeyError:
 				ownerNick = group.subjectOwner
 
-			self.backend.handleSubject(self.user, room, group.subject,
-									   ownerNick)
-			self.backend.handleRoomNicknameChanged(self.user, room,
-												   group.subject)
 			self._refreshParticipants(room)
+			self.backend.handleSubject(self.user, self._shortenGroupId(room),
+									   group.subject, ownerNick)
+			self.logger.debug("Room subject: room=%s, subject=%s",
+							  room, group.subject)
+			self.backend.handleRoomNicknameChanged(
+				self.user, self._shortenGroupId(room), group.subject
+			)
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
 
@@ -224,7 +238,6 @@ class Session(YowsupApp):
 			if nick == "":
 				nick = buddy
 
-			buddyFull = buddy 
 			if buddy == group.owner:
 				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 			else:
@@ -232,37 +245,9 @@ class Session(YowsupApp):
 			if buddy == self.legacyName:
 				nick = group.nick
 				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
-				buddyFull = self.user
 			self.backend.handleParticipantChanged(
-				self.user, buddyFull, self._shortenGroupId(room), flags,
-				protocol_pb2.STATUS_ONLINE, buddy, nick)
-
-	def _addParticipantsToRoom(self, room, participants):
-		group = self.groups[room]
-		group.participants = participants
-		group.nick = self.user.split("@")[0]
-
-		for jid, _type in participants.iteritems():
-			buddy = jid.split("@")[0]
-			buddyFull = buddy
-			self.logger.info("Added %s to room %s", buddy, room)
-			try:
-				nick = self.buddies[buddy].nick
-			except KeyError:
-				nick = buddy
-				buddyFull = buddy
-			if _type == 'admin':
-				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
-			else:
-				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-			if buddy == self.legacyName:
-				nick = group.nick
-				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
-				buddyFull = self.user
-
-			self.backend.handleParticipantChanged(self.user, buddyFull,
-				self._shortenGroupId(room), flags, protocol_pb2.STATUS_ONLINE, buddy, nick)
-
+				self.user, nick, self._shortenGroupId(room), flags,
+				protocol_pb2.STATUS_ONLINE, buddy)
 
 	def _lastSeen(self, number, seconds):
 		self.logger.debug("Last seen %s at %s seconds" % (number, str(seconds)))
@@ -282,6 +267,7 @@ class Session(YowsupApp):
 		if self.initialized == False:
 			self.sendOfflineMessages()
 			#self.bot.call("welcome")
+			self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
 		self.updateRoster()
@@ -336,11 +322,22 @@ class Session(YowsupApp):
 		)
 		buddy = _from.split('@')[0]
 		messageContent = utils.softToUni(body)
-		self.sendReceipt(_id,  _from, None, participant)
+		self.sendReceipt(_id, _from, None, participant)
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 				buddy, self.legacyName, messageContent, timestamp)
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
+			try:
+				part = self.buddies[partname]
+				if part.nick == "":
+					part.nick = notify
+					self.backend.handleParticipantChanged(
+						self.user, partname, self._shortenGroupId(buddy),
+						protocol_pb2.PARTICIPANT_FLAG_NONE,
+						protocol_pb2.STATUS_ONLINE, "", part.nick
+					) # TODO
+			except KeyError:
+				self.updateBuddy(partname, notify, [])
 			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
 										timestamp)
 		else:
@@ -357,6 +354,8 @@ class Session(YowsupApp):
 		self.logger.debug('Received image message %s', str(image))
 		buddy = image._from.split('@')[0]
 		participant = image.participant
+		if image.caption is None:
+                        image.caption = ''
 		message = image.url + ' ' + image.caption
 		if participant is not None: # Group message
                         partname = participant.split('@')[0]
@@ -416,6 +415,7 @@ class Session(YowsupApp):
 			self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
 							   location.timestamp)
                 self.sendReceipt(location._id,      location._from, None, location.participant)
+							   location.timestamp)
 
 
 	# Called by superclass
@@ -460,6 +460,28 @@ class Session(YowsupApp):
 			self.backend.handleBuddyTyped(self.user, buddy)
 			self.timer = Timer(3, self.backend.handleBuddyStoppedTyping,
 							   (self.user, buddy)).start()
+
+	# Called by superclass
+	def onAddedToGroup(self, group):
+		self.logger.debug("Added to group: %s", group)
+		room = group.getGroupId()
+		owner = group.getCreatorJid(full = False)
+		subjectOwner = group.getSubjectOwnerJid(full = False)
+		subject = utils.softToUni(group.getSubject())
+
+		self.groups[room] = Group(room, owner, subject, subjectOwner)
+		self.groups[room].participants = group.getParticipants().keys()
+#		self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+
+		#self._addParticipantsToRoom(room, group.getParticipants())
+		self.bot.send("You have been added to group: %s@%s (%s)"
+					  % (self._shortenGroupId(room), subject, self.backend.spectrum_jid))
+
+	def onParticipantsAddedToGroup(self, group):
+		self.logger.debug("Participants added to group: %s", group)
+		room = group.getGroupId().split('@')[0]
+		self.groups[room].participants.extend(group.getParticipants())
+		self._refreshParticipants(room)
 
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
@@ -642,7 +664,7 @@ class Session(YowsupApp):
 					"", timestamp)
 
 	def sendGroupMessageToXMPP(self, room, buddy, messageContent, timestamp = ""):
-		self._refreshParticipants(room)
+		# self._refreshParticipants(room)
 		try:
 			nick = self.buddies[buddy].nick
 		except KeyError:

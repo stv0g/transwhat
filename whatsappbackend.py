@@ -30,12 +30,13 @@ from session import Session
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
-	def __init__(self, io, db):
+	def __init__(self, io, db, spectrum_jid):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
 		self.db = db
 		self.sessions = { }
+		self.spectrum_jid = spectrum_jid
 		# Used to prevent duplicate messages
 		self.lastMessage = {}
 
