@@ -57,7 +57,7 @@ class Buddy():
 		self.owner = owner
 		self.number = number
 		self.groups = groups
-		self.image_hash = image_hash
+		self.image_hash = image_hash if image_hash is not None else ""
 		self.statusMsg = ""
 		self.lastseen = 0
 		self.presence = 0
