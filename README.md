@@ -9,7 +9,7 @@ transWhat is a WhatsApp XMPP Gateway based on [Spectrum 2](http://www.spectrum.i
     pip install e4u protobuf mysql dateutil
 
   - **e4u**: is a simple emoji4unicode python bindings
-  - **yowsup**:
+  - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
   - **mysqldb**: MySQL client python bindings
 
 #### Spectrum 2
@@ -28,6 +28,6 @@ The following persons have contributed major parts of this code:
 
 ## Documentation
 
-A project wiki is available [here](http://dev.0l.de/projects/transwhat/start).
+A project wiki is available [here](https://dev.0l.de/wiki/projects/transwhat/).
 
 An *outdated* writeup of this project is also availabe at my [blog](http://www.steffenvogel.de/2013/06/29/transwhat/).

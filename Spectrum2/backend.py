@@ -7,7 +7,7 @@ import logging
 import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
- 	wrap = protocol_pb2.WrapperMessage()
+	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
 	wrap.payload = MESSAGE
 	return wrap.SerializeToString()
@@ -24,7 +24,6 @@ class SpectrumBackend:
 		self.m_data = ""
 		self.m_init_res = 0
 		self.logger = logging.getLogger(self.__class__.__name__)
-
 
 	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = ""):
 		m = protocol_pb2.ConversationMessage()
@@ -371,20 +370,19 @@ class SpectrumBackend:
 				self.logger.error("Data too small")
 				return
 
-
+			packet = self.m_data[4:4+expected_size]
 			wrapper = protocol_pb2.WrapperMessage()
-                        try: 
-                           parseFromString = wrapper.ParseFromString(self.m_data[4:])
-                        except:
-                           parseFromString = True
-                           self.logger.error("Parse from String exception")
-
-
-			if (parseFromString == False):
+			try:
+				parseFromString = wrapper.ParseFromString(packet)
+			except:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String error")
+				self.logger.error("Parse from String exception")
 				return
-		
+
+			if parseFromString == False:
+				self.m_data = self.m_data[expected_size+4:]
+				self.logger.error("Parse from String failed")
+				return
 
 			self.m_data = self.m_data[4+expected_size:]
 			#self.logger.error("Data Type: %s",wrapper.type)
