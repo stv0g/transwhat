@@ -29,6 +29,7 @@ class Group():
 		self.subject = subject
 		self.subjectOwner = subjectOwner
 		self.owner = owner
+		self.joined = False
 
 		self.nick = "me"
 		self.participants = { }

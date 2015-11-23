@@ -78,6 +78,10 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)", user, room, nickname)
 		self.sessions[user].joinRoom(room, nickname)
 
+	def handleLeaveRoomRequest(self, user, room):
+		self.logger.debug("handleLeaveRoomRequest(user=%s, room=%s)", user, room)
+		self.sessions[user].leaveRoom(room)
+
 	def handleStatusChangeRequest(self, user, status, statusMessage):
 		self.logger.debug("handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)", user, status, statusMessage)
 		self.sessions[user].changeStatusMessage(statusMessage)
@@ -110,9 +114,6 @@ class WhatsAppBackend(SpectrumBackend):
 
 	# TODO
 	def handleBuddyBlockToggled(self, user, buddy, blocked):
-		pass
-
-	def handleLeaveRoomRequest(self, user, room):
 		pass
 
 	def handleVCardUpdatedRequest(self, user, photo, nickname):

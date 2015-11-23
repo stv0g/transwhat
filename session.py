@@ -91,9 +91,9 @@ class Session(YowsupApp):
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
-                self.imgPath = ""
-                self.imgBuddy = None
-                self.imgType = ""
+		self.imgPath = ""
+		self.imgBuddy = None
+		self.imgType = ""
 
 
 	def __del__(self): # handleLogoutRequest
@@ -223,8 +223,17 @@ class Session(YowsupApp):
 			self.backend.handleRoomNicknameChanged(
 				self.user, self._shortenGroupId(room), group.subject
 			)
+			group.joined = True
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
+
+	def leaveRoom(self, room):
+		if room in self.groups:
+			self.logger.info("Leaving room: %s room=%s", self.legacyName, room)
+			group = self.groups[room]
+			group.joined = False
+		else:
+			self.logger.warn("Room doesn't exist: %s. Unable to leave.", room)
 
 	def _refreshParticipants(self, room):
 		group = self.groups[room]
@@ -681,8 +690,21 @@ class Session(YowsupApp):
 		else:
 			self.logger.debug("Group message sent from %s (%s) to %s: %s",
 							  buddy, nick, room, messageContent)
-			self.backend.handleMessage(self.user, self._shortenGroupId(room),
-									   messageContent, nick, "", timestamp)
+			try:
+				group = self.groups[room]
+				if group.joined:
+					self.backend.handleMessage(self.user,room, messageContent,
+							nick, "", timestamp)
+				else:
+					self.bot.send("You have received a message in group: %s@%s"
+							% (room, self.backend.spectrum_jid))
+					self.bot.send("Join the group in order to reply")
+					self.bot.send("%s: %s" % (nick, messageContent))
+			except KeyError:
+				self.logger.warn("Group is not in group list")
+				self.backend.handleMessage(self.user, self._shortenGroupId(room),
+						messageContent, nick, "", timestamp)
+
 
 	def changeStatus(self, status):
 		if status != self.status:
