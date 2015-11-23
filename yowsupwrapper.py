@@ -61,7 +61,6 @@ class YowsupApp(object):
 					YowContactsIqProtocolLayer,
 					YowChatstateProtocolLayer,
 					YowCallsProtocolLayer,
-					YowMediaProtocolLayer,
 					YowPrivacyProtocolLayer,
 					YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
