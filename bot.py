@@ -185,6 +185,9 @@ following user commands are available:
 		if os.path.exists("/usr/share/fortune/%s" % database):
 			fortune = os.popen('/usr/bin/fortune %s' % database).read()
 			self.send(prefix + fortune[:-1])
+		elif os.path.exists("/usr/share/games/fortunes/%s" % database):
+			fortune = os.popen('/usr/games/fortune %s' % database).read()
+			self.send(prefix + fortune[:-1])
 		else:
 			self.send("invalid database")
 
