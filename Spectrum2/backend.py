@@ -38,14 +38,14 @@ class SpectrumBackend:
 		self.send(message)
 
 	def handleMessageAck(self, user, legacyName, ID):
-                m = protocol_pb2.ConversationMessage()
-                m.userName = user
-                m.buddyName = legacyName
-                m.message = ""
-                m.id = ID
+		m = protocol_pb2.ConversationMessage()
+		m.userName = user
+		m.buddyName = legacyName
+		m.message = ""
+		m.id = ID
 
-                message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
-                self.send(message)
+		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
+		self.send(message)
 
 
 	def handleAttention(self, user, buddyName, msg):
@@ -364,10 +364,10 @@ class SpectrumBackend:
 			if (len(self.m_data) >= 4):
 				expected_size = struct.unpack('!I', self.m_data[0:4])[0]
 				if (len(self.m_data) - 4 < expected_size):
-					self.logger.error("Expected Data Size Error")
+					self.logger.debug("Data packet incomplete")
 					return
 			else:
-				self.logger.error("Data too small")
+				self.logger.debug("Data packet incomplete")
 				return
 
 			packet = self.m_data[4:4+expected_size]
@@ -376,17 +376,15 @@ class SpectrumBackend:
 				parseFromString = wrapper.ParseFromString(packet)
 			except:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String exception")
+				self.logger.error("Parse from String exception. Skipping packet.")
 				return
 
 			if parseFromString == False:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String failed")
+				self.logger.error("Parse from String failed. Skipping packet.")
 				return
 
 			self.m_data = self.m_data[4+expected_size:]
-			#self.logger.error("Data Type: %s",wrapper.type)
-
 
 			if wrapper.type == protocol_pb2.WrapperMessage.TYPE_LOGIN:
 				self.handleLoginPayload(wrapper.payload)
