@@ -16,7 +16,7 @@ After this we have to install several dependencies:
 
 #### Python packages
 
-    pip install --pre e4u protobuf mysql dateutil
+    pip install --pre e4u protobuf mysql python-dateutil
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
@@ -33,11 +33,22 @@ You can use the following guide: http://spectrum.im/documentation/installation/f
 
 ### Configuration of Prosody
 
-http://prosody.im/doc/components
+See http://prosody.im/doc/components.
+
+    Component "whatsapp.0l.de"
+         component_secret = "whatsappsucks"
+        component_ports = { 5221 }
+        component_interface = "127.0.0.1"
 
 ### Configuration of Spectrum
 
 ### Configuration of transWhat
+
+First create a mySQL database named `transwhat` and fill it with the [schema](https://raw.githubusercontent.com/stv0g/transwhat/yowsup-2/conf/schema.sql) provided in the repo.
+
+## Docker
+
+In near future, there will be a Dockerfile for transWhat.
 
 ## Contributors
 
