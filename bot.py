@@ -179,7 +179,10 @@ class Bot():
 \\getgroups		get current groups from WA
 
 following user commands are available:
-\\lastseen			request last online timestamp from buddy""")
+\\lastseen			request last online timestamp from buddy
+
+following group commands are available
+\\leave				permanently leave group chat""")
 
 	def _fortune(self, database = '', prefix=''):
 		if os.path.exists("/usr/share/fortune/%s" % database):

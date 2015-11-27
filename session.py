@@ -564,15 +564,19 @@ class Session(YowsupApp):
 				self.msgIDs[waId] = MsgIDs( ID, waId)
 			else:
 				room = sender
-				try:
-					group = self.groups[self._lengthenGroupId(room)]
-					self.logger.info("Group Message from %s to %s Groups: %s",
-									 group.nick , group , self.groups)
-					self.backend.handleMessage(
-						self.user, room, message.decode('utf-8'), group.nick
-					)
-				except KeyError:
-					self.logger.error('Group not found: %s', room)
+				if message[0] == '\\' and message[:1] != '\\\\':
+					self.logger.debug("Executing command %s in %s", message, room)
+					self.executeCommand(message, room)
+				else:
+					try:
+						group = self.groups[self._lengthenGroupId(room)]
+						self.logger.debug("Group Message from %s to %s Groups: %s",
+										 group.nick , group , self.groups)
+						self.backend.handleMessage(
+							self.user, room, message.decode('utf-8'), group.nick
+						)
+					except KeyError:
+						self.logger.error('Group not found: %s', room)
 				
 				if (".jpg" in message.lower()) or (".webp" in message.lower()):
                                         if (".jpg" in message.lower()):
@@ -629,6 +633,30 @@ class Session(YowsupApp):
 
                                         self.logger.info("WA Message send to %s with ID %s", buddy, waId)
 			#self.sendTextMessage(sender + '@s.whatsapp.net', message)
+	
+	def executeCommand(self, command, room):
+		if command == '\\leave':
+			self.logger.debug("Leaving room %s", room)
+			# Leave group on whatsapp side
+			self.leaveGroup(room)
+			# Delete Room on spectrum side
+			group = self.groups[room]
+			for jid in group.participants:
+				buddy = jid.split("@")[0]
+				self.logger.info("Added %s to room %s", buddy, room)
+				try:
+					nick = self.buddies[buddy].nick
+				except KeyError:
+					nick = buddy
+				if nick == "":
+					nick = buddy
+				if buddy == self.legacyName:
+					nick = group.nick
+				flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
+				self.backend.handleParticipantChanged(
+						self.user, nick, self._shortenGroupId(room), flags,
+						protocol_pb2.STATUS_NONE, buddy)
+			del self.groups[room]
 
 	def _requestLastSeen(self, buddy):
 		

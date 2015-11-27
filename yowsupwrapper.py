@@ -232,6 +232,16 @@ class YowsupApp(object):
 		entity = UnsubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
 
+	def leaveGroup(self, group):
+		"""
+		Permanently leave a WhatsApp group
+
+		Args:
+			- group: (str) the group id (e.g. 27831788123-144024456)
+		"""
+		entity = LeaveGroupsIqProtocolEntity([group + '@g.us'])
+		self.sendEntity(entity)
+
 	def setStatus(self, statusText):
 		"""
 		Send status to whatsapp
@@ -595,6 +605,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
+		self.logger.debug("Received Message: %s", entity)
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,
