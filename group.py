@@ -32,4 +32,4 @@ class Group():
 		self.joined = False
 
 		self.nick = "me"
-		self.participants = { }
+		self.participants = []

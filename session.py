@@ -484,11 +484,33 @@ class Session(YowsupApp):
 		self.bot.send("You have been added to group: %s@%s (%s)"
 					  % (self._shortenGroupId(room), subject, self.backend.spectrum_jid))
 
+	# Called by superclass
 	def onParticipantsAddedToGroup(self, group):
 		self.logger.debug("Participants added to group: %s", group)
 		room = group.getGroupId().split('@')[0]
 		self.groups[room].participants.extend(group.getParticipants())
 		self._refreshParticipants(room)
+
+	# Called by superclass
+	def onParticipantsRemovedFromGroup(self, room, participants):
+		self.logger.debug("Participants removed from group: %s, %s",
+				room, participants)
+		group = self.groups[room]
+		for jid in participants:
+			group.participants.remove(jid)
+			buddy = jid.split("@")[0]
+			try:
+				nick = self.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
+			if nick == "":
+				nick = buddy
+			if buddy == self.legacyName:
+				nick = group.nick
+			flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+			self.backend.handleParticipantChanged(
+					self.user, nick, self._shortenGroupId(room), flags,
+					protocol_pb2.STATUS_NONE, buddy)
 
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
@@ -643,7 +665,6 @@ class Session(YowsupApp):
 			group = self.groups[room]
 			for jid in group.participants:
 				buddy = jid.split("@")[0]
-				self.logger.info("Added %s to room %s", buddy, room)
 				try:
 					nick = self.buddies[buddy].nick
 				except KeyError:

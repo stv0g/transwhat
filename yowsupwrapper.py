@@ -501,6 +501,15 @@ class YowsupApp(object):
 		"""Called when participants have been added to a group"""
 		pass
 
+	def onParticipantsRemovedFromGroup(self, group, participants):
+		"""Called when participants have been removed from a group
+		
+		Args:
+			- group: (str) id of the group (e.g. 27831788123-144024456)
+			- participants: (list) jids of participants that are removed
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
@@ -596,12 +605,17 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
-		self.logger.debug("Received notification: %s", entity)
+		self.logger.debug("Received notification (%s): %s", type(entity), entity)
 		self.toLower(entity.ack())
 		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
 			self.caller.onAddedToGroup(entity)
 		elif isinstance(entity, AddGroupsNotificationProtocolEntity):
 			self.caller.onParticipantsAddedToGroup(entity)
+		elif isinstance(entity, RemoveGroupsNotificationProtocolEntity):
+			self.caller.onParticipantsRemovedFromGroup(
+					entity.getGroupId().split('@')[0],
+					entity.getParticipants().keys()
+			)
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
