@@ -571,6 +571,11 @@ class Session(YowsupApp):
 						 self.legacyName, sender, message)
 
 		message = message.encode("utf-8")
+		# FIXME: Fragile, should pass this in to onDlerror
+		self.dlerror_message = message
+		self.dlerror_sender = sender
+		self.dlerror_ID = ID
+		# End Fragile
 
 		if sender == "bot":
 			self.bot.parse(message)
@@ -607,6 +612,7 @@ class Session(YowsupApp):
                                                 self.imgType = "webp"
                                         self.imgMsgId = ID
                                         self.imgBuddy = room + "@g.us"
+
 
                                         downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
                                         downloader.download(message)
@@ -811,6 +817,68 @@ class Session(YowsupApp):
 		self.logger.debug('Requesting profile picture of %s', buddy)
 		self.requestProfilePicture(buddy, onSuccess = onSuccess)
 
+	def onDlsuccess(self, path):
+                self.logger.info("Success: Image downloaded to %s", path)
+                os.rename(path, path+"."+self.imgType)
+                if self.imgType != "jpg":
+                        im = Image.open(path+"."+self.imgType)
+                        im.save(path+".jpg")
+                self.imgPath = path+".jpg"
+                statinfo = os.stat(self.imgPath)
+                name=os.path.basename(self.imgPath)
+		self.logger.info("Buddy %s",self.imgBuddy)
+		self.image_send(self.imgBuddy, self.imgPath)
+		
+                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
+                #mtype = "image"
+
+                #sha1 = hashlib.sha256()
+                #fp = open(self.imgPath, 'rb')
+                #try:
+                #        sha1.update(fp.read())
+                #        hsh = base64.b64encode(sha1.digest())
+                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
+                #finally:
+                #        fp.close()
+
+
+        def onDlerror(self):
+                self.logger.info("Download Error. Sending message as is.")
+		waId = self.sendTextMessage(self.dlerror_sender + '@s.whatsapp.net', self.dlerror_message)
+		self.msgIDs[waId] = MsgIDs(self.dlerror_ID, waId)
+
+
+	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
+		waId = self.doSendImage(filePath, url, to, ip, caption)
+		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
+                waId = self.doSendAudio(filePath, url, to, ip, caption)
+                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+
+
+   
+	def createThumb(self, size=100, raw=False):
+                img = Image.open(self.imgPath)
+                width, height = img.size
+                img_thumbnail = self.imgPath + '_thumbnail'
+
+                if width > height:
+                        nheight = float(height) / width * size
+                        nwidth = size
+                else:
+                        nwidth = float(width) / height * size
+                        nheight = size
+
+                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
+                img.save(img_thumbnail, 'JPEG')
+
+                with open(img_thumbnail, 'rb') as imageFile:
+                        raw = base64.b64encode(imageFile.read())
+
+                return raw
+
 	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
 		buddy = jid.split("@")[0]
@@ -847,64 +915,4 @@ class Session(YowsupApp):
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
 
 
-
-	def onDlsuccess(self, path):
-                self.logger.info("Success: Image downloaded to %s", path)
-                os.rename(path, path+"."+self.imgType)
-                if self.imgType != "jpg":
-                        im = Image.open(path+"."+self.imgType)
-                        im.save(path+".jpg")
-                self.imgPath = path+".jpg"
-                statinfo = os.stat(self.imgPath)
-                name=os.path.basename(self.imgPath)
-		self.logger.info("Buddy %s",self.imgBuddy)
-		self.image_send(self.imgBuddy, self.imgPath)
-		
-                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
-                #mtype = "image"
-
-                #sha1 = hashlib.sha256()
-                #fp = open(self.imgPath, 'rb')
-                #try:
-                #        sha1.update(fp.read())
-                #        hsh = base64.b64encode(sha1.digest())
-                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
-                #finally:
-                #        fp.close()
-
-
-        def onDlerror(self):
-                self.logger.info("Download Error")
-
-
-	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
-		waId = self.doSendImage(filePath, url, to, ip, caption)
-		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
-                waId = self.doSendAudio(filePath, url, to, ip, caption)
-                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-
-
-   
-	def createThumb(self, size=100, raw=False):
-                img = Image.open(self.imgPath)
-                width, height = img.size
-                img_thumbnail = self.imgPath + '_thumbnail'
-
-                if width > height:
-                        nheight = float(height) / width * size
-                        nwidth = size
-                else:
-                        nwidth = float(width) / height * size
-                        nheight = size
-
-                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
-                img.save(img_thumbnail, 'JPEG')
-
-                with open(img_thumbnail, 'rb') as imageFile:
-                        raw = base64.b64encode(imageFile.read())
-
-                return raw
 
