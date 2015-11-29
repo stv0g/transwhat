@@ -56,8 +56,9 @@ Pull requests, bug reports etc. are welcome. Help us to provide a open implement
 
 The following persons have contributed major parts of this code:
 
-  - **Steffen Vogel** (@stv0g): Idea and initial implementation based on Yowsup 1
-  - **Mohammed Yaseen Mowzer** (@moyamo): Port to Yowsup 2
+  - @stv0g (Steffen Vogel): Idea and initial implementation based on Yowsup 1
+  - @moyamo (Mohammed Yaseen Mowzer): Port to Yowsup 2
+  - @DaZZZl: Improvements to group chats, media & message receipts
 
 ## Documentation
 
