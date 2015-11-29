@@ -30,12 +30,13 @@ from session import Session
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
-	def __init__(self, io, db):
+	def __init__(self, io, db, spectrum_jid):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
 		self.db = db
 		self.sessions = { }
+		self.spectrum_jid = spectrum_jid
 		# Used to prevent duplicate messages
 		self.lastMessage = {}
 
@@ -58,7 +59,7 @@ class WhatsAppBackend(SpectrumBackend):
 			self.sessions[user].logout()
 			del self.sessions[user]
 
-	def handleMessageSendRequest(self, user, buddy, message, xhtml = ""):
+	def handleMessageSendRequest(self, user, buddy, message, xhtml = "", ID =  0):
 		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml = %s)", user, buddy, message, xhtml)
 		# For some reason spectrum occasionally sends to identical messages to
 		# a buddy, one to the bare jid and one to /bot. This causes duplicate
@@ -67,14 +68,19 @@ class WhatsAppBackend(SpectrumBackend):
 		#
 		# TODO Proper fix, this work around drops all duplicate messages even 
 		# intentional ones.
+                # IDEA there is an ID field in ConvMessage. If it is extracted it will work
 		usersMessage = self.lastMessage[user]
 		if buddy not in usersMessage or usersMessage[buddy] != message:
-			self.sessions[user].sendMessageToWA(buddy, message)
+			self.sessions[user].sendMessageToWA(buddy, message, ID)
 			usersMessage[buddy] = message
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
 		self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)", user, room, nickname)
 		self.sessions[user].joinRoom(room, nickname)
+
+	def handleLeaveRoomRequest(self, user, room):
+		self.logger.debug("handleLeaveRoomRequest(user=%s, room=%s)", user, room)
+		self.sessions[user].leaveRoom(room)
 
 	def handleStatusChangeRequest(self, user, status, statusMessage):
 		self.logger.debug("handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)", user, status, statusMessage)
@@ -105,11 +111,9 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleVCardRequest(user=%s, buddy=%s, ID=%s)", user, buddy, ID)
 		self.sessions[user].requestVCard(buddy, ID)
 
+
 	# TODO
 	def handleBuddyBlockToggled(self, user, buddy, blocked):
-		pass
-
-	def handleLeaveRoomRequest(self, user, room):
 		pass
 
 	def handleVCardUpdatedRequest(self, user, photo, nickname):
@@ -133,6 +137,9 @@ class WhatsAppBackend(SpectrumBackend):
 
 	def handleRawXmlRequest(self, xml):
 		pass
+
+ 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+                self.logger.info("Meassage ACK request for %s !!",leagcyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)

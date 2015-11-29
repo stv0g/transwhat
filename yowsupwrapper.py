@@ -1,3 +1,5 @@
+import logging
+
 from yowsup import env
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
@@ -30,14 +32,18 @@ from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 
 from yowsup.layers.protocol_acks.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
+from yowsup.layers.protocol_contacts.protocolentities import *
 from yowsup.layers.protocol_groups.protocolentities import *
 from yowsup.layers.protocol_media.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_profiles.protocolentities import *
 from yowsup.layers.protocol_receipts.protocolentities  import *
+from yowsup.layers.protocol_media.mediauploader import MediaUploader
 
 from functools import partial
+
+#from session import MsgIDs
 
 class YowsupApp(object):
 	def __init__(self):
@@ -55,7 +61,6 @@ class YowsupApp(object):
 					YowContactsIqProtocolLayer,
 					YowChatstateProtocolLayer,
 					YowCallsProtocolLayer,
-					YowMediaProtocolLayer,
 					YowPrivacyProtocolLayer,
 					YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
@@ -66,6 +71,7 @@ class YowsupApp(object):
 				YowStanzaRegulator,
 				YowNetworkLayer
 		)
+		self.logger = logging.getLogger(self.__class__.__name__)
 		self.stack = YowStack(layers)
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
@@ -107,7 +113,7 @@ class YowsupApp(object):
 		Logout from whatsapp
 		"""
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
-	
+
 	def sendReceipt(self, _id, _from, read, participant):
 		"""
 		Send a receipt (delivered: double-tick, read: blue-ticks)
@@ -131,6 +137,64 @@ class YowsupApp(object):
 		"""
 		messageEntity = TextMessageProtocolEntity(message, to = to)
 		self.sendEntity(messageEntity)
+		return messageEntity.getId()
+
+	def sendLocation(self, to, latitude, longitude):
+		messageEntity = LocationMediaMessageProtocolEntity(latitude,longitude, None, None, "raw", to = to)
+		self.sendEntity(messageEntity)
+                return messageEntity.getId()
+
+	def image_send(self, jid, path, caption = None):
+            	entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
+		successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption)
+            	errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
+
+            	self.sendIq(entity, successFn, errorFn)
+
+	def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None):
+
+        	if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
+            		doSendFn = self._doSendAudio
+        	else:
+            		doSendFn = self._doSendImage
+
+        	if resultRequestUploadIqProtocolEntity.isDuplicate():
+            		doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
+                             resultRequestUploadIqProtocolEntity.getIp(), caption)
+        	else:
+            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption)
+            		mediaUploader = MediaUploader(jid, self.legacyName,  filePath,
+                                      resultRequestUploadIqProtocolEntity.getUrl(),
+                                      resultRequestUploadIqProtocolEntity.getResumeOffset(),
+                                      successFn, self.onUploadError, self.onUploadProgress, async=False)
+            		mediaUploader.start()
+
+    	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
+        	self.logger.error("Request upload for file %s for %s failed" % (path, jid))
+
+    	def onUploadError(self, filePath, jid, url):
+        	#logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
+		self.logger.error("Upload Error!")
+
+    	def onUploadProgress(self, filePath, jid, url, progress):
+        	#sys.stdout.write("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
+        	#sys.stdout.flush()
+		pass
+
+	def doSendImage(self, filePath, url, to, ip = None, caption = None):
+        	entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
+        	self.sendEntity(entity)
+		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+		return entity.getId()
+
+
+    	def doSendAudio(self, filePath, url, to, ip = None, caption = None):
+        	entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
+        	self.sendEntity(entity)
+		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+		return entity.getId()
+
+
 
 	def sendPresence(self, available):
 		"""
@@ -167,7 +231,17 @@ class YowsupApp(object):
 		jid = phone_number + '@s.whatsapp.net'
 		entity = UnsubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
-	
+
+	def leaveGroup(self, group):
+		"""
+		Permanently leave a WhatsApp group
+
+		Args:
+			- group: (str) the group id (e.g. 27831788123-144024456)
+		"""
+		entity = LeaveGroupsIqProtocolEntity([group + '@g.us'])
+		self.sendEntity(entity)
+
 	def setStatus(self, statusText):
 		"""
 		Send status to whatsapp
@@ -197,6 +271,26 @@ class YowsupApp(object):
 			)
 		self.sendEntity(state)
 	
+	def sendSync(self, contacts, delta = False, interactive = True):
+		"""
+		You need to sync new contacts before you interact with
+		them, failure to do so could result in a temporary ban.
+		
+		Args:
+			- contacts: ([str]) a list of phone numbers of the
+				contacts you wish to sync
+			- delta: (bool; default: False) If true only send new
+				contacts to sync, if false you should send your full
+				contact list.
+			- interactive: (bool; default: True) Set to false if you are
+				sure this is the first time registering
+		"""
+		# TODO: Implement callbacks
+		mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
+		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
+		iq = GetSyncIqProtocolEntity(contacts, mode, context)
+		self.sendIq(iq)
+
 	def requestLastSeen(self, phoneNumber, success = None, failure = None):
 		"""
 		Requests when user was last seen.
@@ -219,14 +313,26 @@ class YowsupApp(object):
 		Requests profile picture of whatsapp user
 		Args:
 			- phoneNumber: (str) the phone number of the user
-			- success: (func) called when request is successfully processed.
-			- failure: (func) called when request has failed
+			- onSuccess: (func) called when request is successfully processed.
+			- onFailure: (func) called when request has failed
 		"""
 		iq = GetPictureIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 	
 	def requestGroupsList(self, onSuccess = None, onFailure = None):
 		iq = ListGroupsIqProtocolEntity()
+		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+
+	def requestGroupInfo(self, group, onSuccess = None, onFailure = None):
+		"""
+		Request info on a specific group (includes participants, subject, owner etc.)
+
+		Args:
+			- group: (str) the group id in the form of xxxxxxxxx-xxxxxxxx
+			- onSuccess: (func) called when request is successfully processed.
+			- onFailure: (func) called when request is has failed
+		"""
+		iq = InfoGroupsIqProtocolEntity(group + '@g.us')
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
@@ -280,7 +386,7 @@ class YowsupApp(object):
 			- timestamp
 		"""
 		pass
-	
+
 	def onPresenceReceived(self, _type, name, _from, last):
 		"""
 		Called when presence (e.g. available, unavailable) is received
@@ -298,7 +404,7 @@ class YowsupApp(object):
 		"""
 		Called when disconnected from whatsapp
 		"""
-	
+
 	def onContactTyping(self, number):
 		"""
 		Called when contact starts to type
@@ -333,7 +439,7 @@ class YowsupApp(object):
 			- body: The content of the message
 		"""
 		pass
-	
+
 	def onImage(self, entity):
 		"""
 		Called when image message is received
@@ -351,7 +457,7 @@ class YowsupApp(object):
 			- entity: AudioDownloadableMediaMessageProtocolEntity
 		"""
 		pass
-	
+
 
 	def onVideo(self, entity):
 		"""
@@ -361,7 +467,16 @@ class YowsupApp(object):
 			- entity: VideoDownloadableMediaMessageProtocolEntity
 		"""
 		pass
-	
+
+	def onLocation(self, entity):
+		"""
+		Called when location message is received
+
+		Args:
+			- entity: LocationMediaMessageProtocolEntity
+		"""
+		pass
+
 	def onVCard(self, _id, _from, name, card_data, to, notify, timestamp, participant):
 		"""
 		Called when VCard message is received
@@ -378,12 +493,29 @@ class YowsupApp(object):
 		"""
 		pass
 
+	def onAddedToGroup(self, entity):
+		"""Called when the user has been added to a new group"""
+		pass
+
+	def onParticipantsAddedToGroup(self, entity):
+		"""Called when participants have been added to a group"""
+		pass
+
+	def onParticipantsRemovedFromGroup(self, group, participants):
+		"""Called when participants have been removed from a group
+		
+		Args:
+			- group: (str) id of the group (e.g. 27831788123-144024456)
+			- participants: (list) jids of participants that are removed
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
 			entity = entity
 		))
-	
+
 	def sendIq(self, iq, onSuccess = None, onError = None):
 		self.stack.broadcastEvent(
 			YowLayerEvent(
@@ -408,6 +540,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		# return True otherwise
 		if layerEvent.getName() == YowsupAppLayer.EVENT_START:
 			self.caller = layerEvent.getArg('caller')
+			self.logger = logging.getLogger(self.__class__.__name__)
 			return True
 		elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
 			self.caller.onDisconnect()
@@ -472,10 +605,21 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
+		self.logger.debug("Received notification (%s): %s", type(entity), entity)
 		self.toLower(entity.ack())
-	
+		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
+			self.caller.onAddedToGroup(entity)
+		elif isinstance(entity, AddGroupsNotificationProtocolEntity):
+			self.caller.onParticipantsAddedToGroup(entity)
+		elif isinstance(entity, RemoveGroupsNotificationProtocolEntity):
+			self.caller.onParticipantsRemovedFromGroup(
+					entity.getGroupId().split('@')[0],
+					entity.getParticipants().keys()
+			)
+
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
+		self.logger.debug("Received Message: %s", entity)
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,
@@ -508,6 +652,8 @@ class YowsupAppLayer(YowInterfaceLayer):
 					entity.timestamp,
 					entity.participant
 				)
+			elif isinstance(entity, LocationMediaMessageProtocolEntity):
+				self.caller.onLocation(entity)
 
 	@ProtocolEntityCallback('presence')
 	def onPresenceReceived(self, presence):
@@ -516,7 +662,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		_from = presence.getFrom()
 		last = presence.getLast()
 		self.caller.onPresenceReceived(_type, name, _from, last)
-	
+
 	@ProtocolEntityCallback('chatstate')
 	def onChatstate(self, chatstate):
 		number = chatstate._from.split('@')[0]

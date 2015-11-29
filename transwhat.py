@@ -78,7 +78,7 @@ def connectionClosed():
 db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
-plugin = WhatsAppBackend(io, db)
+plugin = WhatsAppBackend(io, db, args.j)
 
 while True:
 	try:

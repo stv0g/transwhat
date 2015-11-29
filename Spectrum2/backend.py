@@ -4,11 +4,10 @@ import struct
 import sys
 import os
 import logging
-
 import google.protobuf
 
 def WRAP(MESSAGE, TYPE):
- 	wrap = protocol_pb2.WrapperMessage()
+	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
 	wrap.payload = MESSAGE
 	return wrap.SerializeToString()
@@ -20,7 +19,6 @@ class SpectrumBackend:
 	@param host: Host where Spectrum2 NetworkPluginServer runs.
 	@param port: Port. 
 	"""
-	
 	def __init__(self):
 		self.m_pingReceived = False
 		self.m_data = ""
@@ -38,6 +36,17 @@ class SpectrumBackend:
 
 		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE)
 		self.send(message)
+
+	def handleMessageAck(self, user, legacyName, ID):
+		m = protocol_pb2.ConversationMessage()
+		m.userName = user
+		m.buddyName = legacyName
+		m.message = ""
+		m.id = ID
+
+		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
+		self.send(message)
+
 
 	def handleAttention(self, user, buddyName, msg):
 		m = protocol_pb2.ConversationMessage()
@@ -206,7 +215,7 @@ class SpectrumBackend:
 
 	def handleFTData(self, ftID, data):
 		d = protocol_pb2.FileTransferData()
-		d.ftID = ftID
+		d.ftid = ftID
 		d.data = data
 
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
@@ -242,10 +251,20 @@ class SpectrumBackend:
 
 	def handleConvMessagePayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
+		self.logger.error("handleConvMessagePayload")
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return
-		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml)
+		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml, payload.id)
+	
+	def handleConvMessageAckPayload(self, data):
+                payload = protocol_pb2.ConversationMessage()
+                if (payload.ParseFromString(data) == False):
+                        #TODO: ERROR
+                        return
+                self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
+
+
 
 	def handleAttentionPayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
@@ -345,8 +364,10 @@ class SpectrumBackend:
 			if (len(self.m_data) >= 4):
 				expected_size = struct.unpack('!I', self.m_data[0:4])[0]
 				if (len(self.m_data) - 4 < expected_size):
+					self.logger.debug("Data packet incomplete")
 					return
 			else:
+				self.logger.debug("Data packet incomplete")
 				return
 
 			packet = self.m_data[4:4+expected_size]
@@ -355,12 +376,12 @@ class SpectrumBackend:
 				parseFromString = wrapper.ParseFromString(packet)
 			except:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String exception")
+				self.logger.error("Parse from String exception. Skipping packet.")
 				return
 
 			if parseFromString == False:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String failed")
+				self.logger.error("Parse from String failed. Skipping packet.")
 				return
 
 			self.m_data = self.m_data[4+expected_size:]
@@ -403,6 +424,8 @@ class SpectrumBackend:
 				self.handleFTContinuePayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
 				self.handleExitRequest()
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK:
+                                self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
 
@@ -475,16 +498,29 @@ class SpectrumBackend:
 
 		raise NotImplementedError, "Implement me"
 
-	def handleMessageSendRequest(self, user, legacyName, message, xhtml = ""):
+	def handleMessageSendRequest(self, user, legacyName, message, xhtml = "", ID = 0):
 		"""
 		Called when XMPP user sends message to legacy network.
 		@param user: XMPP JID of user for which this event occurs.
 		@param legacyName: Legacy network name of buddy or room.
 		@param message: Plain text message.
 		@param xhtml: XHTML message.
+                @param ID: message ID
 		"""
 
 		raise NotImplementedError, "Implement me"
+
+	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+                """
+                Called when XMPP user sends message to legacy network.
+                @param user: XMPP JID of user for which this event occurs.
+                @param legacyName: Legacy network name of buddy or room.
+                @param ID: message ID
+                """
+
+                # raise NotImplementedError, "Implement me"
+		pass
+
 
 	def handleVCardRequest(self, user, legacyName, ID):
 		""" Called when XMPP user requests VCard of buddy.
