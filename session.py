@@ -87,7 +87,7 @@ class Session(YowsupApp):
 		self.lastMsgId = None
 		self.synced = False
 
-		self.buddies = BuddyList(self.legacyName, self.db)
+		self.buddies = BuddyList(self.legacyName)
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
@@ -523,8 +523,8 @@ class Session(YowsupApp):
 
 		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
 			return
-		
-		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")):  
+
+		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")): 
 			buddy.lastseen = int(lastseen)
 		if (_type == None):
 			buddy.lastseen = time.time()
@@ -533,15 +533,15 @@ class Session(YowsupApp):
 
 		timestamp = time.localtime(buddy.lastseen)
                 statusmsg = buddy.statusMsg + time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
-		
+
 		if _type == "unavailable":
 			self.onPresenceUnavailable(buddy, statusmsg)
 		else:
 			self.onPresenceAvailable(buddy, statusmsg)
 
 
-		
-	def onPresenceAvailable(self, buddy, statusmsg): 
+
+	def onPresenceAvailable(self, buddy, statusmsg):
 		self.logger.info("Is available: %s", buddy)
 		self.backend.handleBuddyChanged(self.user, buddy.number.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
@@ -788,6 +788,10 @@ class Session(YowsupApp):
 		while self.offlineQueue:
 			msg = self.offlineQueue.pop(0)
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
+
+	# Called when user logs in to initialize the roster
+	def loadBuddies(self, buddy):
+		self.buddies.load(buddy)
 
 	# also for adding a new buddy
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):

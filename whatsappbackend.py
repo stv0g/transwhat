@@ -87,6 +87,12 @@ class WhatsAppBackend(SpectrumBackend):
 		self.sessions[user].changeStatusMessage(statusMessage)
 		self.sessions[user].changeStatus(status)
 
+	def handleBuddies(self, buddies):
+		"""Called when user logs in. Used to initialize roster."""
+		self.logger.debug("handleBuddies(buddies=%s)", buddies)
+		user = buddies[0].userName
+		self.sessions[user].loadBuddies(buddies)
+
 	def handleBuddyUpdatedRequest(self, user, buddy, nick, groups):
 		self.logger.debug("handleBuddyUpdatedRequest(user=%s, buddy=%s, nick=%s, groups=%s)", user, buddy, nick, str(groups))
 		self.sessions[user].updateBuddy(buddy, nick, groups)
@@ -139,7 +145,7 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
  	def handleMessageAckRequest(self, user, legacyName, ID = 0):
-                self.logger.info("Meassage ACK request for %s !!",leagcyName)
+                self.logger.info("Meassage ACK request for %s !!",legacyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)
