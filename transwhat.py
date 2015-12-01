@@ -80,6 +80,8 @@ io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
 plugin = WhatsAppBackend(io, db, args.j)
 
+plugin.handleBackendConfig('features', 'send_buddies_on_login', 1)
+
 while True:
 	try:
 		asyncore.loop(timeout=1.0, count=10, use_poll = True)

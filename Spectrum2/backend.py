@@ -437,8 +437,8 @@ class SpectrumBackend:
                                 self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
-			elif wrapper.type == Protocol_pb2.WrapperMessage.TYPE_BUDDIES:
-					self.handleBuddiesPayload()
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_BUDDIES:
+					self.handleBuddiesPayload(wrapper.payload)
 
 	def send(self, data):
 		header = struct.pack('!I',len(data))

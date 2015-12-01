@@ -50,10 +50,10 @@ class Buddy():
 
 class BuddyList(dict):
 
-	def __init__(self, owner, backend, user, sendSync):
+	def __init__(self, owner, backend, user, session):
 		self.owner = owner
 		self.backend = backend
-		self.sendSync = sendSync
+		self.session = session
 		self.user = user
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.synced = False
@@ -76,7 +76,7 @@ class BuddyList(dict):
 		contacts = self.keys()
 
 		if self.synced == False:
-			self.sendSync(contacts, delta = False, interactive = True)
+			self.session.sendSync(contacts, delta = False, interactive = True)
 			self.synced = True
 
 #		add = set(new) - set(old)
@@ -91,8 +91,9 @@ class BuddyList(dict):
 #			self.backend.handleBuddyRemoved(self.user, number)
 #			self.unsubscribePresence(number)
 #
-		for buddy in contacts:
-#			self.subscribePresence(number)
+		for number in contacts:
+			self.session.subscribePresence(number)
+			buddy = self[number]
 			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
 				buddy.groups, protocol_pb2.STATUS_NONE,
 				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
@@ -103,8 +104,10 @@ class BuddyList(dict):
 			buddy = self[number]
 			buddy.update(nick, groups, image_hash)
 		else:
-			self.sendSync([number], delta = True, interactive = True)
+			self.session.sendSync([number], delta = True, interactive = True)
+			self.session.subscribePresence(number)
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
+			self[number] = buddy
 			self.logger.debug("Roster add: %s", buddy)
 
 		self.backend.handleBuddyChanged(self.user, number, buddy.nick,
@@ -116,11 +119,11 @@ class BuddyList(dict):
 	def remove(self, number):
 		try:
 			buddy = self[number]
-			buddy.delete()
+			del self[number]
 			self.backend.handleBuddyChanged(self.user, number, "", [],
 											protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
-#			self.unsubscribePresence(number)
+			self.session.unsubscribePresence(number)
 #			TODO Sync remove
 			return buddy
 		except KeyError:

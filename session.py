@@ -87,7 +87,7 @@ class Session(YowsupApp):
 		self.lastMsgId = None
 		self.synced = False
 
-		self.buddies = BuddyList(self.legacyName, self.backend, self.user, self.sendSync)
+		self.buddies = BuddyList(self.legacyName, self.backend, self.user, self)
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
@@ -271,7 +271,7 @@ class Session(YowsupApp):
 			buddy = self.buddies[_from.split('@')[0]]
 			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
 			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-			self.backend.handleMessageAck(self.user, buddy.number.number, self.msgIDs[_id].xmppId)
+			self.backend.handleMessageAck(self.user, buddy.number, self.msgIDs[_id].xmppId)
                         self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
                         if self.msgIDs[_id].cnt == 2:
                                 del self.msgIDs[_id]
@@ -509,12 +509,12 @@ class Session(YowsupApp):
 
 	def onPresenceAvailable(self, buddy, statusmsg):
 		self.logger.info("Is available: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
 
 	def onPresenceUnavailable(self, buddy, statusmsg):
 		self.logger.info("Is unavailable: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
 
 	# spectrum RequestMethods
@@ -756,8 +756,8 @@ class Session(YowsupApp):
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
 
 	# Called when user logs in to initialize the roster
-	def loadBuddies(self, buddy):
-		self.buddies.load(buddy)
+	def loadBuddies(self, buddies):
+		self.buddies.load(buddies)
 
 	# also for adding a new buddy
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):
@@ -794,7 +794,7 @@ class Session(YowsupApp):
                 name=os.path.basename(self.imgPath)
 		self.logger.info("Buddy %s",self.imgBuddy)
 		self.image_send(self.imgBuddy, self.imgPath)
-		
+
                 #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
                 #mtype = "image"
 
