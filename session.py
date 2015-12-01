@@ -87,7 +87,7 @@ class Session(YowsupApp):
 		self.lastMsgId = None
 		self.synced = False
 
-		self.buddies = BuddyList(self.legacyName)
+		self.buddies = BuddyList(self.legacyName, self.backend, self.user, self.sendSync)
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
@@ -131,39 +131,6 @@ class Session(YowsupApp):
 		message = "Note, you are a participant of the following groups:\n" +\
 		          '\n'.join(text) + '\nIf you do not join them you will lose messages'
 		#self.bot.send(message)
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
-		contacts = new
-
-		if self.synced == False:
-			self.sendSync(contacts, delta = False, interactive = True)
-			self.synced = True
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [],
-											protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			self.unsubscribePresence(number)
-
-		for number in add:
-			buddy = self.buddies[number]
-			self.subscribePresence(number)
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
-
-			#self.requestLastSeen(number, self._lastSeen)
 
 	def _updateGroups(self, response, request):
 		self.logger.debug('Received groups list %s', response)
@@ -278,7 +245,6 @@ class Session(YowsupApp):
 			#self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
-		self.updateRoster()
 
 		self.logger.debug('Requesting groups list')
 		self.requestGroupsList(self._updateGroups)
@@ -797,15 +763,11 @@ class Session(YowsupApp):
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):
 		if buddy != "bot":
 			self.buddies.update(buddy, nick, groups, image_hash)
-			if self.initialized == True:
-				self.updateRoster()
 
 	def removeBuddy(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Buddy removed: %s", buddy)
 			self.buddies.remove(buddy)
-			self.updateRoster()
-
 
 	def requestVCard(self, buddy, ID=None):
 		def onSuccess(response, request):

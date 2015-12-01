@@ -50,8 +50,13 @@ class Buddy():
 
 class BuddyList(dict):
 
-	def __init__(self, owner):
+	def __init__(self, owner, backend, user, sendSync):
 		self.owner = owner
+		self.backend = backend
+		self.sendSync = sendSync
+		self.user = user
+		self.logger = logging.getLogger(self.__class__.__name__)
+		self.synced = False
 
 	def load(self, buddies):
 		for buddy in buddies:
@@ -62,13 +67,49 @@ class BuddyList(dict):
 			image_hash = buddy.iconHash
 			self[number] = Buddy(self.owner, number, nick, statusMsg,
 					groups, image_hash)
+		self.logger.debug("Update roster")
+
+#		old = self.buddies.keys()
+#		self.buddies.load()
+#		new = self.buddies.keys()
+#		contacts = new
+		contacts = self.keys()
+
+		if self.synced == False:
+			self.sendSync(contacts, delta = False, interactive = True)
+			self.synced = True
+
+#		add = set(new) - set(old)
+#		remove = set(old) - set(new)
+
+#		self.logger.debug("Roster remove: %s", str(list(remove)))
+		self.logger.debug("Roster add: %s", str(list(contacts)))
+
+#		for number in remove:
+#			self.backend.handleBuddyChanged(self.user, number, "", [],
+#											protocol_pb2.STATUS_NONE)
+#			self.backend.handleBuddyRemoved(self.user, number)
+#			self.unsubscribePresence(number)
+#
+		for buddy in contacts:
+#			self.subscribePresence(number)
+			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
+				buddy.groups, protocol_pb2.STATUS_NONE,
+				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+
 
 	def update(self, number, nick, groups, image_hash):
 		if number in self:
 			buddy = self[number]
 			buddy.update(nick, groups, image_hash)
 		else:
+			self.sendSync([number], delta = True, interactive = True)
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
+			self.logger.debug("Roster add: %s", buddy)
+
+		self.backend.handleBuddyChanged(self.user, number, buddy.nick,
+			buddy.groups, protocol_pb2.STATUS_NONE,
+			iconHash = buddy.image_hash if buddy.image_hash is not None else "")
 
 		return buddy
 
@@ -76,6 +117,11 @@ class BuddyList(dict):
 		try:
 			buddy = self[number]
 			buddy.delete()
+			self.backend.handleBuddyChanged(self.user, number, "", [],
+											protocol_pb2.STATUS_NONE)
+			self.backend.handleBuddyRemoved(self.user, number)
+#			self.unsubscribePresence(number)
+#			TODO Sync remove
 			return buddy
 		except KeyError:
 			return None
