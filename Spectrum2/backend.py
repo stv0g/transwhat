@@ -19,6 +19,7 @@ class SpectrumBackend:
 	@param host: Host where Spectrum2 NetworkPluginServer runs.
 	@param port: Port. 
 	"""
+
 	def __init__(self):
 		self.m_pingReceived = False
 		self.m_data = ""
@@ -344,6 +345,14 @@ class SpectrumBackend:
 		groups = [g for g in payload.group]
 		self.handleBuddyRemovedRequest(payload.userName, payload.buddyName, groups);
 
+	def handleBuddiesPayload(self, data):
+		payload = protocol_pb2.Buddies()
+		if (payload.ParseFromString(data) == False):
+			#TODO: ERROR
+			return
+
+		self.handleBuddies(payload);
+
 	def handleChatStatePayload(self, data, msgType):
 		payload = protocol_pb2.Buddy()
 		if (payload.ParseFromString(data) == False):
@@ -428,6 +437,8 @@ class SpectrumBackend:
                                 self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
+			elif wrapper.type == Protocol_pb2.WrapperMessage.TYPE_BUDDIES:
+					self.handleBuddiesPayload()
 
 	def send(self, data):
 		header = struct.pack('!I',len(data))
@@ -488,6 +499,9 @@ class SpectrumBackend:
 
 		raise NotImplementedError, "Implement me"
 
+	def handleBuddies(self, buddies):
+		pass
+
 	def handleLogoutRequest(self, user, legacyName):
 		"""
 		Called when XMPP user wants to disconnect legacy network.
@@ -505,7 +519,7 @@ class SpectrumBackend:
 		@param legacyName: Legacy network name of buddy or room.
 		@param message: Plain text message.
 		@param xhtml: XHTML message.
-                @param ID: message ID
+		@param ID: message ID
 		"""
 
 		raise NotImplementedError, "Implement me"
