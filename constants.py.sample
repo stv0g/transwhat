@@ -22,11 +22,6 @@ __status__ = "Prototype"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
-DB_HOST = "localhost"
-DB_USER = ""
-DB_PASS = ""
-DB_TABLE = "transwhat"
-
 BASE_PATH = "/opt/transwhat"
 
 TOKEN_FILE = BASE_PATH + "/logs/tokens"

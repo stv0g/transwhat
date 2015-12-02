@@ -10,7 +10,6 @@ transWhat is a WhatsApp XMPP Gateway based on [Spectrum 2](http://www.spectrum.i
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
-  - **mysqldb**: MySQL client python bindings
 
 #### Spectrum 2
 is a XMPP transport

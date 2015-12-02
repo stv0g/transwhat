@@ -28,7 +28,6 @@ import urllib
 import time
 
 from PIL import Image
-import MySQLdb
 import sys
 import os
 
@@ -57,13 +56,10 @@ class MsgIDs:
 
 class Session(YowsupApp):
 
-	def __init__(self, backend, user, legacyName, extra, db):
+	def __init__(self, backend, user, legacyName, extra):
 		super(Session, self).__init__()
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
-
-		#self.db = db
-		self.db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 
 		self.backend = backend
 		self.user = user

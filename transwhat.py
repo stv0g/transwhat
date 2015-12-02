@@ -29,7 +29,6 @@ import traceback
 import logging
 import asyncore
 import sys, os
-import MySQLdb
 import e4u
 import threading
 import Queue
@@ -75,10 +74,9 @@ def connectionClosed():
 	closed = True
 
 # Main
-db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
-plugin = WhatsAppBackend(io, db, args.j)
+plugin = WhatsAppBackend(io, args.j)
 
 plugin.handleBackendConfig('features', 'send_buddies_on_login', 1)
 

@@ -30,11 +30,10 @@ from session import Session
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
-	def __init__(self, io, db, spectrum_jid):
+	def __init__(self, io, spectrum_jid):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
-		self.db = db
 		self.sessions = { }
 		self.spectrum_jid = spectrum_jid
 		# Used to prevent duplicate messages
@@ -46,7 +45,7 @@ class WhatsAppBackend(SpectrumBackend):
 	def handleLoginRequest(self, user, legacyName, password, extra):
 		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
 		if user not in self.sessions:
-			self.sessions[user] = Session(self, user, legacyName, extra, self.db)
+			self.sessions[user] = Session(self, user, legacyName, extra)
 
 		if user not in self.lastMessage:
 			self.lastMessage[user] = {}
