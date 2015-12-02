@@ -58,7 +58,7 @@ class BuddyList(dict):
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.synced = False
 
-	def load(self, buddies):
+	def _load(self, buddies):
 		for buddy in buddies:
 			number = buddy.buddyName
 			nick = buddy.alias
@@ -67,6 +67,7 @@ class BuddyList(dict):
 			image_hash = buddy.iconHash
 			self[number] = Buddy(self.owner, number, nick, statusMsg,
 					groups, image_hash)
+
 		self.logger.debug("Update roster")
 
 #		old = self.buddies.keys()
@@ -76,12 +77,7 @@ class BuddyList(dict):
 		contacts = self.keys()
 
 		if self.synced == False:
-			if self.session.loggedIn:
-				self.session.sendSync(contacts, delta = False, interactive = True)
-			else:
-				self.session.loginQueue.append(
-						lambda: self.session.sendSync(contacts, delta = False, interactive = True)
-				)
+			self.session.sendSync(contacts, delta = False, interactive = True)
 			self.synced = True
 
 #		add = set(new) - set(old)
@@ -97,22 +93,19 @@ class BuddyList(dict):
 #			self.unsubscribePresence(number)
 #
 		for number in contacts:
-			self.logger.debug("Attempting to subscribe to %s", number)
-			if self.session.loggedIn and number != 'bot':
-				self.session.subscribePresence(number)
-			elif number != 'bot':
-				# Bah! Python scoping rules aren't nice. This function is needed
-				# preserve the value of number
-				def deferredLogin(number):
-					self.session.loginQueue.append(
-							lambda: self.session.subscribePresence(number)
-					)
-				deferredLogin(number)
 			buddy = self[number]
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+			if number != 'bot':
+				self.backend.handleBuddyChanged(self.user, number, buddy.nick,
+					buddy.groups, protocol_pb2.STATUS_NONE,
+					iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+				self.session.subscribePresence(number)
 
+
+	def load(self, buddies):
+		if self.session.loggedIn:
+			self._load(buddies)
+		else:
+			self.session.loginQueue.append(lambda: self._load(buddies))
 
 	def update(self, number, nick, groups, image_hash):
 		if number in self:
@@ -125,8 +118,14 @@ class BuddyList(dict):
 			self[number] = buddy
 			self.logger.debug("Roster add: %s", buddy)
 
+		if buddy.presence == 0:
+			status = protocol_pb2.STATUS_NONE
+		elif buddy.presence == 'unavailable':
+			status = protocol_pb2.STATUS_AWAY
+		else:
+			status = protocol_pb2.STATUS_ONLINE
 		self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-			buddy.groups, protocol_pb2.STATUS_NONE,
+			buddy.groups, status,
 			iconHash = buddy.image_hash if buddy.image_hash is not None else "")
 
 		return buddy
