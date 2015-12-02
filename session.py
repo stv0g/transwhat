@@ -74,12 +74,14 @@ class Session(YowsupApp):
 
 		self.groups = {}
 		self.gotGroupList = False
+		# Functions to exectute when logged in via yowsup
+		self.loginQueue = []
 		self.joinRoomQueue = []
 		self.presenceRequested = []
 		self.offlineQueue = []
 		self.msgIDs = { }
 		self.groupOfflineQueue = { }
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 		self.timer = None
 		self.password = None
@@ -102,6 +104,7 @@ class Session(YowsupApp):
 	def logout(self):
 		self.logger.info("%s logged out", self.user)
 		super(Session, self).logout()
+		self.loggedIn = False
 
 	def login(self, password):
 		self.logger.info("%s attempting login", self.user)
@@ -245,16 +248,19 @@ class Session(YowsupApp):
 			#self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
+		for func in self.loginQueue:
+			func()
 
 		self.logger.debug('Requesting groups list')
 		self.requestGroupsList(self._updateGroups)
+		self.loggedIn = True
 
 	# Called by superclass
 	def onAuthFailed(self, reason):
 		self.logger.info("Auth failed: %s (%s)", self.user, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
 		self.password = None
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 	# Called by superclass
 	def onDisconnect(self):

@@ -76,7 +76,12 @@ class BuddyList(dict):
 		contacts = self.keys()
 
 		if self.synced == False:
-			self.session.sendSync(contacts, delta = False, interactive = True)
+			if self.session.loggedIn:
+				self.session.sendSync(contacts, delta = False, interactive = True)
+			else:
+				self.session.loginQueue.append(
+						lambda: self.session.sendSync(contacts, delta = False, interactive = True)
+				)
 			self.synced = True
 
 #		add = set(new) - set(old)
@@ -92,7 +97,17 @@ class BuddyList(dict):
 #			self.unsubscribePresence(number)
 #
 		for number in contacts:
-			self.session.subscribePresence(number)
+			self.logger.debug("Attempting to subscribe to %s", number)
+			if self.session.loggedIn and number != 'bot':
+				self.session.subscribePresence(number)
+			elif number != 'bot':
+				# Bah! Python scoping rules aren't nice. This function is needed
+				# preserve the value of number
+				def deferredLogin(number):
+					self.session.loginQueue.append(
+							lambda: self.session.subscribePresence(number)
+					)
+				deferredLogin(number)
 			buddy = self[number]
 			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
 				buddy.groups, protocol_pb2.STATUS_NONE,
