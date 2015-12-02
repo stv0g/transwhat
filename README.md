@@ -78,22 +78,15 @@ Checkout the latest version of transWhat from GitHub:
     
 Install required dependencies:
 
-    $ pip install --pre e4u protobuf mysql python-dateutil
+    $ pip install --pre e4u protobuf python-dateutil
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
 
 ##### Configuration
 
-First create a new mySQL database named `transwhat` and fill it with the [schema](https://raw.githubusercontent.com/stv0g/transwhat/yowsup-2/conf/schema.sql) provided in the repo.
-
 Then create a new file called `constants.py` in the newly checked out transWhat Git repository:
 
-    DB_HOST = "localhost"
-    DB_USER = "**fillin**"
-    DB_PASS = "**fillin**"
-    DB_TABLE = "transwhat"
-    
     BASE_PATH = "/location/to/transwhat"
     
     TOKEN_FILE = BASE_PATH + "/logs/tokens"
