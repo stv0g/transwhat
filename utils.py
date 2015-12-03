@@ -1,9 +1,8 @@
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2013, Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
-__status__ = "Prototype"
 
 """
  This file is part of transWhat
