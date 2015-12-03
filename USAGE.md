@@ -2,6 +2,9 @@
 
 ## Starting/stopping service
 
+The `transwhat.py` script gets started as a backend by Spectrum. You should not try to run it manually.
+To simplify the management of multiple transports (WhatsApp, IRC, Facebook, libpurple, ...), Spectrum provides a little helper tool called `spectrum_manager`:
+
 To start transwhat run
 
 ```
@@ -65,6 +68,6 @@ To get a list of your WhatsApp groups, you can use the Auto Discovery functional
 
 ### Smileys / Emojis
 
-To be able to see smileys, you will need an [[https://github.com/stv0g/unicode-emoji/raw/master/symbola/Symbola.ttf|Unicode emoji font]].
+To be able to see smileys, you will need an [Unicode Emoji font](https://github.com/stv0g/unicode-emoji/raw/master/symbola/Symbola.ttf).
 
-When using Pidgin, you might want to check out my [[https://github.com/stv0g/unicode-emoji|Unicode emoji theme]].
+When using Pidgin, you might want to check out my [stv0g's Unicode emoji theme](https://github.com/stv0g/unicode-emoji)].
