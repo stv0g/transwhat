@@ -18,15 +18,14 @@ The bot is one of the contacts every user has in its contact list. It offers you
 
 ## Login
 
-**This is outdated!**
+To login to the transWhat, you should use the service discovery option in your XMPP client.
 
-| **User**       | CountryCode + PhoneNumber (eg. 4917634911387)|
-| **Password**   | WhatsApp password |
-| **Domain**     | *example.org* (see INSTALL.md) |
-| **Port**       | 5222 |
-| **Alias**      | *not required* |
-| **Ressource**  | *not required* |
-| **Encryption** | *activate!!!*  |
+When asked about the login credentials, enter your data as described below:
+
+| **Setting** | **Value**                 | **Example**     |
+| ----------- | ------------------------- | --------------- |
+| User        | CountryCode + PhoneNumber | 4917634911387   |
+| Password    | WhatsApp password         | *Base64 string* |
 
 ### Buddies
 
