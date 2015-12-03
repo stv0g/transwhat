@@ -30,7 +30,6 @@ import time
 import os
 import utils
 
-from constants import *
 class Bot():
 	def __init__(self, session, name = "Bot"):
 		self.session = session

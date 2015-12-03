@@ -38,7 +38,6 @@ sys.path.insert(0, os.getcwd())
 from Spectrum2.iochannel import IOChannel
 
 from whatsappbackend import WhatsAppBackend
-from constants import *
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
 

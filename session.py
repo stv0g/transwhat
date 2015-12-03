@@ -41,7 +41,6 @@ from buddy import BuddyList
 from threading import Timer
 from group import Group
 from bot import Bot
-from constants import *
 from yowsupwrapper import YowsupApp
 
 

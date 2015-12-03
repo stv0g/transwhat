@@ -78,13 +78,3 @@ Install required dependencies:
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
-
-### Configuration
-
-Then create a new file called `constants.py` in the newly checked out transWhat Git repository:
-
-    BASE_PATH = "/location/to/transwhat"
-    
-    TOKEN_FILE = BASE_PATH + "/logs/tokens"
-    MOTD_FILE = BASE_PATH + "/conf/motd"
-    REQUESTS_FILE = BASE_PATH + "/logs/requests"
