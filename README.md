@@ -2,7 +2,59 @@
 
 transWhat is a WhatsApp XMPP Gateway based on [Spectrum 2](http://www.spectrum.im) and [Yowsup 2](https://github.com/tgalal/yowsup).
 
-## Getting started
+## Features
+
+  * Typing notifications
+  * Receive images, audio & video
+  * Set/get online status
+  * Set status message
+  * Groupchats
+
+## Usage
+
+### Bot
+
+You might want to talk to [[.:bot|our bot]] if you're feeling lonely ;-P
+
+### Login
+
+|**User**|CountryCode + PhoneNumber (eg. 4917634911387)|
+|**Password**|WhatsApp password, see [[.:password|password]] for details|
+|**Domain**|*example.org*|
+|**Port**|5222|
+|**Alias**|//not required//|
+|**Ressource**|//not required//|
+|**Encryption**|//activate!!!//|
+
+### Buddies
+
+WhatsApp does not store your contacts on their servers. Thus you need to import your contacts manually with your XMPP Client or use [[.:bot|our bot]] to Import your contacts from Google (preferred).
+
+(In Pidgin: Menu => Buddys => Add Buddy)
+
+Just use the same JID format as for your login:
+
+  CountryCode + PhoneNumber + "@whatsapp.example.org"
+
+### Groups
+
+To chat with groups you need to add them manually to your XMPP client.
+
+To get a list of your WhatsApp groups, you can use the AutoDiscovery function of your WhatsApp client.
+
+(In Pidgin: Menu => Buddys => Join Chat => RoomList)
+
+When asked, use this conference server:
+
+  whatsapp.0l.de
+  
+### Smileys / Emojis
+
+To be able to see smileys, you will need an [[https://github.com/stv0g/unicode-emoji/raw/master/symbola/Symbola.ttf|Unicode emoji font]].
+
+When using pidgin, you might want to check out my [[https://github.com/stv0g/unicode-emoji|Unicode emoji theme]].
+
+## Setup
 
 I assume that you have a basic understanding of XMPP and the the concept of a XMPP component / transport. If not, please get a book about Jabber or read the standards.
 
@@ -93,10 +145,6 @@ Then create a new file called `constants.py` in the newly checked out transWhat 
     MOTD_FILE = BASE_PATH + "/conf/motd"
     REQUESTS_FILE = BASE_PATH + "/logs/requests"
 
-## Docker
-
-In near future, there will be a Dockerfile for transWhat.
-
 ## Contributors
 
 Pull requests, bug reports etc. are welcome. Help us to provide a open implementation of the WhatsApp protocol.
@@ -107,8 +155,8 @@ The following persons have contributed major parts of this code:
   - @moyamo (Mohammed Yaseen Mowzer): Port to Yowsup 2
   - @DaZZZl: Improvements to group chats, media & message receipts
 
-## Documentation
+## Links
 
-A project wiki is available [here](https://dev.0l.de/wiki/projects/transwhat/).
+An *outdated* project wiki is available [here](https://dev.0l.de/wiki/projects/transwhat/).
 
 An *outdated* writeup of this project is also availabe at my [blog](http://www.steffenvogel.de/2013/06/29/transwhat/).
