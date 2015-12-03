@@ -6,13 +6,15 @@ You might want to talk to bot if you're feeling lonely ;-P
 
 The bot is one of the contacts every user has in its contact list. It offers you a simple way to interact with the server:
 
-| **Command** | **Description** |
-| ----------- | --------------- |
-| `\prune`    | Wipe all your date we are storing on our server|
-| `\help`     | Getting a simple help|
-| `\sync`     | Resync your contact list with WhatsApp \\ (Determine which contacts are using WhatsApp)|
-| `\lastseen` | Get last online timestamp of your buddies \\ (send to Buddy)|
-| `\fortune`  | Get a quote|
+| **Command**  | **Description** |
+| ------------ | --------------- |
+| `\help`      | show this message |
+| `\prune`     | clear your buddylist |
+| `\sync`      | sync your imported contacts with WhatsApp |
+| `\lastseen`  | request last online timestamp from buddy |
+| `\leave`     | permanently leave group chat |
+| `\groups`    | print all attended groups |
+| `\getgroups` | get current groups from WA |
 
 <note tip>All commands start with a **back**slash!</note>
 
