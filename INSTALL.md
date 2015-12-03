@@ -74,7 +74,7 @@ Checkout the latest version of transWhat from GitHub:
     
 Install required dependencies:
 
-    $ pip install --pre e4u protobuf python-dateutil
+    $ pip install --pre e4u protobuf python-dateutil yowsup
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.

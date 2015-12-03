@@ -1,5 +1,20 @@
 # Usage
 
+## Starting/stopping service
+
+To start transwhat run
+
+```
+    spectrum_manager start whatsapp
+
+```
+
+To stop transwhat run
+
+```
+    spectrum_manager stop whatsapp
+```
+
 ## Bot
 
 You might want to talk to bot if you're feeling lonely ;-P
@@ -27,7 +42,8 @@ When asked about the login credentials, enter your data as described below:
 | **Setting** | **Value**                 | **Example**     |
 | ----------- | ------------------------- | --------------- |
 | User        | CountryCode + PhoneNumber | 4917634911387   |
-| Password    | WhatsApp password         | *Base64 string* |
+| Password    | WhatsApp password         | [*Base64 string*](https://github.com/davidgfnet/whatsapp-purple#how-do-i-get-my-user-name-and-password)|
+
 
 ### Buddies
 
