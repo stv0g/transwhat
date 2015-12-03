@@ -41,16 +41,12 @@ Just use the same JID format as for your login:
 
 To chat with groups you need to add them manually to your XMPP client.
 
-To get a list of your WhatsApp groups, you can use the AutoDiscovery function of your WhatsApp client.
+To get a list of your WhatsApp groups, you can use the Auto Discovery functionality of your XMPP client.
 
 (In Pidgin: Menu => Buddys => Join Chat => RoomList)
 
-When asked, use this conference server:
-
-  whatsapp.0l.de
-  
 ### Smileys / Emojis
 
 To be able to see smileys, you will need an [[https://github.com/stv0g/unicode-emoji/raw/master/symbola/Symbola.ttf|Unicode emoji font]].
 
-When using pidgin, you might want to check out my [[https://github.com/stv0g/unicode-emoji|Unicode emoji theme]].
+When using Pidgin, you might want to check out my [[https://github.com/stv0g/unicode-emoji|Unicode emoji theme]].
