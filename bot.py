@@ -40,9 +40,8 @@ class Bot():
 			"help": self._help,
 			"prune": self._prune,
 			"welcome": self._welcome,
-			"fortune": self._fortune,
 			"sync": self._sync,
-                        "groups": self._groups,
+            "groups": self._groups,
 			"getgroups": self._getgroups
 		}
 
@@ -89,39 +88,23 @@ class Bot():
 
 	def _help(self):
 		self.send("""following bot commands are available:
-\\help				show this message
+\\help			show this message
 \\prune			clear your buddylist
-\\import [token]		import buddies from Google
 \\sync			sync your imported contacts with WhatsApp
-\\fortune [database]		give me a quote
-\\groups		print all attended groups
-\\getgroups		get current groups from WA
 
 following user commands are available:
-\\lastseen			request last online timestamp from buddy
+\\lastseen		request last online timestamp from buddy
 
 following group commands are available
-\\leave				permanently leave group chat""")
-
-	def _fortune(self, database = '', prefix=''):
-		if os.path.exists("/usr/share/fortune/%s" % database):
-			fortune = os.popen('/usr/bin/fortune %s' % database).read()
-			self.send(prefix + fortune[:-1])
-		elif os.path.exists("/usr/share/games/fortunes/%s" % database):
-			fortune = os.popen('/usr/games/fortune %s' % database).read()
-			self.send(prefix + fortune[:-1])
-		else:
-			self.send("invalid database")
-
-	def _welcome(self):
-		motd = open(MOTD_FILE, "r").read()
-		self.send(motd[:-1])
-		self.call("fortune", ("disclaimer", "Disclaimer: "))
+\\leave			permanently leave group chat
+\\groups		print all attended groups
+\\getgroups		get current groups from WA""")
 
 	def _prune(self):
 		self.session.buddies.prune()
 		self.session.updateRoster()
 		self.send("buddy list cleared")
+
 	def _groups(self):
 		for group in self.session.groups:
 			buddy = self.session.groups[group].owner
@@ -131,6 +114,7 @@ following group commands are available
                            nick = buddy
 
 			self.send(self.session.groups[group].id + "@" + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
+
 	def _getgroups(self):
 		#self.session.call("group_getGroups", ("participating",))
 		self.session.requestGroupsList(self.session._updateGroups)
