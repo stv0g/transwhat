@@ -19,7 +19,7 @@ _sym_db = _symbol_database.Default()
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='protocol.proto',
   package='pbnetwork',
-  serialized_pb=_b('\n\x0eprotocol.proto\x12\tpbnetwork\"\x19\n\tConnected\x12\x0c\n\x04user\x18\x01 \x02(\t\"<\n\x0c\x44isconnected\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\r\n\x05\x65rror\x18\x02 \x02(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"P\n\x05Login\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\x12\x10\n\x08password\x18\x03 \x02(\t\x12\x13\n\x0b\x65xtraFields\x18\x04 \x03(\t\"*\n\x06Logout\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\"\xab\x01\n\x05\x42uddy\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\r\n\x05\x61lias\x18\x03 \x01(\t\x12\r\n\x05group\x18\x04 \x03(\t\x12%\n\x06status\x18\x05 \x01(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x10\n\x08iconHash\x18\x07 \x01(\t\x12\x0f\n\x07\x62locked\x18\x08 \x01(\x08\"\xa9\x01\n\x13\x43onversationMessage\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\r\n\x05xhtml\x18\x05 \x01(\t\x12\x11\n\ttimestamp\x18\x06 \x01(\t\x12\x10\n\x08headline\x18\x07 \x01(\x08\x12\n\n\x02id\x18\x08 \x01(\t\x12\n\n\x02pm\x18\t \x01(\x08\"J\n\x04Room\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x10\n\x08nickname\x18\x02 \x02(\t\x12\x0c\n\x04room\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x01(\t\"&\n\x08RoomList\x12\x0c\n\x04room\x18\x01 \x03(\t\x12\x0c\n\x04name\x18\x02 \x03(\t\"\x9c\x01\n\x0bParticipant\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x0c\n\x04room\x18\x02 \x02(\t\x12\x10\n\x08nickname\x18\x03 \x02(\t\x12\x0c\n\x04\x66lag\x18\x04 \x02(\x05\x12%\n\x06status\x18\x05 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x0f\n\x07newname\x18\x07 \x01(\t\"k\n\x05VCard\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\n\n\x02id\x18\x03 \x02(\x05\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\x12\x10\n\x08nickname\x18\x05 \x01(\t\x12\r\n\x05photo\x18\x06 \x01(\x0c\"X\n\x06Status\x12\x10\n\x08userName\x18\x01 \x02(\t\x12%\n\x06status\x18\x03 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x04 \x01(\t\"B\n\x05Stats\x12\x0b\n\x03res\x18\x01 \x02(\x05\x12\x10\n\x08init_res\x18\x02 \x02(\x05\x12\x0e\n\x06shared\x18\x03 \x02(\x05\x12\n\n\x02id\x18\x04 \x02(\t\"Y\n\x04\x46ile\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x10\n\x08\x66ileName\x18\x03 \x02(\t\x12\x0c\n\x04size\x18\x04 \x02(\x05\x12\x0c\n\x04\x66tID\x18\x05 \x01(\x05\".\n\x10\x46ileTransferData\x12\x0c\n\x04\x66tID\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x1f\n\rBackendConfig\x12\x0e\n\x06\x63onfig\x18\x01 \x02(\t\"\x9a\x06\n\x0eWrapperMessage\x12,\n\x04type\x18\x01 \x02(\x0e\x32\x1e.pbnetwork.WrapperMessage.Type\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\xc8\x05\n\x04Type\x12\x12\n\x0eTYPE_CONNECTED\x10\x01\x12\x15\n\x11TYPE_DISCONNECTED\x10\x02\x12\x0e\n\nTYPE_LOGIN\x10\x03\x12\x0f\n\x0bTYPE_LOGOUT\x10\x04\x12\x16\n\x12TYPE_BUDDY_CHANGED\x10\x06\x12\x16\n\x12TYPE_BUDDY_REMOVED\x10\x07\x12\x15\n\x11TYPE_CONV_MESSAGE\x10\x08\x12\r\n\tTYPE_PING\x10\t\x12\r\n\tTYPE_PONG\x10\n\x12\x12\n\x0eTYPE_JOIN_ROOM\x10\x0b\x12\x13\n\x0fTYPE_LEAVE_ROOM\x10\x0c\x12\x1c\n\x18TYPE_PARTICIPANT_CHANGED\x10\r\x12\x1e\n\x1aTYPE_ROOM_NICKNAME_CHANGED\x10\x0e\x12\x1d\n\x19TYPE_ROOM_SUBJECT_CHANGED\x10\x0f\x12\x0e\n\nTYPE_VCARD\x10\x10\x12\x17\n\x13TYPE_STATUS_CHANGED\x10\x11\x12\x15\n\x11TYPE_BUDDY_TYPING\x10\x12\x12\x1d\n\x19TYPE_BUDDY_STOPPED_TYPING\x10\x13\x12\x14\n\x10TYPE_BUDDY_TYPED\x10\x14\x12\x15\n\x11TYPE_AUTH_REQUEST\x10\x15\x12\x12\n\x0eTYPE_ATTENTION\x10\x16\x12\x0e\n\nTYPE_STATS\x10\x17\x12\x11\n\rTYPE_FT_START\x10\x18\x12\x12\n\x0eTYPE_FT_FINISH\x10\x19\x12\x10\n\x0cTYPE_FT_DATA\x10\x1a\x12\x11\n\rTYPE_FT_PAUSE\x10\x1b\x12\x14\n\x10TYPE_FT_CONTINUE\x10\x1c\x12\r\n\tTYPE_EXIT\x10\x1d\x12\x17\n\x13TYPE_BACKEND_CONFIG\x10\x1e\x12\x0e\n\nTYPE_QUERY\x10\x1f\x12\x12\n\x0eTYPE_ROOM_LIST\x10 \x12\x19\n\x15TYPE_CONV_MESSAGE_ACK\x10!\x12\x10\n\x0cTYPE_RAW_XML\x10\"*\xb3\x05\n\x0f\x43onnectionError\x12\"\n\x1e\x43ONNECTION_ERROR_NETWORK_ERROR\x10\x00\x12%\n!CONNECTION_ERROR_INVALID_USERNAME\x10\x01\x12*\n&CONNECTION_ERROR_AUTHENTICATION_FAILED\x10\x02\x12.\n*CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE\x10\x03\x12#\n\x1f\x43ONNECTION_ERROR_NO_SSL_SUPPORT\x10\x04\x12%\n!CONNECTION_ERROR_ENCRYPTION_ERROR\x10\x05\x12 \n\x1c\x43ONNECTION_ERROR_NAME_IN_USE\x10\x06\x12%\n!CONNECTION_ERROR_INVALID_SETTINGS\x10\x07\x12&\n\"CONNECTION_ERROR_CERT_NOT_PROVIDED\x10\x08\x12#\n\x1f\x43ONNECTION_ERROR_CERT_UNTRUSTED\x10\t\x12!\n\x1d\x43ONNECTION_ERROR_CERT_EXPIRED\x10\n\x12\'\n#CONNECTION_ERROR_CERT_NOT_ACTIVATED\x10\x0b\x12+\n\'CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH\x10\x0c\x12.\n*CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH\x10\r\x12%\n!CONNECTION_ERROR_CERT_SELF_SIGNED\x10\x0e\x12%\n!CONNECTION_ERROR_CERT_OTHER_ERROR\x10\x0f\x12 \n\x1c\x43ONNECTION_ERROR_OTHER_ERROR\x10\x10*\x86\x01\n\nStatusType\x12\x11\n\rSTATUS_ONLINE\x10\x00\x12\x0f\n\x0bSTATUS_AWAY\x10\x01\x12\x0e\n\nSTATUS_FFC\x10\x02\x12\r\n\tSTATUS_XA\x10\x03\x12\x0e\n\nSTATUS_DND\x10\x04\x12\x0f\n\x0bSTATUS_NONE\x10\x05\x12\x14\n\x10STATUS_INVISIBLE\x10\x06*\x88\x02\n\x0fParticipantFlag\x12\x19\n\x15PARTICIPANT_FLAG_NONE\x10\x00\x12\x1e\n\x1aPARTICIPANT_FLAG_MODERATOR\x10\x01\x12\x1d\n\x19PARTICIPANT_FLAG_CONFLICT\x10\x02\x12\x1b\n\x17PARTICIPANT_FLAG_BANNED\x10\x04\x12#\n\x1fPARTICIPANT_FLAG_NOT_AUTHORIZED\x10\x08\x12\x17\n\x13PARTICIPANT_FLAG_ME\x10\x10\x12\x1b\n\x17PARTICIPANT_FLAG_KICKED\x10 \x12#\n\x1fPARTICIPANT_FLAG_ROOM_NOT_FOUND\x10@')
+  serialized_pb=_b('\n\x0eprotocol.proto\x12\tpbnetwork\"\x19\n\tConnected\x12\x0c\n\x04user\x18\x01 \x02(\t\"<\n\x0c\x44isconnected\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\r\n\x05\x65rror\x18\x02 \x02(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"P\n\x05Login\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\x12\x10\n\x08password\x18\x03 \x02(\t\x12\x13\n\x0b\x65xtraFields\x18\x04 \x03(\t\"*\n\x06Logout\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\"\xab\x01\n\x05\x42uddy\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\r\n\x05\x61lias\x18\x03 \x01(\t\x12\r\n\x05group\x18\x04 \x03(\t\x12%\n\x06status\x18\x05 \x01(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x10\n\x08iconHash\x18\x07 \x01(\t\x12\x0f\n\x07\x62locked\x18\x08 \x01(\x08\"*\n\x07\x42uddies\x12\x1f\n\x05\x62uddy\x18\x01 \x03(\x0b\x32\x10.pbnetwork.Buddy\"\xa9\x01\n\x13\x43onversationMessage\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\r\n\x05xhtml\x18\x05 \x01(\t\x12\x11\n\ttimestamp\x18\x06 \x01(\t\x12\x10\n\x08headline\x18\x07 \x01(\x08\x12\n\n\x02id\x18\x08 \x01(\t\x12\n\n\x02pm\x18\t \x01(\x08\"J\n\x04Room\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x10\n\x08nickname\x18\x02 \x02(\t\x12\x0c\n\x04room\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x01(\t\"&\n\x08RoomList\x12\x0c\n\x04room\x18\x01 \x03(\t\x12\x0c\n\x04name\x18\x02 \x03(\t\"\x9c\x01\n\x0bParticipant\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x0c\n\x04room\x18\x02 \x02(\t\x12\x10\n\x08nickname\x18\x03 \x02(\t\x12\x0c\n\x04\x66lag\x18\x04 \x02(\x05\x12%\n\x06status\x18\x05 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x0f\n\x07newname\x18\x07 \x01(\t\"k\n\x05VCard\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\n\n\x02id\x18\x03 \x02(\x05\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\x12\x10\n\x08nickname\x18\x05 \x01(\t\x12\r\n\x05photo\x18\x06 \x01(\x0c\"X\n\x06Status\x12\x10\n\x08userName\x18\x01 \x02(\t\x12%\n\x06status\x18\x03 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x04 \x01(\t\"B\n\x05Stats\x12\x0b\n\x03res\x18\x01 \x02(\x05\x12\x10\n\x08init_res\x18\x02 \x02(\x05\x12\x0e\n\x06shared\x18\x03 \x02(\x05\x12\n\n\x02id\x18\x04 \x02(\t\"Y\n\x04\x46ile\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x10\n\x08\x66ileName\x18\x03 \x02(\t\x12\x0c\n\x04size\x18\x04 \x02(\x05\x12\x0c\n\x04\x66tID\x18\x05 \x01(\x05\".\n\x10\x46ileTransferData\x12\x0c\n\x04\x66tID\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x1f\n\rBackendConfig\x12\x0e\n\x06\x63onfig\x18\x01 \x02(\t\"\xac\x06\n\x0eWrapperMessage\x12,\n\x04type\x18\x01 \x02(\x0e\x32\x1e.pbnetwork.WrapperMessage.Type\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\xda\x05\n\x04Type\x12\x12\n\x0eTYPE_CONNECTED\x10\x01\x12\x15\n\x11TYPE_DISCONNECTED\x10\x02\x12\x0e\n\nTYPE_LOGIN\x10\x03\x12\x0f\n\x0bTYPE_LOGOUT\x10\x04\x12\x16\n\x12TYPE_BUDDY_CHANGED\x10\x06\x12\x16\n\x12TYPE_BUDDY_REMOVED\x10\x07\x12\x15\n\x11TYPE_CONV_MESSAGE\x10\x08\x12\r\n\tTYPE_PING\x10\t\x12\r\n\tTYPE_PONG\x10\n\x12\x12\n\x0eTYPE_JOIN_ROOM\x10\x0b\x12\x13\n\x0fTYPE_LEAVE_ROOM\x10\x0c\x12\x1c\n\x18TYPE_PARTICIPANT_CHANGED\x10\r\x12\x1e\n\x1aTYPE_ROOM_NICKNAME_CHANGED\x10\x0e\x12\x1d\n\x19TYPE_ROOM_SUBJECT_CHANGED\x10\x0f\x12\x0e\n\nTYPE_VCARD\x10\x10\x12\x17\n\x13TYPE_STATUS_CHANGED\x10\x11\x12\x15\n\x11TYPE_BUDDY_TYPING\x10\x12\x12\x1d\n\x19TYPE_BUDDY_STOPPED_TYPING\x10\x13\x12\x14\n\x10TYPE_BUDDY_TYPED\x10\x14\x12\x15\n\x11TYPE_AUTH_REQUEST\x10\x15\x12\x12\n\x0eTYPE_ATTENTION\x10\x16\x12\x0e\n\nTYPE_STATS\x10\x17\x12\x11\n\rTYPE_FT_START\x10\x18\x12\x12\n\x0eTYPE_FT_FINISH\x10\x19\x12\x10\n\x0cTYPE_FT_DATA\x10\x1a\x12\x11\n\rTYPE_FT_PAUSE\x10\x1b\x12\x14\n\x10TYPE_FT_CONTINUE\x10\x1c\x12\r\n\tTYPE_EXIT\x10\x1d\x12\x17\n\x13TYPE_BACKEND_CONFIG\x10\x1e\x12\x0e\n\nTYPE_QUERY\x10\x1f\x12\x12\n\x0eTYPE_ROOM_LIST\x10 \x12\x19\n\x15TYPE_CONV_MESSAGE_ACK\x10!\x12\x10\n\x0cTYPE_RAW_XML\x10\"\x12\x10\n\x0cTYPE_BUDDIES\x10#*\xb3\x05\n\x0f\x43onnectionError\x12\"\n\x1e\x43ONNECTION_ERROR_NETWORK_ERROR\x10\x00\x12%\n!CONNECTION_ERROR_INVALID_USERNAME\x10\x01\x12*\n&CONNECTION_ERROR_AUTHENTICATION_FAILED\x10\x02\x12.\n*CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE\x10\x03\x12#\n\x1f\x43ONNECTION_ERROR_NO_SSL_SUPPORT\x10\x04\x12%\n!CONNECTION_ERROR_ENCRYPTION_ERROR\x10\x05\x12 \n\x1c\x43ONNECTION_ERROR_NAME_IN_USE\x10\x06\x12%\n!CONNECTION_ERROR_INVALID_SETTINGS\x10\x07\x12&\n\"CONNECTION_ERROR_CERT_NOT_PROVIDED\x10\x08\x12#\n\x1f\x43ONNECTION_ERROR_CERT_UNTRUSTED\x10\t\x12!\n\x1d\x43ONNECTION_ERROR_CERT_EXPIRED\x10\n\x12\'\n#CONNECTION_ERROR_CERT_NOT_ACTIVATED\x10\x0b\x12+\n\'CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH\x10\x0c\x12.\n*CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH\x10\r\x12%\n!CONNECTION_ERROR_CERT_SELF_SIGNED\x10\x0e\x12%\n!CONNECTION_ERROR_CERT_OTHER_ERROR\x10\x0f\x12 \n\x1c\x43ONNECTION_ERROR_OTHER_ERROR\x10\x10*\x86\x01\n\nStatusType\x12\x11\n\rSTATUS_ONLINE\x10\x00\x12\x0f\n\x0bSTATUS_AWAY\x10\x01\x12\x0e\n\nSTATUS_FFC\x10\x02\x12\r\n\tSTATUS_XA\x10\x03\x12\x0e\n\nSTATUS_DND\x10\x04\x12\x0f\n\x0bSTATUS_NONE\x10\x05\x12\x14\n\x10STATUS_INVISIBLE\x10\x06*\x88\x02\n\x0fParticipantFlag\x12\x19\n\x15PARTICIPANT_FLAG_NONE\x10\x00\x12\x1e\n\x1aPARTICIPANT_FLAG_MODERATOR\x10\x01\x12\x1d\n\x19PARTICIPANT_FLAG_CONFLICT\x10\x02\x12\x1b\n\x17PARTICIPANT_FLAG_BANNED\x10\x04\x12#\n\x1fPARTICIPANT_FLAG_NOT_AUTHORIZED\x10\x08\x12\x17\n\x13PARTICIPANT_FLAG_ME\x10\x10\x12\x1b\n\x17PARTICIPANT_FLAG_KICKED\x10 \x12#\n\x1fPARTICIPANT_FLAG_ROOM_NOT_FOUND\x10@')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -100,8 +100,8 @@ _CONNECTIONERROR = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2102,
-  serialized_end=2793,
+  serialized_start=2164,
+  serialized_end=2855,
 )
 _sym_db.RegisterEnumDescriptor(_CONNECTIONERROR)
 
@@ -143,8 +143,8 @@ _STATUSTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2796,
-  serialized_end=2930,
+  serialized_start=2858,
+  serialized_end=2992,
 )
 _sym_db.RegisterEnumDescriptor(_STATUSTYPE)
 
@@ -190,8 +190,8 @@ _PARTICIPANTFLAG = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2933,
-  serialized_end=3197,
+  serialized_start=2995,
+  serialized_end=3259,
 )
 _sym_db.RegisterEnumDescriptor(_PARTICIPANTFLAG)
 
@@ -368,11 +368,15 @@ _WRAPPERMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='TYPE_RAW_XML', index=32, number=34,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='TYPE_BUDDIES', index=33, number=35,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=1387,
-  serialized_end=2099,
+  serialized_start=1431,
+  serialized_end=2161,
 )
 _sym_db.RegisterEnumDescriptor(_WRAPPERMESSAGE_TYPE)
 
@@ -618,6 +622,36 @@ _BUDDY = _descriptor.Descriptor(
 )
 
 
+_BUDDIES = _descriptor.Descriptor(
+  name='Buddies',
+  full_name='pbnetwork.Buddies',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='buddy', full_name='pbnetwork.Buddies.buddy', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=418,
+  serialized_end=460,
+)
+
+
 _CONVERSATIONMESSAGE = _descriptor.Descriptor(
   name='ConversationMessage',
   full_name='pbnetwork.ConversationMessage',
@@ -699,8 +733,8 @@ _CONVERSATIONMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=419,
-  serialized_end=588,
+  serialized_start=463,
+  serialized_end=632,
 )
 
 
@@ -750,8 +784,8 @@ _ROOM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=590,
-  serialized_end=664,
+  serialized_start=634,
+  serialized_end=708,
 )
 
 
@@ -787,8 +821,8 @@ _ROOMLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=666,
-  serialized_end=704,
+  serialized_start=710,
+  serialized_end=748,
 )
 
 
@@ -859,8 +893,8 @@ _PARTICIPANT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=707,
-  serialized_end=863,
+  serialized_start=751,
+  serialized_end=907,
 )
 
 
@@ -924,8 +958,8 @@ _VCARD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=865,
-  serialized_end=972,
+  serialized_start=909,
+  serialized_end=1016,
 )
 
 
@@ -968,8 +1002,8 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=974,
-  serialized_end=1062,
+  serialized_start=1018,
+  serialized_end=1106,
 )
 
 
@@ -1019,8 +1053,8 @@ _STATS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1064,
-  serialized_end=1130,
+  serialized_start=1108,
+  serialized_end=1174,
 )
 
 
@@ -1077,8 +1111,8 @@ _FILE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1132,
-  serialized_end=1221,
+  serialized_start=1176,
+  serialized_end=1265,
 )
 
 
@@ -1114,8 +1148,8 @@ _FILETRANSFERDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1223,
-  serialized_end=1269,
+  serialized_start=1267,
+  serialized_end=1313,
 )
 
 
@@ -1144,8 +1178,8 @@ _BACKENDCONFIG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1271,
-  serialized_end=1302,
+  serialized_start=1315,
+  serialized_end=1346,
 )
 
 
@@ -1182,11 +1216,12 @@ _WRAPPERMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1305,
-  serialized_end=2099,
+  serialized_start=1349,
+  serialized_end=2161,
 )
 
 _BUDDY.fields_by_name['status'].enum_type = _STATUSTYPE
+_BUDDIES.fields_by_name['buddy'].message_type = _BUDDY
 _PARTICIPANT.fields_by_name['status'].enum_type = _STATUSTYPE
 _STATUS.fields_by_name['status'].enum_type = _STATUSTYPE
 _WRAPPERMESSAGE.fields_by_name['type'].enum_type = _WRAPPERMESSAGE_TYPE
@@ -1196,6 +1231,7 @@ DESCRIPTOR.message_types_by_name['Disconnected'] = _DISCONNECTED
 DESCRIPTOR.message_types_by_name['Login'] = _LOGIN
 DESCRIPTOR.message_types_by_name['Logout'] = _LOGOUT
 DESCRIPTOR.message_types_by_name['Buddy'] = _BUDDY
+DESCRIPTOR.message_types_by_name['Buddies'] = _BUDDIES
 DESCRIPTOR.message_types_by_name['ConversationMessage'] = _CONVERSATIONMESSAGE
 DESCRIPTOR.message_types_by_name['Room'] = _ROOM
 DESCRIPTOR.message_types_by_name['RoomList'] = _ROOMLIST
@@ -1245,6 +1281,13 @@ Buddy = _reflection.GeneratedProtocolMessageType('Buddy', (_message.Message,), d
   # @@protoc_insertion_point(class_scope:pbnetwork.Buddy)
   ))
 _sym_db.RegisterMessage(Buddy)
+
+Buddies = _reflection.GeneratedProtocolMessageType('Buddies', (_message.Message,), dict(
+  DESCRIPTOR = _BUDDIES,
+  __module__ = 'protocol_pb2'
+  # @@protoc_insertion_point(class_scope:pbnetwork.Buddies)
+  ))
+_sym_db.RegisterMessage(Buddies)
 
 ConversationMessage = _reflection.GeneratedProtocolMessageType('ConversationMessage', (_message.Message,), dict(
   DESCRIPTOR = _CONVERSATIONMESSAGE,

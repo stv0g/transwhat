@@ -30,11 +30,10 @@ from session import Session
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
-	def __init__(self, io, db, spectrum_jid):
+	def __init__(self, io, spectrum_jid):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
-		self.db = db
 		self.sessions = { }
 		self.spectrum_jid = spectrum_jid
 		# Used to prevent duplicate messages
@@ -46,7 +45,7 @@ class WhatsAppBackend(SpectrumBackend):
 	def handleLoginRequest(self, user, legacyName, password, extra):
 		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
 		if user not in self.sessions:
-			self.sessions[user] = Session(self, user, legacyName, extra, self.db)
+			self.sessions[user] = Session(self, user, legacyName, extra)
 
 		if user not in self.lastMessage:
 			self.lastMessage[user] = {}
@@ -86,6 +85,13 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)", user, status, statusMessage)
 		self.sessions[user].changeStatusMessage(statusMessage)
 		self.sessions[user].changeStatus(status)
+
+	def handleBuddies(self, buddies):
+		"""Called when user logs in. Used to initialize roster."""
+		self.logger.debug("handleBuddies(buddies=%s)", buddies)
+		buddies = [b for b in buddies.buddy]
+		user = buddies[0].userName
+		self.sessions[user].loadBuddies(buddies)
 
 	def handleBuddyUpdatedRequest(self, user, buddy, nick, groups):
 		self.logger.debug("handleBuddyUpdatedRequest(user=%s, buddy=%s, nick=%s, groups=%s)", user, buddy, nick, str(groups))
@@ -139,7 +145,7 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
  	def handleMessageAckRequest(self, user, legacyName, ID = 0):
-                self.logger.info("Meassage ACK request for %s !!",leagcyName)
+                self.logger.info("Meassage ACK request for %s !!",legacyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)

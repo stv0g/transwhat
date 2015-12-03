@@ -216,6 +216,7 @@ class YowsupApp(object):
 			- phone_number: (str) The cellphone number of the person to
 				subscribe to
 		"""
+		self.logger.debug("Subscribing to Presence updates from %s", (phone_number))
 		jid = phone_number + '@s.whatsapp.net'
 		entity = SubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)

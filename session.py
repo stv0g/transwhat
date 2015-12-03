@@ -28,7 +28,6 @@ import urllib
 import time
 
 from PIL import Image
-import MySQLdb
 import sys
 import os
 
@@ -57,13 +56,10 @@ class MsgIDs:
 
 class Session(YowsupApp):
 
-	def __init__(self, backend, user, legacyName, extra, db):
+	def __init__(self, backend, user, legacyName, extra):
 		super(Session, self).__init__()
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
-
-		#self.db = db
-		self.db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 
 		self.backend = backend
 		self.user = user
@@ -74,12 +70,14 @@ class Session(YowsupApp):
 
 		self.groups = {}
 		self.gotGroupList = False
+		# Functions to exectute when logged in via yowsup
+		self.loginQueue = []
 		self.joinRoomQueue = []
 		self.presenceRequested = []
 		self.offlineQueue = []
 		self.msgIDs = { }
 		self.groupOfflineQueue = { }
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 		self.timer = None
 		self.password = None
@@ -87,7 +85,7 @@ class Session(YowsupApp):
 		self.lastMsgId = None
 		self.synced = False
 
-		self.buddies = BuddyList(self.legacyName, self.db)
+		self.buddies = BuddyList(self.legacyName, self.backend, self.user, self)
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
@@ -102,6 +100,7 @@ class Session(YowsupApp):
 	def logout(self):
 		self.logger.info("%s logged out", self.user)
 		super(Session, self).logout()
+		self.loggedIn = False
 
 	def login(self, password):
 		self.logger.info("%s attempting login", self.user)
@@ -131,39 +130,6 @@ class Session(YowsupApp):
 		message = "Note, you are a participant of the following groups:\n" +\
 		          '\n'.join(text) + '\nIf you do not join them you will lose messages'
 		#self.bot.send(message)
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
-		contacts = new
-
-		if self.synced == False:
-			self.sendSync(contacts, delta = False, interactive = True)
-			self.synced = True
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [],
-											protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			self.unsubscribePresence(number)
-
-		for number in add:
-			buddy = self.buddies[number]
-			self.subscribePresence(number)
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
-
-			#self.requestLastSeen(number, self._lastSeen)
 
 	def _updateGroups(self, response, request):
 		self.logger.debug('Received groups list %s', response)
@@ -278,17 +244,19 @@ class Session(YowsupApp):
 			#self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
-		self.updateRoster()
+		for func in self.loginQueue:
+			func()
 
 		self.logger.debug('Requesting groups list')
 		self.requestGroupsList(self._updateGroups)
+		self.loggedIn = True
 
 	# Called by superclass
 	def onAuthFailed(self, reason):
 		self.logger.info("Auth failed: %s (%s)", self.user, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
 		self.password = None
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 	# Called by superclass
 	def onDisconnect(self):
@@ -305,7 +273,7 @@ class Session(YowsupApp):
 			buddy = self.buddies[_from.split('@')[0]]
 			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
 			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-			self.backend.handleMessageAck(self.user, buddy.number.number, self.msgIDs[_id].xmppId)
+			self.backend.handleMessageAck(self.user, buddy.number, self.msgIDs[_id].xmppId)
                         self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
                         if self.msgIDs[_id].cnt == 2:
                                 del self.msgIDs[_id]
@@ -523,8 +491,8 @@ class Session(YowsupApp):
 
 		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
 			return
-		
-		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")):  
+
+		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")): 
 			buddy.lastseen = int(lastseen)
 		if (_type == None):
 			buddy.lastseen = time.time()
@@ -533,22 +501,22 @@ class Session(YowsupApp):
 
 		timestamp = time.localtime(buddy.lastseen)
                 statusmsg = buddy.statusMsg + time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
-		
+
 		if _type == "unavailable":
 			self.onPresenceUnavailable(buddy, statusmsg)
 		else:
 			self.onPresenceAvailable(buddy, statusmsg)
 
 
-		
-	def onPresenceAvailable(self, buddy, statusmsg): 
+
+	def onPresenceAvailable(self, buddy, statusmsg):
 		self.logger.info("Is available: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
 
 	def onPresenceUnavailable(self, buddy, statusmsg):
 		self.logger.info("Is unavailable: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
 
 	# spectrum RequestMethods
@@ -789,19 +757,19 @@ class Session(YowsupApp):
 			msg = self.offlineQueue.pop(0)
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
 
+	# Called when user logs in to initialize the roster
+	def loadBuddies(self, buddies):
+		self.buddies.load(buddies)
+
 	# also for adding a new buddy
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):
 		if buddy != "bot":
 			self.buddies.update(buddy, nick, groups, image_hash)
-			if self.initialized == True:
-				self.updateRoster()
 
 	def removeBuddy(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Buddy removed: %s", buddy)
 			self.buddies.remove(buddy)
-			self.updateRoster()
-
 
 	def requestVCard(self, buddy, ID=None):
 		def onSuccess(response, request):
@@ -828,7 +796,7 @@ class Session(YowsupApp):
                 name=os.path.basename(self.imgPath)
 		self.logger.info("Buddy %s",self.imgBuddy)
 		self.image_send(self.imgBuddy, self.imgPath)
-		
+
                 #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
                 #mtype = "image"
 
