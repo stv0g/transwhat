@@ -89,8 +89,9 @@ class WhatsAppBackend(SpectrumBackend):
 		"""Called when user logs in. Used to initialize roster."""
 		self.logger.debug("handleBuddies(buddies=%s)", buddies)
 		buddies = [b for b in buddies.buddy]
-		user = buddies[0].userName
-		self.sessions[user].loadBuddies(buddies)
+		if len(buddies) > 0:
+			user = buddies[0].userName
+			self.sessions[user].loadBuddies(buddies)
 
 	def handleBuddyUpdatedRequest(self, user, buddy, nick, groups):
 		self.logger.debug("handleBuddyUpdatedRequest(user=%s, buddy=%s, nick=%s, groups=%s)", user, buddy, nick, str(groups))
