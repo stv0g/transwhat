@@ -37,7 +37,6 @@ class Bot():
 		self.commands = {
 			"help": self._help,
 			"prune": self._prune,
-			"welcome": self._welcome,
 			"sync": self._sync,
             "groups": self._groups,
 			"getgroups": self._getgroups
