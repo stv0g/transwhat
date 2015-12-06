@@ -1,9 +1,8 @@
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2013, Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
-__status__ = "Prototype"
 
 """
  This file is part of transWhat
@@ -28,7 +27,6 @@ import urllib
 import time
 
 from PIL import Image
-import MySQLdb
 import sys
 import os
 
@@ -42,7 +40,6 @@ from buddy import BuddyList
 from threading import Timer
 from group import Group
 from bot import Bot
-from constants import *
 from yowsupwrapper import YowsupApp
 
 
@@ -57,13 +54,10 @@ class MsgIDs:
 
 class Session(YowsupApp):
 
-	def __init__(self, backend, user, legacyName, extra, db):
+	def __init__(self, backend, user, legacyName, extra):
 		super(Session, self).__init__()
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.logger.info("Created: %s", legacyName)
-
-		#self.db = db
-		self.db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 
 		self.backend = backend
 		self.user = user
@@ -74,12 +68,14 @@ class Session(YowsupApp):
 
 		self.groups = {}
 		self.gotGroupList = False
+		# Functions to exectute when logged in via yowsup
+		self.loginQueue = []
 		self.joinRoomQueue = []
 		self.presenceRequested = []
 		self.offlineQueue = []
 		self.msgIDs = { }
 		self.groupOfflineQueue = { }
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 		self.timer = None
 		self.password = None
@@ -87,13 +83,13 @@ class Session(YowsupApp):
 		self.lastMsgId = None
 		self.synced = False
 
-		self.buddies = BuddyList(self.legacyName, self.db)
+		self.buddies = BuddyList(self.legacyName, self.backend, self.user, self)
 		self.bot = Bot(self)
 
 		self.imgMsgId = None
-                self.imgPath = ""
-                self.imgBuddy = None
-                self.imgType = ""
+		self.imgPath = ""
+		self.imgBuddy = None
+		self.imgType = ""
 
 
 	def __del__(self): # handleLogoutRequest
@@ -102,6 +98,7 @@ class Session(YowsupApp):
 	def logout(self):
 		self.logger.info("%s logged out", self.user)
 		super(Session, self).logout()
+		self.loggedIn = False
 
 	def login(self, password):
 		self.logger.info("%s attempting login", self.user)
@@ -131,39 +128,6 @@ class Session(YowsupApp):
 		message = "Note, you are a participant of the following groups:\n" +\
 		          '\n'.join(text) + '\nIf you do not join them you will lose messages'
 		#self.bot.send(message)
-
-	def updateRoster(self):
-		self.logger.debug("Update roster")
-
-		old = self.buddies.keys()
-		self.buddies.load()
-		new = self.buddies.keys()
-		contacts = new
-
-		if self.synced == False:
-			self.sendSync(contacts, delta = False, interactive = True)
-			self.synced = True
-
-		add = set(new) - set(old)
-		remove = set(old) - set(new)
-
-		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(add)))
-
-		for number in remove:
-			self.backend.handleBuddyChanged(self.user, number, "", [],
-											protocol_pb2.STATUS_NONE)
-			self.backend.handleBuddyRemoved(self.user, number)
-			self.unsubscribePresence(number)
-
-		for number in add:
-			buddy = self.buddies[number]
-			self.subscribePresence(number)
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
-
-			#self.requestLastSeen(number, self._lastSeen)
 
 	def _updateGroups(self, response, request):
 		self.logger.debug('Received groups list %s', response)
@@ -223,8 +187,17 @@ class Session(YowsupApp):
 			self.backend.handleRoomNicknameChanged(
 				self.user, self._shortenGroupId(room), group.subject
 			)
+			group.joined = True
 		else:
 			self.logger.warn("Room doesn't exist: %s", room)
+
+	def leaveRoom(self, room):
+		if room in self.groups:
+			self.logger.info("Leaving room: %s room=%s", self.legacyName, room)
+			group = self.groups[room]
+			group.joined = False
+		else:
+			self.logger.warn("Room doesn't exist: %s. Unable to leave.", room)
 
 	def _refreshParticipants(self, room):
 		group = self.groups[room]
@@ -269,17 +242,19 @@ class Session(YowsupApp):
 			#self.bot.call("welcome")
 			self.initialized = True
 		self.sendPresence(True)
-		self.updateRoster()
+		for func in self.loginQueue:
+			func()
 
 		self.logger.debug('Requesting groups list')
 		self.requestGroupsList(self._updateGroups)
+		self.loggedIn = True
 
 	# Called by superclass
 	def onAuthFailed(self, reason):
 		self.logger.info("Auth failed: %s (%s)", self.user, reason)
 		self.backend.handleDisconnected(self.user, 0, reason)
 		self.password = None
-		self.shouldBeConnected = False
+		self.loggedIn = False
 
 	# Called by superclass
 	def onDisconnect(self):
@@ -296,7 +271,7 @@ class Session(YowsupApp):
 			buddy = self.buddies[_from.split('@')[0]]
 			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
 			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-			self.backend.handleMessageAck(self.user, buddy.number.number, self.msgIDs[_id].xmppId)
+			self.backend.handleMessageAck(self.user, buddy.number, self.msgIDs[_id].xmppId)
                         self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
                         if self.msgIDs[_id].cnt == 2:
                                 del self.msgIDs[_id]
@@ -475,11 +450,33 @@ class Session(YowsupApp):
 		self.bot.send("You have been added to group: %s@%s (%s)"
 					  % (self._shortenGroupId(room), subject, self.backend.spectrum_jid))
 
+	# Called by superclass
 	def onParticipantsAddedToGroup(self, group):
 		self.logger.debug("Participants added to group: %s", group)
 		room = group.getGroupId().split('@')[0]
 		self.groups[room].participants.extend(group.getParticipants())
 		self._refreshParticipants(room)
+
+	# Called by superclass
+	def onParticipantsRemovedFromGroup(self, room, participants):
+		self.logger.debug("Participants removed from group: %s, %s",
+				room, participants)
+		group = self.groups[room]
+		for jid in participants:
+			group.participants.remove(jid)
+			buddy = jid.split("@")[0]
+			try:
+				nick = self.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
+			if nick == "":
+				nick = buddy
+			if buddy == self.legacyName:
+				nick = group.nick
+			flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+			self.backend.handleParticipantChanged(
+					self.user, nick, self._shortenGroupId(room), flags,
+					protocol_pb2.STATUS_NONE, buddy)
 
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
@@ -492,8 +489,8 @@ class Session(YowsupApp):
 
 		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
 			return
-		
-		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")):  
+
+		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")): 
 			buddy.lastseen = int(lastseen)
 		if (_type == None):
 			buddy.lastseen = time.time()
@@ -502,22 +499,22 @@ class Session(YowsupApp):
 
 		timestamp = time.localtime(buddy.lastseen)
                 statusmsg = buddy.statusMsg + time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
-		
+
 		if _type == "unavailable":
 			self.onPresenceUnavailable(buddy, statusmsg)
 		else:
 			self.onPresenceAvailable(buddy, statusmsg)
 
 
-		
-	def onPresenceAvailable(self, buddy, statusmsg): 
+
+	def onPresenceAvailable(self, buddy, statusmsg):
 		self.logger.info("Is available: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
 
 	def onPresenceUnavailable(self, buddy, statusmsg):
 		self.logger.info("Is unavailable: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number.number,
+		self.backend.handleBuddyChanged(self.user, buddy.number,
 				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
 
 	# spectrum RequestMethods
@@ -540,6 +537,11 @@ class Session(YowsupApp):
 						 self.legacyName, sender, message)
 
 		message = message.encode("utf-8")
+		# FIXME: Fragile, should pass this in to onDlerror
+		self.dlerror_message = message
+		self.dlerror_sender = sender
+		self.dlerror_ID = ID
+		# End Fragile
 
 		if sender == "bot":
 			self.bot.parse(message)
@@ -555,15 +557,19 @@ class Session(YowsupApp):
 				self.msgIDs[waId] = MsgIDs( ID, waId)
 			else:
 				room = sender
-				try:
-					group = self.groups[self._lengthenGroupId(room)]
-					self.logger.info("Group Message from %s to %s Groups: %s",
-									 group.nick , group , self.groups)
-					self.backend.handleMessage(
-						self.user, room, message.decode('utf-8'), group.nick
-					)
-				except KeyError:
-					self.logger.error('Group not found: %s', room)
+				if message[0] == '\\' and message[:1] != '\\\\':
+					self.logger.debug("Executing command %s in %s", message, room)
+					self.executeCommand(message, room)
+				else:
+					try:
+						group = self.groups[self._lengthenGroupId(room)]
+						self.logger.debug("Group Message from %s to %s Groups: %s",
+										 group.nick , group , self.groups)
+						self.backend.handleMessage(
+							self.user, room, message.decode('utf-8'), group.nick
+						)
+					except KeyError:
+						self.logger.error('Group not found: %s', room)
 				
 				if (".jpg" in message.lower()) or (".webp" in message.lower()):
                                         if (".jpg" in message.lower()):
@@ -572,6 +578,7 @@ class Session(YowsupApp):
                                                 self.imgType = "webp"
                                         self.imgMsgId = ID
                                         self.imgBuddy = room + "@g.us"
+
 
                                         downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
                                         downloader.download(message)
@@ -620,6 +627,29 @@ class Session(YowsupApp):
 
                                         self.logger.info("WA Message send to %s with ID %s", buddy, waId)
 			#self.sendTextMessage(sender + '@s.whatsapp.net', message)
+	
+	def executeCommand(self, command, room):
+		if command == '\\leave':
+			self.logger.debug("Leaving room %s", room)
+			# Leave group on whatsapp side
+			self.leaveGroup(room)
+			# Delete Room on spectrum side
+			group = self.groups[room]
+			for jid in group.participants:
+				buddy = jid.split("@")[0]
+				try:
+					nick = self.buddies[buddy].nick
+				except KeyError:
+					nick = buddy
+				if nick == "":
+					nick = buddy
+				if buddy == self.legacyName:
+					nick = group.nick
+				flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
+				self.backend.handleParticipantChanged(
+						self.user, nick, self._shortenGroupId(room), flags,
+						protocol_pb2.STATUS_NONE, buddy)
+			del self.groups[room]
 
 	def _requestLastSeen(self, buddy):
 		
@@ -681,8 +711,21 @@ class Session(YowsupApp):
 		else:
 			self.logger.debug("Group message sent from %s (%s) to %s: %s",
 							  buddy, nick, room, messageContent)
-			self.backend.handleMessage(self.user, self._shortenGroupId(room),
-									   messageContent, nick, "", timestamp)
+			try:
+				group = self.groups[room]
+				if group.joined:
+					self.backend.handleMessage(self.user,room, messageContent,
+							nick, "", timestamp)
+				else:
+					self.bot.send("You have received a message in group: %s@%s"
+							% (room, self.backend.spectrum_jid))
+					self.bot.send("Join the group in order to reply")
+					self.bot.send("%s: %s" % (nick, messageContent))
+			except KeyError:
+				self.logger.warn("Group is not in group list")
+				self.backend.handleMessage(self.user, self._shortenGroupId(room),
+						messageContent, nick, "", timestamp)
+
 
 	def changeStatus(self, status):
 		if status != self.status:
@@ -712,19 +755,19 @@ class Session(YowsupApp):
 			msg = self.offlineQueue.pop(0)
 			self.backend.handleMessage(self.user, msg[0], msg[1], "", "", msg[2])
 
+	# Called when user logs in to initialize the roster
+	def loadBuddies(self, buddies):
+		self.buddies.load(buddies)
+
 	# also for adding a new buddy
 	def updateBuddy(self, buddy, nick, groups, image_hash = None):
 		if buddy != "bot":
 			self.buddies.update(buddy, nick, groups, image_hash)
-			if self.initialized == True:
-				self.updateRoster()
 
 	def removeBuddy(self, buddy):
 		if buddy != "bot":
 			self.logger.info("Buddy removed: %s", buddy)
 			self.buddies.remove(buddy)
-			self.updateRoster()
-
 
 	def requestVCard(self, buddy, ID=None):
 		def onSuccess(response, request):
@@ -739,6 +782,68 @@ class Session(YowsupApp):
 
 		self.logger.debug('Requesting profile picture of %s', buddy)
 		self.requestProfilePicture(buddy, onSuccess = onSuccess)
+
+	def onDlsuccess(self, path):
+                self.logger.info("Success: Image downloaded to %s", path)
+                os.rename(path, path+"."+self.imgType)
+                if self.imgType != "jpg":
+                        im = Image.open(path+"."+self.imgType)
+                        im.save(path+".jpg")
+                self.imgPath = path+".jpg"
+                statinfo = os.stat(self.imgPath)
+                name=os.path.basename(self.imgPath)
+		self.logger.info("Buddy %s",self.imgBuddy)
+		self.image_send(self.imgBuddy, self.imgPath)
+
+                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
+                #mtype = "image"
+
+                #sha1 = hashlib.sha256()
+                #fp = open(self.imgPath, 'rb')
+                #try:
+                #        sha1.update(fp.read())
+                #        hsh = base64.b64encode(sha1.digest())
+                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
+                #finally:
+                #        fp.close()
+
+
+        def onDlerror(self):
+                self.logger.info("Download Error. Sending message as is.")
+		waId = self.sendTextMessage(self.dlerror_sender + '@s.whatsapp.net', self.dlerror_message)
+		self.msgIDs[waId] = MsgIDs(self.dlerror_ID, waId)
+
+
+	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
+		waId = self.doSendImage(filePath, url, to, ip, caption)
+		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
+                waId = self.doSendAudio(filePath, url, to, ip, caption)
+                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
+
+
+
+   
+	def createThumb(self, size=100, raw=False):
+                img = Image.open(self.imgPath)
+                width, height = img.size
+                img_thumbnail = self.imgPath + '_thumbnail'
+
+                if width > height:
+                        nheight = float(height) / width * size
+                        nwidth = size
+                else:
+                        nwidth = float(width) / height * size
+                        nheight = size
+
+                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
+                img.save(img_thumbnail, 'JPEG')
+
+                with open(img_thumbnail, 'rb') as imageFile:
+                        raw = base64.b64encode(imageFile.read())
+
+                return raw
 
 	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
@@ -776,64 +881,4 @@ class Session(YowsupApp):
 		if receiptRequested: self.call("notification_ack", (jid, messageId))
 
 
-
-	def onDlsuccess(self, path):
-                self.logger.info("Success: Image downloaded to %s", path)
-                os.rename(path, path+"."+self.imgType)
-                if self.imgType != "jpg":
-                        im = Image.open(path+"."+self.imgType)
-                        im.save(path+".jpg")
-                self.imgPath = path+".jpg"
-                statinfo = os.stat(self.imgPath)
-                name=os.path.basename(self.imgPath)
-		self.logger.info("Buddy %s",self.imgBuddy)
-		self.image_send(self.imgBuddy, self.imgPath)
-		
-                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
-                #mtype = "image"
-
-                #sha1 = hashlib.sha256()
-                #fp = open(self.imgPath, 'rb')
-                #try:
-                #        sha1.update(fp.read())
-                #        hsh = base64.b64encode(sha1.digest())
-                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
-                #finally:
-                #        fp.close()
-
-
-        def onDlerror(self):
-                self.logger.info("Download Error")
-
-
-	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
-		waId = self.doSendImage(filePath, url, to, ip, caption)
-		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
-                waId = self.doSendAudio(filePath, url, to, ip, caption)
-                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-
-
-   
-	def createThumb(self, size=100, raw=False):
-                img = Image.open(self.imgPath)
-                width, height = img.size
-                img_thumbnail = self.imgPath + '_thumbnail'
-
-                if width > height:
-                        nheight = float(height) / width * size
-                        nwidth = size
-                else:
-                        nwidth = float(width) / height * size
-                        nheight = size
-
-                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
-                img.save(img_thumbnail, 'JPEG')
-
-                with open(img_thumbnail, 'rb') as imageFile:
-                        raw = base64.b64encode(imageFile.read())
-
-                return raw
 

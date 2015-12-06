@@ -19,6 +19,7 @@ class SpectrumBackend:
 	@param host: Host where Spectrum2 NetworkPluginServer runs.
 	@param port: Port. 
 	"""
+
 	def __init__(self):
 		self.m_pingReceived = False
 		self.m_data = ""
@@ -38,14 +39,14 @@ class SpectrumBackend:
 		self.send(message)
 
 	def handleMessageAck(self, user, legacyName, ID):
-                m = protocol_pb2.ConversationMessage()
-                m.userName = user
-                m.buddyName = legacyName
-                m.message = ""
-                m.id = ID
+		m = protocol_pb2.ConversationMessage()
+		m.userName = user
+		m.buddyName = legacyName
+		m.message = ""
+		m.id = ID
 
-                message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
-                self.send(message)
+		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
+		self.send(message)
 
 
 	def handleAttention(self, user, buddyName, msg):
@@ -344,6 +345,14 @@ class SpectrumBackend:
 		groups = [g for g in payload.group]
 		self.handleBuddyRemovedRequest(payload.userName, payload.buddyName, groups);
 
+	def handleBuddiesPayload(self, data):
+		payload = protocol_pb2.Buddies()
+		if (payload.ParseFromString(data) == False):
+			#TODO: ERROR
+			return
+
+		self.handleBuddies(payload);
+
 	def handleChatStatePayload(self, data, msgType):
 		payload = protocol_pb2.Buddy()
 		if (payload.ParseFromString(data) == False):
@@ -364,10 +373,10 @@ class SpectrumBackend:
 			if (len(self.m_data) >= 4):
 				expected_size = struct.unpack('!I', self.m_data[0:4])[0]
 				if (len(self.m_data) - 4 < expected_size):
-					self.logger.error("Expected Data Size Error")
+					self.logger.debug("Data packet incomplete")
 					return
 			else:
-				self.logger.error("Data too small")
+				self.logger.debug("Data packet incomplete")
 				return
 
 			packet = self.m_data[4:4+expected_size]
@@ -376,17 +385,15 @@ class SpectrumBackend:
 				parseFromString = wrapper.ParseFromString(packet)
 			except:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String exception")
+				self.logger.error("Parse from String exception. Skipping packet.")
 				return
 
 			if parseFromString == False:
 				self.m_data = self.m_data[expected_size+4:]
-				self.logger.error("Parse from String failed")
+				self.logger.error("Parse from String failed. Skipping packet.")
 				return
 
 			self.m_data = self.m_data[4+expected_size:]
-			#self.logger.error("Data Type: %s",wrapper.type)
-
 
 			if wrapper.type == protocol_pb2.WrapperMessage.TYPE_LOGIN:
 				self.handleLoginPayload(wrapper.payload)
@@ -430,6 +437,8 @@ class SpectrumBackend:
                                 self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_BUDDIES:
+					self.handleBuddiesPayload(wrapper.payload)
 
 	def send(self, data):
 		header = struct.pack('!I',len(data))
@@ -490,6 +499,9 @@ class SpectrumBackend:
 
 		raise NotImplementedError, "Implement me"
 
+	def handleBuddies(self, buddies):
+		pass
+
 	def handleLogoutRequest(self, user, legacyName):
 		"""
 		Called when XMPP user wants to disconnect legacy network.
@@ -507,7 +519,7 @@ class SpectrumBackend:
 		@param legacyName: Legacy network name of buddy or room.
 		@param message: Plain text message.
 		@param xhtml: XHTML message.
-                @param ID: message ID
+		@param ID: message ID
 		"""
 
 		raise NotImplementedError, "Implement me"

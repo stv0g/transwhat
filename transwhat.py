@@ -1,11 +1,10 @@
 #!/usr/bin/python
 
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2013, Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
-__status__ = "Prototype"
 
 """
  This file is part of transWhat
@@ -29,7 +28,6 @@ import traceback
 import logging
 import asyncore
 import sys, os
-import MySQLdb
 import e4u
 import threading
 import Queue
@@ -39,7 +37,6 @@ sys.path.insert(0, os.getcwd())
 from Spectrum2.iochannel import IOChannel
 
 from whatsappbackend import WhatsAppBackend
-from constants import *
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
 
@@ -75,10 +72,11 @@ def connectionClosed():
 	closed = True
 
 # Main
-db = MySQLdb.connect(DB_HOST, DB_USER, DB_PASS, DB_TABLE)
 io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
-plugin = WhatsAppBackend(io, db, args.j)
+plugin = WhatsAppBackend(io, args.j)
+
+plugin.handleBackendConfig('features', 'send_buddies_on_login', 1)
 
 while True:
 	try:
