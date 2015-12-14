@@ -35,6 +35,7 @@ from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_contacts.protocolentities import *
 from yowsup.layers.protocol_groups.protocolentities import *
 from yowsup.layers.protocol_media.protocolentities import *
+from yowsup.layers.protocol_notifications.protocolentities import *
 from yowsup.layers.protocol_messages.protocolentities  import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_profiles.protocolentities import *
@@ -545,6 +546,15 @@ class YowsupApp(object):
 		"""
 		pass
 
+	def onContactStatusChanged(self, number, status):
+		"""Called when a contacts changes their status
+
+		Args
+			number: (str) the number of the contact who changed their status
+			status: (str) the new status
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
@@ -650,6 +660,11 @@ class YowsupAppLayer(YowInterfaceLayer):
 			self.caller.onParticipantsRemovedFromGroup(
 					entity.getGroupId().split('@')[0],
 					entity.getParticipants().keys()
+			)
+		elif isinstance(entity, StatusNotificationProtocolEntity):
+			self.caller.onContactStatusChanged(
+					entity._from.split('@')[0],
+					entity.status
 			)
 
 	@ProtocolEntityCallback('message')

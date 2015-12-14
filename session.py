@@ -447,6 +447,16 @@ class Session(YowsupApp):
 				room, participants)
 		self.groups[room].removeParticipants(participants)
 
+	# Called by superclass
+	def onContactStatusChanged(self, number, status):
+		self.logger.debug("%s changed their status to %s", number, status)
+		try:
+			buddy = self.buddies[number]
+			buddy.statusMsg = status
+			self.buddies.updateSpectrum(buddy)
+		except KeyError:
+			self.logger.debug("%s not in buddy list", number)
+
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
 		buddy = jid.split("@")[0]
