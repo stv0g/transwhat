@@ -30,7 +30,6 @@ from PIL import Image
 import sys
 import os
 
-from yowsup.common.tools import TimeTools
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
@@ -497,25 +496,20 @@ class Session(YowsupApp):
 
 		buddy.presence = _type
 
-		timestamp = time.localtime(buddy.lastseen)
-                statusmsg = buddy.statusMsg + time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
-
 		if _type == "unavailable":
-			self.onPresenceUnavailable(buddy, statusmsg)
+			self.onPresenceUnavailable(buddy)
 		else:
-			self.onPresenceAvailable(buddy, statusmsg)
+			self.onPresenceAvailable(buddy)
 
 
 
-	def onPresenceAvailable(self, buddy, statusmsg):
+	def onPresenceAvailable(self, buddy):
 		self.logger.info("Is available: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number,
-				buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE, statusmsg, buddy.image_hash)
+		self.buddies.updateSpectrum(buddy)
 
-	def onPresenceUnavailable(self, buddy, statusmsg):
+	def onPresenceUnavailable(self, buddy):
 		self.logger.info("Is unavailable: %s", buddy)
-		self.backend.handleBuddyChanged(self.user, buddy.number,
-				buddy.nick, buddy.groups, protocol_pb2.STATUS_AWAY, statusmsg, buddy.image_hash)
+		self.buddies.updateSpectrum(buddy)
 
 	# spectrum RequestMethods
 	def sendTypingStarted(self, buddy):

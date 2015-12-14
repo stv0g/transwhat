@@ -24,6 +24,7 @@ __email__ = "post@steffenvogel.de"
 from Spectrum2 import protocol_pb2
 
 import logging
+import time
 
 
 class Buddy():
@@ -74,6 +75,7 @@ class BuddyList(dict):
 #		new = self.buddies.keys()
 #		contacts = new
 		contacts = self.keys()
+		contacts.remove('bot')
 
 		if self.synced == False:
 			self.session.sendSync(contacts, delta = False, interactive = True)
@@ -93,11 +95,19 @@ class BuddyList(dict):
 #
 		for number in contacts:
 			buddy = self[number]
-			if number != 'bot':
-				self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-					buddy.groups, protocol_pb2.STATUS_NONE,
-					iconHash = buddy.image_hash if buddy.image_hash is not None else "")
-				self.session.subscribePresence(number)
+			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
+				buddy.groups, protocol_pb2.STATUS_NONE,
+				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+			self.session.subscribePresence(number)
+		self.logger.debug("%s is requesting statuses of: %s", self.user, contacts)
+		self.session.requestStatuses(contacts, success = self.onStatus)
+
+	def onStatus(self, contacts):
+		self.logger.debug("%s received statuses of: %s", self.user, contacts)
+		for number, (status, time) in contacts.iteritems():
+			buddy = self[number]
+			buddy.statusMsg = status
+			self.updateSpectrum(buddy)
 
 
 	def load(self, buddies):
@@ -113,21 +123,31 @@ class BuddyList(dict):
 		else:
 			self.session.sendSync([number], delta = True, interactive = True)
 			self.session.subscribePresence(number)
+			self.session.requestStatuses(contacts, success = self.onStatus)
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
 			self[number] = buddy
 			self.logger.debug("Roster add: %s", buddy)
 
+		self.updateSpectrum(buddy)
+		return buddy
+
+	def updateSpectrum(self, buddy):
 		if buddy.presence == 0:
 			status = protocol_pb2.STATUS_NONE
 		elif buddy.presence == 'unavailable':
 			status = protocol_pb2.STATUS_AWAY
 		else:
 			status = protocol_pb2.STATUS_ONLINE
-		self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-			buddy.groups, status,
+
+		statusmsg = buddy.statusMsg
+		if buddy.lastseen != 0:
+			timestamp = time.localtime(buddy.lastseen)
+			statusmsg += time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
+
+		self.backend.handleBuddyChanged(self.user, buddy.number, buddy.nick,
+			buddy.groups, status, statusMessage = statusmsg,
 			iconHash = buddy.image_hash if buddy.image_hash is not None else "")
 
-		return buddy
 
 	def remove(self, number):
 		try:

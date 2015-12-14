@@ -65,6 +65,7 @@ class YowsupApp(object):
 					YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
 					YowPresenceProtocolLayer)),
+				YowLoggerLayer,
 				YowAxolotlLayer,
 				YowCoderLayer,
 				YowCryptLayer,
@@ -291,6 +292,27 @@ class YowsupApp(object):
 		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
 		iq = GetSyncIqProtocolEntity(contacts, mode, context)
 		self.sendIq(iq)
+	
+	def requestStatuses(self, contacts, success = None, failure = None):
+		"""
+		Request the statuses of a number of users.
+
+		Args:
+			- contacts: ([str]) the phone numbers of users whose statuses you
+				wish to request
+			- success: (func) called when request is successful
+			- failure: (func) called when request has failed
+		"""
+		iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
+		def onSuccess(response, request):
+			self.logger.debug("Received Statuses %s", response)
+			s = {}
+			for k, v in response.statuses.iteritems():
+				s[k.split('@')[0]] = v
+			success(s)
+
+		self.sendIq(iq, onSuccess = onSuccess, onError = failure)
+
 
 	def requestLastSeen(self, phoneNumber, success = None, failure = None):
 		"""
