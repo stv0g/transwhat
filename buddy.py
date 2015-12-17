@@ -123,7 +123,7 @@ class BuddyList(dict):
 		else:
 			self.session.sendSync([number], delta = True, interactive = True)
 			self.session.subscribePresence(number)
-			self.session.requestStatuses(contacts, success = self.onStatus)
+			self.session.requestStatuses([number], success = self.onStatus)
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
 			self[number] = buddy
 			self.logger.debug("Roster add: %s", buddy)
