@@ -76,7 +76,12 @@ io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
 plugin = WhatsAppBackend(io, args.j)
 
-plugin.handleBackendConfig('features', 'send_buddies_on_login', 1)
+plugin.handleBackendConfig({
+	'features': [
+		('send_buddies_on_login', 1),
+		('muc', 'true'),
+	],
+})
 
 while True:
 	try:
