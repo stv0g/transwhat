@@ -259,7 +259,20 @@ class YowsupApp(object):
 		"""
 		iq = SetStatusIqProtocolEntity(statusText)
 		self.sendIq(iq)
-	
+
+	def setProfilePicture(self, previewPicture, fullPicture = None):
+		"""
+		Requests profile picture of whatsapp user
+		Args:
+			- previewPicture: (bytes) The preview picture
+			- fullPicture: (bytes) The full profile picture
+		"""
+		if fullPicture == None:
+			fullPicture = previewPicture
+		ownJid = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full = True)
+		iq = SetPictureIqProtocolEntity(ownJid, previewPicture, fullPicture)
+		self.sendIq(iq)
+
 	def sendTyping(self, phoneNumber, typing):
 		"""
 		Notify buddy using phoneNumber that you are typing to him

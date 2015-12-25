@@ -142,3 +142,6 @@ class RegisterSession(YowsupApp):
 
 	def requestVCard(self, buddy, ID):
 		pass
+
+	def setProfilePicture(self, previewPicture, fullPicture = None):
+		pass
