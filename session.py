@@ -730,11 +730,16 @@ class Session(YowsupApp):
 			self.logger.debug('Image hash is %s', image_hash)
 			if ID != None:
 				self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
-			obuddy = self.buddies[buddy]
-			self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
+			if not (buddy == self.user or buddy == self.user.split('@')[0]):
+				obuddy = self.buddies[buddy]
+				self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
 
-		self.logger.debug('Requesting profile picture of %s', buddy)
-		self.requestProfilePicture(buddy, onSuccess = onSuccess)
+		if buddy == self.user or buddy == self.user.split('@')[0]:
+			newbuddy = self.legacyName
+		else:
+			newbuddy = buddy
+		self.logger.debug('Requesting profile picture of %s', newbuddy)
+		self.requestProfilePicture(newbuddy, onSuccess = onSuccess)
 
 	def onDlsuccess(self, path):
                 self.logger.info("Success: Image downloaded to %s", path)
