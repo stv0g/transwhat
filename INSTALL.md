@@ -63,6 +63,9 @@ Create a new file `/etc/spectrum2/transports/whatsapp.cfg` with the following co
     [logging]
     config = /etc/spectrum2/logging.cfg
     backend_config = /etc/spectrum2/backend-logging.cfg
+    
+    [database]
+    type = sqlite3
 
 ## transWhat
 
