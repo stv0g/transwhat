@@ -28,7 +28,6 @@ The bot is one of the contacts every user has in its contact list. It offers you
 | ------------ | --------------- |
 | `\help`      | show this message |
 | `\prune`     | clear your buddylist |
-| `\sync`      | sync your imported contacts with WhatsApp |
 | `\lastseen`  | request last online timestamp from buddy |
 | `\leave`     | permanently leave group chat |
 | `\groups`    | print all attended groups |
