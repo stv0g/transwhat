@@ -1,10 +1,10 @@
-__author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2015, Steffen Vogel"
-__license__ = "GPLv3"
-__maintainer__ = "Steffen Vogel"
-__email__ = "post@steffenvogel.de"
+__author__ = u"Steffen Vogel"
+__copyright__ = u"Copyright 2015, Steffen Vogel"
+__license__ = u"GPLv3"
+__maintainer__ = u"Steffen Vogel"
+__email__ = u"post@steffenvogel.de"
 
-"""
+u"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -33,7 +33,7 @@ class Buddy():
 		self.owner = owner
 		self.number = number
 		self.groups = groups
-		self.image_hash = image_hash if image_hash is not None else ""
+		self.image_hash = image_hash if image_hash is not None else u""
 		self.statusMsg = u""
 		self.lastseen = 0
 		self.presence = 0
@@ -46,7 +46,7 @@ class Buddy():
 			self.image_hash = image_hash
 
 	def __str__(self):
-		return "%s (nick=%s)" % (self.number, self.nick)
+		return u"%s (nick=%s)" % (self.number, self.nick)
 
 class BuddyList(dict):
 
@@ -62,20 +62,20 @@ class BuddyList(dict):
 		for buddy in buddies:
 			number = buddy.buddyName
 			nick = buddy.alias
-			statusMsg = buddy.statusMessage.decode('utf-8')
+			statusMsg = buddy.statusMessage.decode(u'utf-8')
 			groups = [g for g in buddy.group]
 			image_hash = buddy.iconHash
 			self[number] = Buddy(self.owner, number, nick, statusMsg,
 					groups, image_hash)
 
-		self.logger.debug("Update roster")
+		self.logger.debug(u"Update roster")
 
 #		old = self.buddies.keys()
 #		self.buddies.load()
 #		new = self.buddies.keys()
 #		contacts = new
 		contacts = self.keys()
-		contacts.remove('bot')
+		contacts.remove(u'bot')
 
 		if self.synced == False:
 			self.session.sendSync(contacts, delta = False, interactive = True)
@@ -84,11 +84,11 @@ class BuddyList(dict):
 #		add = set(new) - set(old)
 #		remove = set(old) - set(new)
 
-#		self.logger.debug("Roster remove: %s", str(list(remove)))
-		self.logger.debug("Roster add: %s", str(list(contacts)))
+#		self.logger.debug(u"Roster remove: %s", str(list(remove)))
+		self.logger.debug(u"Roster add: %s", str(list(contacts)))
 
 #		for number in remove:
-#			self.backend.handleBuddyChanged(self.user, number, "", [],
+#			self.backend.handleBuddyChanged(self.user, number, u"", [],
 #											protocol_pb2.STATUS_NONE)
 #			self.backend.handleBuddyRemoved(self.user, number)
 #			self.unsubscribePresence(number)
@@ -97,16 +97,16 @@ class BuddyList(dict):
 			buddy = self[number]
 			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
 				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+				iconHash = buddy.image_hash if buddy.image_hash is not None else u"")
 			self.session.subscribePresence(number)
-		self.logger.debug("%s is requesting statuses of: %s", self.user, contacts)
+		self.logger.debug(u"%s is requesting statuses of: %s", self.user, contacts)
 		self.session.requestStatuses(contacts, success = self.onStatus)
 
 	def onStatus(self, contacts):
-		self.logger.debug("%s received statuses of: %s", self.user, contacts)
+		self.logger.debug(u"%s received statuses of: %s", self.user, contacts)
 		for number, (status, time) in contacts.iteritems():
 			buddy = self[number]
-			buddy.statusMsg = status.decode('utf-8')
+			buddy.statusMsg = status.decode(u'utf-8')
 			self.updateSpectrum(buddy)
 
 
@@ -124,9 +124,9 @@ class BuddyList(dict):
 			self.session.sendSync([number], delta = True, interactive = True)
 			self.session.subscribePresence(number)
 			self.session.requestStatuses([number], success = self.onStatus)
-			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
+			buddy = Buddy(self.owner, number, nick, u"",  groups, image_hash)
 			self[number] = buddy
-			self.logger.debug("Roster add: %s", buddy)
+			self.logger.debug(u"Roster add: %s", buddy)
 
 		self.updateSpectrum(buddy)
 		return buddy
@@ -134,7 +134,7 @@ class BuddyList(dict):
 	def updateSpectrum(self, buddy):
 		if buddy.presence == 0:
 			status = protocol_pb2.STATUS_NONE
-		elif buddy.presence == 'unavailable':
+		elif buddy.presence == u'unavailable':
 			status = protocol_pb2.STATUS_AWAY
 		else:
 			status = protocol_pb2.STATUS_ONLINE
@@ -142,18 +142,18 @@ class BuddyList(dict):
 		statusmsg = buddy.statusMsg
 		if buddy.lastseen != 0:
 			timestamp = time.localtime(buddy.lastseen)
-			statusmsg += time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
+			statusmsg += time.strftime(u"\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
 
 		self.backend.handleBuddyChanged(self.user, buddy.number, buddy.nick,
 			buddy.groups, status, statusMessage = statusmsg,
-			iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+			iconHash = buddy.image_hash if buddy.image_hash is not None else u"")
 
 
 	def remove(self, number):
 		try:
 			buddy = self[number]
 			del self[number]
-			self.backend.handleBuddyChanged(self.user, number, "", [],
+			self.backend.handleBuddyChanged(self.user, number, u"", [],
 											protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
 			self.session.unsubscribePresence(number)

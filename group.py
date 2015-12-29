@@ -1,10 +1,10 @@
-__author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2015, Steffen Vogel"
-__license__ = "GPLv3"
-__maintainer__ = "Steffen Vogel"
-__email__ = "post@steffenvogel.de"
+__author__ = u"Steffen Vogel"
+__copyright__ = u"Copyright 2015, Steffen Vogel"
+__license__ = u"GPLv3"
+__maintainer__ = u"Steffen Vogel"
+__email__ = u"post@steffenvogel.de"
 
-"""
+u"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -34,12 +34,12 @@ class Group():
 		self.backend = backend
 		self.user = user
 
-		self.nick = "me"
+		self.nick = u"me"
 		# Participants is a number -> nickname dict
 		self.participants = {}
 
 	def addParticipants(self, participants, buddies, yourNumber):
-		"""
+		u"""
 		Adds participants to the group.
 
 		Args:
@@ -48,14 +48,14 @@ class Group():
 			- yourNumber: The number you are using
 		"""
 		for jid in participants:
-			number = jid.split('@')[0]
+			number = jid.split(u'@')[0]
 			try:
 				nick = buddies[number].nick
 			except KeyError:
 				nick = number
 			if number == yourNumber:
 				nick = self.nick
-			if nick == "":
+			if nick == u"":
 				nick = number
 			self.participants[number] = nick
 
@@ -72,7 +72,7 @@ class Group():
 
 	def removeParticipants(self, participants):
 		for jid in participants:
-			number = jid.split('@')[0]
+			number = jid.split(u'@')[0]
 			nick = self.participants[number]
 			flags = protocol_pb2.PARTICIPANT_FLAG_NONE
 			self._updateParticipant(number, flags, protocol_pb2.STATUS_NONE)
@@ -88,7 +88,7 @@ class Group():
 		self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE, new_nick)
 		self.participants[number] = new_nick
 
-	def _updateParticipant(self, number, flags, status, newNick = ""):
+	def _updateParticipant(self, number, flags, status, newNick = u""):
 		nick = self.participants[number]
 		# Notice the status message is the buddy's number
 		if self.joined:
