@@ -280,7 +280,7 @@ class Session(YowsupApp):
 		if participant is not None: # Group message
 			partname = participant.split(u'@')[0]
 			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
-										timestamp)
+										timestamp, participant)
 		else:
 			self.sendMessageToXMPP(buddy, messageContent, timestamp)
 		# isBroadcast always returns false, Iu'm not sure how to get a broadcast
@@ -636,7 +636,7 @@ class Session(YowsupApp):
 			self.backend.handleMessage(self.user, buddy, messageContent, u"",
 					u"", timestamp)
 
-	def sendGroupMessageToXMPP(self, room, number, messageContent, timestamp = u""):
+	def sendGroupMessageToXMPP(self, room, number, messageContent, timestamp = u"", defaultname = u""):
 		if timestamp:
 			timestamp = time.strftime(u"%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
@@ -657,6 +657,8 @@ class Session(YowsupApp):
 				group = self.groups[room]
 				# Update nickname
 				try:
+					if defaultname != u"" and group.participants[number].nick == number:
+						group.changeNick(number, defaultname)
 					if self.buddies[number].nick != u"":
 						group.changeNick(number, self.buddies[number].nick)
 				except KeyError:
