@@ -25,6 +25,7 @@ from Spectrum2 import protocol_pb2
 
 import logging
 import time
+import utils
 
 
 class Buddy():
@@ -106,7 +107,10 @@ class BuddyList(dict):
 		self.logger.debug(u"%s received statuses of: %s", self.user, contacts)
 		for number, (status, time) in contacts.iteritems():
 			buddy = self[number]
-			buddy.statusMsg = status.decode(u'utf-8')
+			if status is None:
+				buddy.statusMessage = ""
+			else:
+				buddy.statusMsg = utils.softToUni(status)
 			self.updateSpectrum(buddy)
 
 
