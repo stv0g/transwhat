@@ -1,10 +1,10 @@
-__author__ = u"Steffen Vogel"
-__copyright__ = u"Copyright 2015, Steffen Vogel"
-__license__ = u"GPLv3"
-__maintainer__ = u"Steffen Vogel"
-__email__ = u"post@steffenvogel.de"
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
 
-u"""
+"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -30,30 +30,30 @@ import os
 import utils
 
 class Bot():
-	def __init__(self, session, name = u"Bot"):
+	def __init__(self, session, name = "Bot"):
 		self.session = session
 		self.name = name
 
 		self.commands = {
-			u"help": self._help,
-			u"prune": self._prune,
-            u"groups": self._groups,
-			u"getgroups": self._getgroups
+			"help": self._help,
+			"prune": self._prune,
+            "groups": self._groups,
+			"getgroups": self._getgroups
 		}
 
 	def parse(self, message):
-		args = message.split(u" ")
+		args = message.split(" ")
 		cmd = args.pop(0)
 
-		if cmd[0] == u'\\':
+		if cmd[0] == '\\':
 			try:
 				self.call(cmd[1:], args)
 			except KeyError:
-				self.send(u"invalid command")
+				self.send("invalid command")
 			except TypeError:
-				self.send(u"invalid syntax")
+				self.send("invalid syntax")
 		else:
-			self.send(u"a valid command starts with a backslash")
+			self.send("a valid command starts with a backslash")
 
 	def call(self, cmd, args = []):
 		func = self.commands[cmd]
@@ -71,7 +71,7 @@ class Bot():
 
 	# commands
 	def _help(self):
-		self.send(u"""following bot commands are available:
+		self.send("""following bot commands are available:
 \\help			show this message
 \\prune			clear your buddylist
 
@@ -86,7 +86,7 @@ following group commands are available
 	def _prune(self):
 		self.session.buddies.prune()
 		self.session.updateRoster()
-		self.send(u"buddy list cleared")
+		self.send("buddy list cleared")
 
 	def _groups(self):
 		for group in self.session.groups:
@@ -96,9 +96,9 @@ following group commands are available
                         except KeyError:
                            nick = buddy
 
-			self.send(self.session.groups[group].id + u"@" + self.session.backend.spectrum_jid + u" " + self.session.groups[group].subject + u" Owner: " + nick )
+			self.send(self.session.groups[group].id + "@" + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
 
 	def _getgroups(self):
-		#self.session.call(u"group_getGroups", (u"participating",))
+		#self.session.call("group_getGroups", ("participating",))
 		self.session.requestGroupsList(self.session._updateGroups)
 

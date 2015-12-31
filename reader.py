@@ -1,10 +1,10 @@
-__author__ = u"Steffen Vogel"
-__copyright__ = u"Copyright 2015, Steffen Vogel"
-__license__ = u"GPLv3"
-__maintainer__ = u"Steffen Vogel"
-__email__ = u"post@steffenvogel.de"
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
 
-u"""
+"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -24,19 +24,19 @@ u"""
 import time
 
 def get_token(number, timeout = 30):
-	file = open(u'tokens')
+	file = open('tokens')
 	file.seek(-1, 2)
 
 	count = 0
 	while count < timeout:
 		line = file.readline()
 
-		if line in  [u"", u"\n"]:
+		if line in  ["", "\n"]:
 			time.sleep(1)
 			count += 1
 			continue
 		else:
-			t, n, tk = line[:-1].split(u"\t")
+			t, n, tk = line[:-1].split("\t")
 
 			if (n == number):
 				file.close()
@@ -45,4 +45,4 @@ def get_token(number, timeout = 30):
 	file.close()
 
 
-print get_token(u"4917696978528")
+print get_token("4917696978528")

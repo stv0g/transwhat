@@ -1,10 +1,10 @@
-__author__ = u"Steffen Vogel"
-__copyright__ = u"Copyright 2015, Steffen Vogel"
-__license__ = u"GPLv3"
-__maintainer__ = u"Steffen Vogel"
-__email__ = u"post@steffenvogel.de"
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
 
-u"""
+"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -24,10 +24,9 @@ u"""
 import e4u
 import base64
 import hashlib
-import base64
 
 def ago(secs):
-	periods = [u"second", u"minute", u"hour", u"day", u"week", u"month", u"year", u"decade"]
+	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
 	lengths = [60, 60, 24, 7,4.35, 12, 10]
 
 	j = 0
@@ -39,16 +38,16 @@ def ago(secs):
 		j += 1
 
 	period = periods[j]
-	if diff > 1: period += u"s"
+	if diff > 1: period += "s"
 
-	return u"%d %s ago" % (diff, period)
+	return "%d %s ago" % (diff, period)
 
 def softToUni(message):
-	message = message.decode(u"utf-8")
+	message = message.decode("utf-8")
 	return e4u.translate(message, reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
 
 def decodePassword(password):
-	return base64.b64decode(bytes(password.encode(u"utf-8")))
+	return base64.b64decode(bytes(password.encode("utf-8")))
 
 def sha1hash(data):
-    return base64.b64encode(hashlib.sha1(data).digest())
+    return hashlib.sha1(data).hexdigest()

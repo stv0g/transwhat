@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-__author__ = u"Steffen Vogel"
-__copyright__ = u"Copyright 2015, Steffen Vogel"
-__license__ = u"GPLv3"
-__maintainer__ = u"Steffen Vogel"
-__email__ = u"post@steffenvogel.de"
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
 
-u"""
+"""
  This file is part of transWhat
 
  transWhat is free software: you can redistribute it and/or modify
@@ -42,21 +42,21 @@ from yowsup.stacks import YowStack
 
 # Arguments
 parser = argparse.ArgumentParser()
-parser.add_argument(u'--debug', action=u'store_true')
-parser.add_argument(u'--host', type=str, required=True)
-parser.add_argument(u'--port', type=int, required=True)
-parser.add_argument(u'--service.backend_id', metavar=u"ID", type=int, required=True)
-parser.add_argument(u'config', type=str)
-parser.add_argument(u'-j', type=str, required=True)
+parser.add_argument('--debug', action='store_true')
+parser.add_argument('--host', type=str, required=True)
+parser.add_argument('--port', type=int, required=True)
+parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
+parser.add_argument('config', type=str)
+parser.add_argument('-j', type=str, required=True)
 
 args, unknown = parser.parse_known_args()
 
-YowConstants.PATH_STORAGE=u'/var/lib/spectrum2/' + args.j
-loggingfile = u'/var/log/spectrum2/' + args.j + u'/backends/backend.log'
+YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
+loggingfile = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
 # Logging
 logging.basicConfig( \
 	filename=loggingfile,\
-	format = u"%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
+	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
 	level = logging.DEBUG if args.debug else logging.INFO \
 )
 
@@ -77,9 +77,9 @@ io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 plugin = WhatsAppBackend(io, args.j)
 
 plugin.handleBackendConfig({
-	u'features': [
-		(u'send_buddies_on_login', 1),
-		(u'muc', u'true'),
+	'features': [
+		('send_buddies_on_login', 1),
+		('muc', 'true'),
 	],
 })
 
@@ -87,7 +87,7 @@ while True:
 	try:
 		asyncore.loop(timeout=1.0, count=10, use_poll = True)
 		try:
-			callback = YowStack._YowStack__detachedQueue.get(False) #doesnu't block
+			callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
 			callback()
 		except Queue.Empty:
 			pass
