@@ -108,7 +108,7 @@ class BuddyList(dict):
 		for number, (status, time) in contacts.iteritems():
 			buddy = self[number]
 			if status is None:
-				buddy.statusMessage = ""
+				buddy.statusMsg = ""
 			else:
 				buddy.statusMsg = utils.softToUni(status)
 			self.updateSpectrum(buddy)
