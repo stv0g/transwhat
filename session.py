@@ -39,7 +39,9 @@ from buddy import BuddyList
 from threading import Timer
 from group import Group
 from bot import Bot
+import deferred
 from yowsupwrapper import YowsupApp
+from functools import partial
 
 
 class MsgIDs:
@@ -723,23 +725,34 @@ class Session(YowsupApp):
 			self.buddies.remove(buddy)
 
 	def requestVCard(self, buddy, ID=None):
-		def onSuccess(response, request):
-			self.logger.debug('Sending VCard (%s) with image id %s',
-					ID, response.pictureId)
-			image_hash = utils.sha1hash(response.pictureData)
-			self.logger.debug('Image hash is %s', image_hash)
-			if ID != None:
-				self.backend.handleVCard(self.user, ID, buddy, "", "", response.pictureData)
-			if not (buddy == self.user or buddy == self.user.split('@')[0]):
-				obuddy = self.buddies[buddy]
-				self.updateBuddy(buddy, obuddy.nick, obuddy.groups, image_hash)
-
 		if buddy == self.user or buddy == self.user.split('@')[0]:
-			newbuddy = self.legacyName
-		else:
-			newbuddy = buddy
-		self.logger.debug('Requesting profile picture of %s', newbuddy)
-		self.requestProfilePicture(newbuddy, onSuccess = onSuccess)
+			buddy = self.legacyName
+
+		# Get profile picture
+		self.logger.debug('Requesting profile picture of %s', buddy)
+		response = deferred.Deferred()
+		self.requestProfilePicture(buddy, onSuccess = response.run)
+		response = response.arg(0)
+
+		# Send VCard
+		if ID != None:
+			response.pictureId().then(partial(
+				self.logger.debug, 'Sending VCard (%s) with image id %s', ID
+			))
+			pictureData = response.pictureData()
+			response.pictureData().then(partial(
+				self.backend.handleVCard, self.user, ID, buddy, "", ""
+			))
+
+		# Send image hash
+		if not buddy == self.legacyName:
+			obuddy = self.buddies[buddy]
+			image_hash = pictureData.then(utils.sha1hash)
+			image_hash.then(partial(self.logger.debug, 'Image hash is %s'))
+			image_hash.then(partial(
+				self.updateBuddy, buddy, obuddy.nick, obuddy.groups
+			))
+
 
 	def onDlsuccess(self, path):
                 self.logger.info("Success: Image downloaded to %s", path)
