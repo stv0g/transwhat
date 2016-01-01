@@ -25,6 +25,7 @@ from Spectrum2 import protocol_pb2
 
 import logging
 import time
+import utils
 
 
 class Buddy():
@@ -34,7 +35,7 @@ class Buddy():
 		self.number = number
 		self.groups = groups
 		self.image_hash = image_hash if image_hash is not None else ""
-		self.statusMsg = ""
+		self.statusMsg = u""
 		self.lastseen = 0
 		self.presence = 0
 
@@ -62,7 +63,7 @@ class BuddyList(dict):
 		for buddy in buddies:
 			number = buddy.buddyName
 			nick = buddy.alias
-			statusMsg = buddy.statusMessage
+			statusMsg = buddy.statusMessage.decode('utf-8')
 			groups = [g for g in buddy.group]
 			image_hash = buddy.iconHash
 			self[number] = Buddy(self.owner, number, nick, statusMsg,
@@ -106,7 +107,10 @@ class BuddyList(dict):
 		self.logger.debug("%s received statuses of: %s", self.user, contacts)
 		for number, (status, time) in contacts.iteritems():
 			buddy = self[number]
-			buddy.statusMsg = status
+			if status is None:
+				buddy.statusMsg = ""
+			else:
+				buddy.statusMsg = utils.softToUni(status)
 			self.updateSpectrum(buddy)
 
 
