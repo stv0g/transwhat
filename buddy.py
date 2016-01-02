@@ -26,6 +26,10 @@ from Spectrum2 import protocol_pb2
 import logging
 import time
 import utils
+import base64
+
+import deferred
+from deferred import call
 
 
 class Buddy():
@@ -38,7 +42,6 @@ class Buddy():
 		self.statusMsg = u""
 		self.lastseen = 0
 		self.presence = 0
-
 
 	def update(self, nick, groups, image_hash):
 		self.nick = nick
@@ -71,10 +74,6 @@ class BuddyList(dict):
 
 		self.logger.debug("Update roster")
 
-#		old = self.buddies.keys()
-#		self.buddies.load()
-#		new = self.buddies.keys()
-#		contacts = new
 		contacts = self.keys()
 		contacts.remove('bot')
 
@@ -82,18 +81,8 @@ class BuddyList(dict):
 			self.session.sendSync(contacts, delta = False, interactive = True)
 			self.synced = True
 
-#		add = set(new) - set(old)
-#		remove = set(old) - set(new)
-
-#		self.logger.debug("Roster remove: %s", str(list(remove)))
 		self.logger.debug("Roster add: %s", str(list(contacts)))
 
-#		for number in remove:
-#			self.backend.handleBuddyChanged(self.user, number, "", [],
-#											protocol_pb2.STATUS_NONE)
-#			self.backend.handleBuddyRemoved(self.user, number)
-#			self.unsubscribePresence(number)
-#
 		for number in contacts:
 			buddy = self[number]
 			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
@@ -125,13 +114,14 @@ class BuddyList(dict):
 			buddy = self[number]
 			buddy.update(nick, groups, image_hash)
 		else:
-			self.session.sendSync([number], delta = True, interactive = True)
-			self.session.subscribePresence(number)
-			self.session.requestStatuses([number], success = self.onStatus)
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
 			self[number] = buddy
 			self.logger.debug("Roster add: %s", buddy)
-
+			self.session.sendSync([number], delta = True, interactive = True)
+			self.session.subscribePresence(number)
+			self.session.requestStatuses([number], success = self.onStatus)
+			if image_hash == "" or image_hash is None:
+				self.requestVCard(number)
 		self.updateSpectrum(buddy)
 		return buddy
 
@@ -148,9 +138,13 @@ class BuddyList(dict):
 			timestamp = time.localtime(buddy.lastseen)
 			statusmsg += time.strftime("\n Last seen: %a, %d %b %Y %H:%M:%S", timestamp)
 
+		iconHash = buddy.image_hash if buddy.image_hash is not None else ""
+
+		self.logger.debug("Updating buddy %s (%s) in %s, image_hash = %s",
+				buddy.nick, buddy.number, buddy.groups, iconHash)
+		self.logger.debug("Status Message: %s", statusmsg)
 		self.backend.handleBuddyChanged(self.user, buddy.number, buddy.nick,
-			buddy.groups, status, statusMessage = statusmsg,
-			iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+			buddy.groups, status, statusMessage=statusmsg, iconHash=iconHash)
 
 
 	def remove(self, number):
@@ -165,3 +159,34 @@ class BuddyList(dict):
 			return buddy
 		except KeyError:
 			return None
+
+	def requestVCard(self, buddy, ID=None):
+		if buddy == self.user or buddy == self.user.split('@')[0]:
+			buddy = self.session.legacyName
+
+		# Get profile picture
+		self.logger.debug('Requesting profile picture of %s', buddy)
+		response = deferred.Deferred()
+		self.session.requestProfilePicture(buddy, onSuccess = response.run)
+		response = response.arg(0)
+
+		pictureData = response.pictureData()
+		# Send VCard
+		if ID != None:
+			call(self.logger.debug, 'Sending VCard (%s) with image id %s: %s',
+					ID, response.pictureId(), pictureData.then(base64.b64encode))
+			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
+					pictureData)
+
+		# Send image hash
+		if not buddy == self.session.legacyName:
+			try:
+				obuddy = self[buddy]
+				nick = obuddy.nick
+				groups = obuddy.groups
+			except KeyError:
+				nick = ""
+				groups = []
+			image_hash = pictureData.then(utils.sha1hash)
+			call(self.logger.debug, 'Image hash is %s', image_hash)
+			call(self.update, buddy, nick, groups, image_hash)

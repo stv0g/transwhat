@@ -725,30 +725,7 @@ class Session(YowsupApp):
 			self.buddies.remove(buddy)
 
 	def requestVCard(self, buddy, ID=None):
-		if buddy == self.user or buddy == self.user.split('@')[0]:
-			buddy = self.legacyName
-
-		# Get profile picture
-		self.logger.debug('Requesting profile picture of %s', buddy)
-		response = deferred.Deferred()
-		self.requestProfilePicture(buddy, onSuccess = response.run)
-		response = response.arg(0)
-
-		# Send VCard
-		if ID != None:
-			call(self.logger.debug, 'Sending VCard (%s) with image id %s',
-					ID, response.pictureId())
-			pictureData = response.pictureData()
-			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
-					response.pictureData())
-
-		# Send image hash
-		if not buddy == self.legacyName:
-			obuddy = self.buddies[buddy]
-			image_hash = pictureData.then(utils.sha1hash)
-			call(self.logger.debug, 'Image hash is %s', image_hash)
-			call(self.updateBuddy, buddy, obuddy.nick, obuddy.groups, image_hash)
-
+		self.buddies.requestVCard(buddy, ID)
 
 	def onDlsuccess(self, path):
                 self.logger.info("Success: Image downloaded to %s", path)
