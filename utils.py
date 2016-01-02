@@ -24,7 +24,6 @@ __email__ = "post@steffenvogel.de"
 import e4u
 import base64
 import hashlib
-import base64
 
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
@@ -51,4 +50,4 @@ def decodePassword(password):
 	return base64.b64decode(bytes(password.encode("utf-8")))
 
 def sha1hash(data):
-    return base64.b64encode(hashlib.sha1(data).digest())
+    return hashlib.sha1(data).hexdigest()
