@@ -40,8 +40,8 @@ from threading import Timer
 from group import Group
 from bot import Bot
 import deferred
+from deferred import call
 from yowsupwrapper import YowsupApp
-from functools import partial
 
 
 class MsgIDs:
@@ -736,22 +736,18 @@ class Session(YowsupApp):
 
 		# Send VCard
 		if ID != None:
-			response.pictureId().then(partial(
-				self.logger.debug, 'Sending VCard (%s) with image id %s', ID
-			))
+			call(self.logger.debug, 'Sending VCard (%s) with image id %s',
+					ID, response.pictureId())
 			pictureData = response.pictureData()
-			response.pictureData().then(partial(
-				self.backend.handleVCard, self.user, ID, buddy, "", ""
-			))
+			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
+					response.pictureData())
 
 		# Send image hash
 		if not buddy == self.legacyName:
 			obuddy = self.buddies[buddy]
 			image_hash = pictureData.then(utils.sha1hash)
-			image_hash.then(partial(self.logger.debug, 'Image hash is %s'))
-			image_hash.then(partial(
-				self.updateBuddy, buddy, obuddy.nick, obuddy.groups
-			))
+			call(self.logger.debug, 'Image hash is %s', image_hash)
+			call(self.updateBuddy, buddy, obuddy.nick, obuddy.groups, image_hash)
 
 
 	def onDlsuccess(self, path):

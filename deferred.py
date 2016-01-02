@@ -1,3 +1,5 @@
+from functools import partial
+
 class Deferred(object):
 	"""
 	Represents a delayed computation. This is a more elegant way to deal with
@@ -8,7 +10,8 @@ class Deferred(object):
 	value by using the then method. Computations dependent on the Deferred will
 	only proceed when the run method is called.
 
-	Attributes of a Deferred can be accessed directly as methods.
+	Attributes of a Deferred can be accessed directly as methods. The result of
+	calling these functions will be Deferred.
 
 	Example:
 		image = Deferred()
@@ -91,6 +94,39 @@ class Then(object):
 			func = (lambda x: tryCall(getattr(x, name), *args, **kwargs))
 			return self.deferred.then(func)
 		return helper
+
+def call(func, *args, **kwargs):
+	"""
+	Call a function with deferred arguments
+
+	Example:
+		colors = Deferred()
+		colors.append('blue')
+		colors.run(['red', 'green'])
+call(print, colors) #=> ['red', 'green', 'blue']
+		call(print, 'hi', colors) #=> hi ['red', 'green', 'blue']
+	"""
+	for i, c in enumerate(args):
+		if isinstance(c, Deferred):
+			# Function without deferred arguments
+			normalfunc = partial(func, *args[:i])
+			# Function with deferred and possibly deferred arguments
+			def restfunc(*arg2, **kwarg2):
+				apply_deferred = partial(normalfunc, *arg2, **kwarg2)
+				return call(apply_deferred, *args[i + 1:], **kwargs)
+			return c.then(restfunc)
+	items = kwargs.items()
+	for i, (k, v) in enumerate(items):
+		if isinstance(v, Deferred):
+			# Function without deferred arguments
+			normalfunc = partial(func, *args, **dict(items[:i]))
+			# Function with deferred and possibly deferred arguments
+			def restfunc2(*arg2, **kwarg2):
+				apply_deferred = partial(normalfunc, *arg2, **kwarg2)
+				return call(apply_deferred, **dict(items[i + 1:]))
+			return c.then(restfunc2)
+	# No items deferred
+	return func(*args, **kwargs)
 
 class DeferredHasValue(Exception):
 	def __init__(self, string):
