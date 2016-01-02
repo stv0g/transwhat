@@ -62,7 +62,13 @@ logging.basicConfig( \
 
 # Handler
 def handleTransportData(data):
-	plugin.handleDataRead(data)
+	try:
+		plugin.handleDataRead(data)
+	except SystemExit as e:
+		raise e
+	except:
+		logger = logging.getLogger('transwhat')
+		logger.error(traceback.format_exc())
 
 e4u.load()
 

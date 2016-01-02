@@ -262,7 +262,6 @@ class SpectrumBackend:
 
 	def handleConvMessagePayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
-		self.logger.error("handleConvMessagePayload")
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return

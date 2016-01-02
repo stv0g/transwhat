@@ -434,10 +434,12 @@ class Session(YowsupApp):
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
 		buddy = jid.split("@")[0]
-                try:
-                        buddy = self.buddies[buddy]
+		try:
+			buddy = self.buddies[buddy]
 		except KeyError:
-                        self.logger.error("Buddy not found: %s", buddy)
+			# Sometimes whatsapp send our own presence
+			if buddy != self.legacyName:
+				self.logger.error("Buddy not found: %s", buddy)
 			return
 
 		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
