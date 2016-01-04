@@ -248,16 +248,13 @@ class Session(YowsupApp):
 					type, participant, offline, items]))
 		)
 		try:
-			buddy = self.buddies[_from.split('@')[0]]
-			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
-			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-			self.backend.handleMessageAck(self.user, buddy.number, self.msgIDs[_id].xmppId)
-                        self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
-                        if self.msgIDs[_id].cnt == 2:
-                                del self.msgIDs[_id]
-
+			number = _from.split('@')[0]
+			self.backend.handleMessageAck(self.user, number, self.msgIDs[_id].xmppId)
+			self.msgIDs[_id].cnt = self.msgIDs[_id].cnt + 1
+			if self.msgIDs[_id].cnt == 2:
+				del self.msgIDs[_id]
 		except KeyError:
-			pass
+			self.logger.error("Message %s not found. Unable to send ack", _id)
 
 	# Called by superclass
 	def onAck(self, _id, _class, _from, timestamp):
