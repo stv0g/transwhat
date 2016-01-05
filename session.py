@@ -663,7 +663,7 @@ class Session(YowsupApp):
 				group = self.groups[room]
 				# Update nickname
 				try:
-					if defaultname != "" and group.participants[number].nick == number:
+					if defaultname != "" and group.participants[number] == number:
 						group.changeNick(number, defaultname)
 					if self.buddies[number].nick != "":
 						group.changeNick(number, self.buddies[number].nick)
