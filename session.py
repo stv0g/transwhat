@@ -591,20 +591,7 @@ class Session(YowsupApp):
 			self.leaveGroup(room)
 			# Delete Room on spectrum side
 			group = self.groups[room]
-			for jid in group.participants:
-				buddy = jid.split("@")[0]
-				try:
-					nick = self.buddies[buddy].nick
-				except KeyError:
-					nick = buddy
-				if nick == "":
-					nick = buddy
-				if buddy == self.legacyName:
-					nick = group.nick
-				flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
-				self.backend.handleParticipantChanged(
-						self.user, nick, self._shortenGroupId(room), flags,
-						protocol_pb2.STATUS_NONE, buddy)
+			group.leaveRoom()
 			del self.groups[room]
 
 	def _requestLastSeen(self, buddy):
