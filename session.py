@@ -248,16 +248,13 @@ class Session(YowsupApp):
 					type, participant, offline, items]))
 		)
 		try:
-			buddy = self.buddies[_from.split('@')[0]]
-			#self.backend.handleBuddyChanged(self.user, buddy.number.number,
-			#		buddy.nick, buddy.groups, protocol_pb2.STATUS_ONLINE)
-			self.backend.handleMessageAck(self.user, buddy.number, self.msgIDs[_id].xmppId)
-                        self.msgIDs[_id].cnt = self.msgIDs[_id].cnt +1
-                        if self.msgIDs[_id].cnt == 2:
-                                del self.msgIDs[_id]
-
+			number = _from.split('@')[0]
+			self.backend.handleMessageAck(self.user, number, self.msgIDs[_id].xmppId)
+			self.msgIDs[_id].cnt = self.msgIDs[_id].cnt + 1
+			if self.msgIDs[_id].cnt == 2:
+				del self.msgIDs[_id]
 		except KeyError:
-			pass
+			self.logger.error("Message %s not found. Unable to send ack", _id)
 
 	# Called by superclass
 	def onAck(self, _id, _class, _from, timestamp):
@@ -282,7 +279,7 @@ class Session(YowsupApp):
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if notify is None:
-				notify = "";
+				notify = ""
 			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
 										timestamp, notify)
 		else:
@@ -482,9 +479,9 @@ class Session(YowsupApp):
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, False)
 
-	def sendMessageToWA(self, sender, message, ID):
-		self.logger.info("Message sent from %s to %s: %s",
-						 self.legacyName, sender, message)
+	def sendMessageToWA(self, sender, message, ID, xhtml=""):
+		self.logger.info("Message sent from %s to %s: %s (xhtml=%s)",
+						 self.legacyName, sender, message, xhtml)
 
 		message = message.encode("utf-8")
 		# FIXME: Fragile, should pass this in to onDlerror
@@ -522,11 +519,11 @@ class Session(YowsupApp):
 						self.logger.debug("Group Message from %s to %s Groups: %s",
 										 group.nick , group , self.groups)
 						self.backend.handleMessage(
-							self.user, room, message.decode('utf-8'), group.nick
+							self.user, room, message.decode('utf-8'), group.nick, xhtml=xhtml
 						)
 					except KeyError:
 						self.logger.error('Group not found: %s', room)
-				
+
 				if (".jpg" in message.lower()) or (".webp" in message.lower()):
                                         if (".jpg" in message.lower()):
                                                 self.imgType = "jpg"
@@ -591,20 +588,7 @@ class Session(YowsupApp):
 			self.leaveGroup(room)
 			# Delete Room on spectrum side
 			group = self.groups[room]
-			for jid in group.participants:
-				buddy = jid.split("@")[0]
-				try:
-					nick = self.buddies[buddy].nick
-				except KeyError:
-					nick = buddy
-				if nick == "":
-					nick = buddy
-				if buddy == self.legacyName:
-					nick = group.nick
-				flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
-				self.backend.handleParticipantChanged(
-						self.user, nick, self._shortenGroupId(room), flags,
-						protocol_pb2.STATUS_NONE, buddy)
+			group.leaveRoom()
 			del self.groups[room]
 
 	def _requestLastSeen(self, buddy):

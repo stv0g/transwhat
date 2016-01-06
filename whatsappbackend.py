@@ -36,7 +36,7 @@ class WhatsAppBackend(SpectrumBackend):
 		self.sessions = { }
 		self.spectrum_jid = spectrum_jid
 		# Used to prevent duplicate messages
-		self.lastMessage = {}
+		self.lastMsgId = {}
 
 		self.logger.debug("Backend started")
 
@@ -46,9 +46,6 @@ class WhatsAppBackend(SpectrumBackend):
 		if user not in self.sessions:
 			self.sessions[user] = Session(self, user, legacyName, extra)
 
-		if user not in self.lastMessage:
-			self.lastMessage[user] = {}
-
 		self.sessions[user].login(password)
 
 	def handleLogoutRequest(self, user, legacyName):
@@ -57,20 +54,17 @@ class WhatsAppBackend(SpectrumBackend):
 			self.sessions[user].logout()
 			del self.sessions[user]
 
-	def handleMessageSendRequest(self, user, buddy, message, xhtml = "", ID =  0):
-		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml = %s)", user, buddy, message, xhtml)
+	def handleMessageSendRequest(self, user, buddy, message, xhtml="", ID=""):
+		self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml=%s, ID=%s)", user, buddy, message, xhtml, ID)
 		# For some reason spectrum occasionally sends to identical messages to
-		# a buddy, one to the bare jid and one to /bot. This causes duplicate
-		# messages. Since it is unlikely a user wants to send the same message
-		# twice, we should just ignore the second message
-		#
-		# TODO Proper fix, this work around drops all duplicate messages even 
-		# intentional ones.
-                # IDEA there is an ID field in ConvMessage. If it is extracted it will work
-		usersMessage = self.lastMessage[user]
-		if buddy not in usersMessage or usersMessage[buddy] != message:
-			self.sessions[user].sendMessageToWA(buddy, message, ID)
-			usersMessage[buddy] = message
+		# a buddy, one to the bare jid and one to the /bot resource. This
+		# causes duplicate messages. Thus we should not send consecutive
+		# messages with the same id
+		if ID == '':
+			self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
+		elif user not in self.lastMsgId or self.lastMsgId[user] != ID:
+			self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
+			self.lastMsgId[user] = ID
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
 		self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)", user, room, nickname)

@@ -78,6 +78,12 @@ class Group():
 			self._updateParticipant(number, flags, protocol_pb2.STATUS_NONE)
 			del self.participants[number]
 
+	def leaveRoom(self):
+		for number in self.participants:
+			nick = self.participants[number]
+			flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
+			self._updateParticipant(number, flags, protocol_pb2.STATUS_NONE)
+
 	def changeNick(self, number, new_nick):
 		if self.participants[number] == new_nick:
 			return
