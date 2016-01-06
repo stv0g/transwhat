@@ -291,9 +291,16 @@ class YowsupApp(object):
 		# TODO: Implement callbacks
 		mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
 		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
+		# International contacts must be preceded by a plus.  Other numbers are
+		# considered local.
+		contacts = ['+' + c for c in contacts]
 		iq = GetSyncIqProtocolEntity(contacts, mode, context)
 		def onSuccess(response, request):
-			success(response.inNumbers.keys(), response.outNumbers.keys(), response.invalidNumbers)
+			# Remove leading plus
+			existing = [s[1:] for s in response.inNumbers.keys()]
+			nonexisting = [s[1:] for s in response.outNumbers.keys()]
+			invalid = [s[1:] for s in response.invalidNumbers]
+			success(existing, nonexisting, invalid)
 
 		self.sendIq(iq, onSuccess = onSuccess, onError = failure)
 
