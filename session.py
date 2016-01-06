@@ -279,7 +279,7 @@ class Session(YowsupApp):
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if notify is None:
-				notify = "";
+				notify = ""
 			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
 										timestamp, notify)
 		else:
@@ -479,9 +479,9 @@ class Session(YowsupApp):
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, False)
 
-	def sendMessageToWA(self, sender, message, ID):
-		self.logger.info("Message sent from %s to %s: %s",
-						 self.legacyName, sender, message)
+	def sendMessageToWA(self, sender, message, ID, xhtml=""):
+		self.logger.info("Message sent from %s to %s: %s (xhtml=%s)",
+						 self.legacyName, sender, message, xhtml)
 
 		message = message.encode("utf-8")
 		# FIXME: Fragile, should pass this in to onDlerror
@@ -519,11 +519,11 @@ class Session(YowsupApp):
 						self.logger.debug("Group Message from %s to %s Groups: %s",
 										 group.nick , group , self.groups)
 						self.backend.handleMessage(
-							self.user, room, message.decode('utf-8'), group.nick
+							self.user, room, message.decode('utf-8'), group.nick, xhtml=xhtml
 						)
 					except KeyError:
 						self.logger.error('Group not found: %s', room)
-				
+
 				if (".jpg" in message.lower()) or (".webp" in message.lower()):
                                         if (".jpg" in message.lower()):
                                                 self.imgType = "jpg"

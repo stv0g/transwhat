@@ -61,9 +61,9 @@ class WhatsAppBackend(SpectrumBackend):
 		# causes duplicate messages. Thus we should not send consecutive
 		# messages with the same id
 		if ID == '':
-			self.sessions[user].sendMessageToWA(buddy, message, ID)
+			self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
 		elif user not in self.lastMsgId or self.lastMsgId[user] != ID:
-			self.sessions[user].sendMessageToWA(buddy, message, ID)
+			self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
 			self.lastMsgId[user] = ID
 
 	def handleJoinRoomRequest(self, user, room, nickname, pasword):
