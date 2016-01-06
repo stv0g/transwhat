@@ -271,12 +271,12 @@ class YowsupApp(object):
 				ChatstateProtocolEntity.STATE_PAUSED, jid
 			)
 		self.sendEntity(state)
-	
-	def sendSync(self, contacts, delta = False, interactive = True):
+
+	def sendSync(self, contacts, delta = False, interactive = True, success = None, failure = None):
 		"""
 		You need to sync new contacts before you interact with
 		them, failure to do so could result in a temporary ban.
-		
+
 		Args:
 			- contacts: ([str]) a list of phone numbers of the
 				contacts you wish to sync
@@ -285,13 +285,19 @@ class YowsupApp(object):
 				contact list.
 			- interactive: (bool; default: True) Set to false if you are
 				sure this is the first time registering
+			- success: (func) - Callback; Takes three arguments: existing numbers,
+				non-existing numbers, invalid numbers.
 		"""
 		# TODO: Implement callbacks
 		mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
 		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
 		iq = GetSyncIqProtocolEntity(contacts, mode, context)
-		self.sendIq(iq)
-	
+		def onSuccess(response, request):
+			success(response.inNumbers.keys(), response.outNumbers.keys(), response.invalidNumbers)
+
+		self.sendIq(iq, onSuccess = onSuccess, onError = failure)
+
+
 	def requestStatuses(self, contacts, success = None, failure = None):
 		"""
 		Request the statuses of a number of users.

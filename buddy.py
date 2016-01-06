@@ -60,7 +60,6 @@ class BuddyList(dict):
 		self.session = session
 		self.user = user
 		self.logger = logging.getLogger(self.__class__.__name__)
-		self.synced = False
 
 	def _load(self, buddies):
 		for buddy in buddies:
@@ -77,20 +76,32 @@ class BuddyList(dict):
 		contacts = self.keys()
 		contacts.remove('bot')
 
-		if self.synced == False:
-			self.session.sendSync(contacts, delta = False, interactive = True)
-			self.synced = True
+		self.session.sendSync(contacts, delta=False, interactive=True,
+				success=self.onSync)
 
 		self.logger.debug("Roster add: %s", str(list(contacts)))
 
 		for number in contacts:
 			buddy = self[number]
-			self.backend.handleBuddyChanged(self.user, number, buddy.nick,
-				buddy.groups, protocol_pb2.STATUS_NONE,
-				iconHash = buddy.image_hash if buddy.image_hash is not None else "")
+			self.updateSpectrum(buddy)
+
+	def onSync(self, existing, nonexisting, invalid):
+		"""We should only presence subscribe to existing numbers"""
+
+		for number in existing:
 			self.session.subscribePresence(number)
-		self.logger.debug("%s is requesting statuses of: %s", self.user, contacts)
-		self.session.requestStatuses(contacts, success = self.onStatus)
+		self.logger.debug("%s is requesting statuses of: %s", self.user, existing)
+		self.session.requestStatuses(existing, success = self.onStatus)
+
+		self.logger.debug("Removing nonexisting buddies %s", nonexisting)
+		for number in nonexisting:
+			self.remove(number)
+			del self[number]
+
+		self.logger.debug("Removing invalid buddies %s", invalid)
+		for number in invalid:
+			self.remove(number)
+			del self[number]
 
 	def onStatus(self, contacts):
 		self.logger.debug("%s received statuses of: %s", self.user, contacts)
