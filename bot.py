@@ -42,7 +42,7 @@ class Bot():
 		}
 
 	def parse(self, message):
-		args = message.split(" ")
+		args = message.strip().split(" ")
 		cmd = args.pop(0)
 
 		if cmd[0] == '\\':
@@ -56,7 +56,7 @@ class Bot():
 			self.send("a valid command starts with a backslash")
 
 	def call(self, cmd, args = []):
-		func = self.commands[cmd]
+		func = self.commands[cmd.lower()]
 		spec = inspect.getargspec(func)
 		maxs = len(spec.args) - 1
 		reqs = maxs - len(spec.defaults or [])
