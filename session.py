@@ -54,6 +54,7 @@ class MsgIDs:
 
 
 class Session(YowsupApp):
+	broadcast_prefix = u'\U0001F4E2 '
 
 	def __init__(self, backend, user, legacyName, extra):
 		super(Session, self).__init__()
@@ -276,20 +277,18 @@ class Session(YowsupApp):
 		self.sendReceipt(_id, _from, None, participant)
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 				buddy, self.legacyName, messageContent, timestamp)
-		if participant is not None: # Group message
+		if participant is not None: # Group message or broadcast
 			partname = participant.split('@')[0]
-			if notify is None:
-				notify = ""
-			self.sendGroupMessageToXMPP(buddy, partname, messageContent,
-										timestamp, notify)
+			if _from.split('@')[1] == 'broadcast': # Broadcast message
+				message = self.broadcast_prefix + messageContent
+				self.sendMessageToXMPP(partname, message, timestamp)
+			else: # Group message
+				if notify is None:
+					notify = ""
+				self.sendGroupMessageToXMPP(buddy, partname, messageContent,
+											timestamp, notify)
 		else:
 			self.sendMessageToXMPP(buddy, messageContent, timestamp)
-		# isBroadcast always returns false, I'm not sure how to get a broadcast
-		# message.
-		#if messageEntity.isBroadcast():
-		#	self.logger.info("Broadcast received from %s to %s: %s (at ts=%s)",\
-		#			buddy, self.legacyName, messageContent, timestamp)
-		#	messageContent = "[Broadcast] " + messageContent
 
 	# Called by superclass
 	def onImage(self, image):
@@ -300,10 +299,13 @@ class Session(YowsupApp):
                         image.caption = ''
 		message = image.url + ' ' + image.caption
 		if participant is not None: # Group message
-                        partname = participant.split('@')[0]
-                        self.sendGroupMessageToXMPP(buddy, partname, message, image.timestamp)
-                else:
-
+			partname = participant.split('@')[0]
+			if image._from.split('@')[1] == 'broadcast': # Broadcast message
+				self.sendMessageToXMPP(partname, self.broadcast_prefix, image.timestamp)
+				self.sendMessageToXMPP(partname, message, image.timestamp)
+			else: # Group message
+				self.sendGroupMessageToXMPP(buddy, partname, message, image.timestamp)
+		else:
 			self.sendMessageToXMPP(buddy, message, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)
 
@@ -314,10 +316,13 @@ class Session(YowsupApp):
                 participant = audio.participant
 		message = audio.url
 		if participant is not None: # Group message
-                        partname = participant.split('@')[0]
-                        self.sendGroupMessageToXMPP(buddy, partname, message, audio.timestamp)
-                else:
-
+			partname = participant.split('@')[0]
+			if audio._from.split('@')[1] == 'broadcast': # Broadcast message
+				self.sendMessageToXMPP(partname, self.broadcast_prefix, audio.timestamp)
+				self.sendMessageToXMPP(partname, message, audio.timestamp)
+			else: # Group message
+				self.sendGroupMessageToXMPP(buddy, partname, message, audio.timestamp)
+		else:
 			self.sendMessageToXMPP(buddy, message, audio.timestamp)
 		self.sendReceipt(audio._id,	 audio._from, None, audio.participant)
 
@@ -329,10 +334,13 @@ class Session(YowsupApp):
 
 		message = video.url
 		if participant is not None: # Group message
-                        partname = participant.split('@')[0]
-                        self.sendGroupMessageToXMPP(buddy, partname, message, video.timestamp)
-                else:
-
+			partname = participant.split('@')[0]
+			if video._from.split('@')[1] == 'broadcast': # Broadcast message
+				self.sendMessageToXMPP(partname, self.broadcast_prefix, video.timestamp)
+				self.sendMessageToXMPP(partname, message, video.timestamp)
+			else: # Group message
+				self.sendGroupMessageToXMPP(buddy, partname, message, video.timestamp)
+		else:
 			self.sendMessageToXMPP(buddy, message, video.timestamp)
 		self.sendReceipt(video._id,	 video._from, None, video.participant)
 
@@ -340,23 +348,30 @@ class Session(YowsupApp):
 		buddy = location._from.split('@')[0]
 		latitude = location.getLatitude()
 		longitude = location.getLongitude()
-		url = location.getLocationUrl()
+		url = location.getLocationURL()
                 participant = location.participant
+		latlong = 'geo:' + latitude + ',' + longitude
 
 		self.logger.debug("Location received from %s: %s, %s",
 						  buddy, latitude, longitude)
 
-		if participant is not None: # Group message
-                        partname = participant.split('@')[0]
-                        self.sendGroupMessageToXMPP(buddy, partname, url, location.timestamp)
-			self.sendGroupMessageToXMPP(buddy, partname, 'geo:' + latitude + ',' + longitude,
-                                                           location.timestamp)
-                else:
 
-			self.sendMessageToXMPP(buddy, url, location.timestamp)
-			self.sendMessageToXMPP(buddy, 'geo:' + latitude + ',' + longitude,
-							   location.timestamp)
-                self.sendReceipt(location._id, location._from, None, location.participant, location.timestamp)
+		if participant is not None: # Group message
+			partname = participant.split('@')[0]
+			if location._from.split('@')[1] == 'broadcast': # Broadcast message
+				self.sendMessageToXMPP(partname, self.broadcast_prefix, location.timestamp)
+				if url is not None:
+					self.sendMessageToXMPP(partname, url, location.timestamp)
+				self.sendMessageToXMPP(partname, latlong, location.timestamp)
+			else: # Group message
+				if url is not None:
+					self.sendGroupMessageToXMPP(buddy, partname, url, location.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, latlong, location.timestamp)
+		else:
+			if url is not None:
+				self.sendMessageToXMPP(buddy, url, location.timestamp)
+			self.sendMessageToXMPP(buddy, latlong, location.timestamp)
+		self.sendReceipt(location._id, location._from, None, location.participant)
 
 
 	# Called by superclass
@@ -366,13 +381,17 @@ class Session(YowsupApp):
 				_id, _from, name, card_data, to, notify, timestamp, participant
 			]))
 		)
+		message =  "Received VCard (not implemented yet)"
 		buddy = _from.split("@")[0]
 		if participant is not None: # Group message
-                        partname = participant.split('@')[0]
-                        self.sendGroupMessageToXMPP(buddy, partname, "Received VCard (not implemented yet)", timestamp)
-                else:
-
-			self.sendMessageToXMPP(buddy, "Received VCard (not implemented yet)")
+			partname = participant.split('@')[0]
+			if _from.split('@')[1] == 'broadcast': # Broadcast message
+				message = self.broadcast_prefix + message
+				self.sendMessageToXMPP(partname, message, timestamp)
+			else: # Group message
+				self.sendGroupMessageToXMPP(buddy, partname, message, timestamp)
+		else:
+			self.sendMessageToXMPP(buddy, message, timestamp)
 #		self.sendMessageToXMPP(buddy, card_data)
 		#self.transferFile(buddy, str(name), card_data)
 		self.sendReceipt(_id, _from, None, participant)
