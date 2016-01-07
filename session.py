@@ -462,6 +462,33 @@ class Session(YowsupApp):
 		self.logger.debug("%s changed their profile picture", number)
 		self.buddies.requestVCard(number)
 
+	# Called by superclass
+	def onContactAdded(self, number, nick):
+		self.logger.debug("Adding new contact %s (%s)", nick, number)
+		self.updateBuddy(number, nick, [])
+
+	# Called by superclass
+	def onContactRemoved(self, number):
+		self.logger.debug("Removing contact %s", number)
+		self.removeBuddy(number)
+
+	def onContactUpdated(self, oldnumber, newnumber):
+		self.logger.debug("Contact has changed number from %s to %s",
+				oldnumber, newnumber)
+		if newnumber in self.buddies:
+			self.logger.warn("Contact %s exists, just updating", newnumber)
+			self.buddies.refresh(newnumber)
+		try:
+			buddy = self.buddies[oldnumber]
+		except KeyError:
+			self.logger.warn("Old contact (%s) not found. Adding new contact (%s)",
+				oldnumber, newnumber)
+			nick = ""
+		else:
+			self.removeBuddy(buddy.number)
+			nick = buddy.nick
+		self.updateBuddy(newnumber, nick, [])
+
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
 		buddy = jid.split("@")[0]

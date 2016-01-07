@@ -201,3 +201,9 @@ class BuddyList(dict):
 			image_hash = pictureData.then(utils.sha1hash)
 			call(self.logger.debug, 'Image hash is %s', image_hash)
 			call(self.update, buddy, nick, groups, image_hash)
+
+	def refresh(self, number):
+		self.session.unsubscribePresence(number)
+		self.session.subscribePresence(number)
+		self.requestVCard(number)
+		self.session.requestStatuses([number], success = self.onStatus)

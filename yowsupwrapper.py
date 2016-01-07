@@ -562,6 +562,32 @@ class YowsupApp(object):
 		"""
 		pass
 
+	def onContactRemoved(self, number):
+		"""Called when a contact has been removed
+
+		Args:
+			number: (str) the number of the contact who has been removed
+		"""
+		pass
+
+	def onContactAdded(self, number, nick):
+		"""Called when a contact has been added
+
+		Args:
+			number: (str) contacts number
+			nick: (str) contacts nickname
+		"""
+		pass
+
+	def onContactUpdated(self, oldNumber, newNumber):
+		"""Called when a contact has changed their number
+
+		Args:
+			oldNumber: (str) the number the contact previously used
+			newNumber: (str) the new number of the contact
+		"""
+		pass
+
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
@@ -676,6 +702,18 @@ class YowsupAppLayer(YowInterfaceLayer):
 		elif (isinstance(entity, SetPictureNotificationProtocolEntity) or
 				isinstance(entity, DeletePictureNotificationProtocolEntity)):
 			self.caller.onContactPictureChanged(entity.setJid.split('@')[0])
+		elif isinstance(entity, RemoveContactNotificationProtocolEntity):
+			self.caller.onContactRemoved(entity.contactJid.split('@')[0])
+		elif isinstance(entity, AddContactNotificationProtocolEntity):
+			self.caller.onContactAdded(
+					entity.contactJid.split('@')[0],
+					entity.notify
+			)
+		elif isinstance(entity, UpdateContactNotificationProtocolEntity):
+			self.caller.onContactUpdated(
+					entity._from.split('@')[0],
+					entity.contactJid.split('@')[0],
+			)
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
