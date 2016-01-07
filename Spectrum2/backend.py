@@ -239,6 +239,12 @@ class SpectrumBackend:
 		message = WRAP(c.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BACKEND_CONFIG);
 		self.send(message)
 
+	def handleQuery(self, command):
+		c = protocol_pb2.BackendConfig()
+		c.config = command
+		message = WRAP(c.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_QUERY);
+		self.send(message)
+
 	def handleLoginPayload(self, data):
 		payload = protocol_pb2.Login()
 		if (payload.ParseFromString(data) == False):

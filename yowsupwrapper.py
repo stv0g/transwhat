@@ -45,7 +45,8 @@ from yowsup.layers.protocol_media.mediauploader import MediaUploader
 
 # Registration
 
-from yowsup.registration.coderequest import WACodeRequest
+from yowsup.registration import WACodeRequest
+from yowsup.registration import WARegRequest
 
 from functools import partial
 
@@ -387,6 +388,21 @@ class YowsupApp(object):
 		"""
 		request = WACodeRequest(countryCode, phoneNumber)
 		return request.send()
+
+	def requestPassword(self, countryCode, phoneNumber, smsCode):
+		"""
+		Request a password. WARNING: this function is blocking
+
+		Args:
+			countryCode: The country code of the phone you wish to register
+			phoneNumber: phoneNumber of the phone you wish to register without
+				the country code.
+			smsCode: The sms code that you asked for previously
+		"""
+		smsCode = smsCode.replace('-', '')
+		request = WARegRequest(countryCode, phoneNumber, smsCode)
+		return request.send()
+
 
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):

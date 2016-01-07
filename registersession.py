@@ -3,6 +3,7 @@ from Spectrum2 import protocol_pb2
 from yowsupwrapper import YowsupApp
 import logging
 import threadutils
+import sys
 
 class RegisterSession(YowsupApp):
 	"""
@@ -14,6 +15,7 @@ class RegisterSession(YowsupApp):
 		self.user = user
 		self.number = legacyName
 		self.backend = backend
+		self.countryCode = ''
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.state = self.WANT_CC
 
@@ -39,24 +41,72 @@ class RegisterSession(YowsupApp):
 				else:
 					self.backend.handleMessage(self.user, 'bot', 'Requesting sms code')
 					self.logger.debug('Requesting SMS code for %s', self.user)
-					self._requestSMSCodeNonBlock(country_code)
+					self.countryCode = country_code
+					self._requestSMSCodeNonBlock()
 		elif buddy == 'bot' and self.state == self.WANT_SMS:
-			self.backend.handleMessage(self.user, 'bot', 'Not implemented')
+			code = message.strip()
+			if self._checkSMSFormat(code):
+				self._requestPassword(code)
+			else:
+				self.backend.handleMessage(self.user,
+						'bot', 'Invalid code. Must be of the form XXX-XXX.')
 		else:
 			self.logger.warn('Unauthorised user (%s) attempting to send messages',
 					self.user)
 			self.backend.handleMessage(self.user, buddy,
 			'You are not logged in yet. You can only send messages to bot.')
 
-	def _requestSMSCodeNonBlock(self, country_code):
-		number = self.number[len(country_code):]
-		threadFunc = lambda: self.requestSMSCode(country_code, number)
+	def _checkSMSFormat(self, sms):
+		splitting = sms.split('-')
+		if len(splitting) != 2:
+			return False
+		a, b = splitting
+		if len(a) != 3 and len(b) != 3:
+			return False
+		try:
+			int(a)
+			int(b)
+		except ValueError:
+			return False
+		return True
+
+	def _requestSMSCodeNonBlock(self):
+		number = self.number[len(self.countryCode):]
+		threadFunc = lambda: self.requestSMSCode(self.countryCode, number)
 		threadutils.runInThread(threadFunc, self._confirmation)
+		self.backend.handleMessage(self.user, 'bot', 'SMS Code Sent')
 
 	def _confirmation(self, result):
-		self.backend.handleMessage(self.user, 'bot', 'SMS Code Sent')
 		self.state = self.WANT_SMS
+		resultStr = self._resultToString(result)
+		self.backend.handleMessage(self.user, 'bot', 'Response:')
+		self.backend.handleMessage(self.user, 'bot', resultStr)
 		self.backend.handleMessage(self.user, 'bot', 'Please enter SMS Code')
+
+	def _requestPassword(self, smsCode):
+		cc = self.countryCode
+		number = self.number[len(cc):]
+		threadFunc = lambda: self.requestPassword(cc, number, smsCode)
+		threadutils.runInThread(threadFunc, self._gotPassword)
+		self.backend.handleMessage(self.user, 'bot', 'Getting Password')
+
+	def _gotPassword(self, result):
+		resultStr = self._resultToString(result)
+		self.backend.handleMessage(self.user, 'bot', 'Response:')
+		self.backend.handleMessage(self.user, 'bot', resultStr)
+		self.backend.handleMessage(self.user, 'bot', 'Logging you in')
+		password = result['pw']
+		self.backend.relogin(self.user, self.number, password, None)
+
+	def _resultToString(self, result):
+		unistr = str if sys.version_info >= (3, 0) else unicode
+		out = []
+		for k, v in result.items():
+			if v is None:
+				continue
+			out.append("%s: %s" %(k, v.encode("utf-8") if type(v) is unistr else v))
+
+		return "\n".join(out)
 
 	# Dummy methods. Whatsapp backend might call these, but they should have no
 	# effect

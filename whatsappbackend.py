@@ -44,7 +44,7 @@ class WhatsAppBackend(SpectrumBackend):
 	# RequestsHandlers
 	def handleLoginRequest(self, user, legacyName, password, extra):
 		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
-		# Key word means we should register
+		# Key word means we should register a new password
 		if password == 'register':
 			if user not in self.sessions:
 				self.sessions[user] = RegisterSession(self, user, legacyName, extra)
@@ -117,6 +117,20 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleVCardRequest(user=%s, buddy=%s, ID=%s)", user, buddy, ID)
 		self.sessions[user].requestVCard(buddy, ID)
 
+	def relogin(self, user, legacyName, password, extra):
+		"""
+		Used to re-initialize the session object. Used when finished with
+		registration session and the user needs to login properly
+		"""
+		self.logger.debug("relogin(user=%s, legacyName=%s)", user, legacyName)
+		# Change password in spectrum database
+		self.handleQuery('register %s %s %s' % (user, legacyName, password))
+		# Key word means we should register a new password
+		if password == 'register': # This shouldn't happen, but just in case
+			self.sessions[user] = RegisterSession(self, user, legacyName, extra)
+		else:
+			self.sessions[user] = Session(self, user, legacyName, extra)
+		self.sessions[user].login(password)
 
 	# TODO
 	def handleBuddyBlockToggled(self, user, buddy, blocked):
