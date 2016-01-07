@@ -178,7 +178,10 @@ class BuddyList(dict):
 		# Get profile picture
 		self.logger.debug('Requesting profile picture of %s', buddy)
 		response = deferred.Deferred()
-		self.session.requestProfilePicture(buddy, onSuccess = response.run)
+		# Error probably means image doesn't exist
+		error = deferred.Deferred()
+		self.session.requestProfilePicture(buddy, onSuccess=response.run,
+				onFailure=error.run)
 		response = response.arg(0)
 
 		pictureData = response.pictureData()
@@ -188,6 +191,9 @@ class BuddyList(dict):
 					ID, response.pictureId(), pictureData.then(base64.b64encode))
 			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
 					pictureData)
+			# If error
+			error.when(self.logger.debug, 'Sending VCard (%s) without image', ID)
+			error.when(self.backend.handleVCard, self.user, ID, buddy, "", "", "")
 
 		# Send image hash
 		if not buddy == self.session.legacyName:
@@ -201,6 +207,9 @@ class BuddyList(dict):
 			image_hash = pictureData.then(utils.sha1hash)
 			call(self.logger.debug, 'Image hash is %s', image_hash)
 			call(self.update, buddy, nick, groups, image_hash)
+			# No image
+			error.when(self.logger.debug, 'No image')
+			error.when(self.update, buddy, nick, groups, '')
 
 	def refresh(self, number):
 		self.session.unsubscribePresence(number)

@@ -766,9 +766,10 @@ class YowsupAppLayer(YowInterfaceLayer):
 					entity._from.split('@')[0],
 					entity.status
 			)
-		elif (isinstance(entity, SetPictureNotificationProtocolEntity) or
-				isinstance(entity, DeletePictureNotificationProtocolEntity)):
+		elif isinstance(entity, SetPictureNotificationProtocolEntity):
 			self.caller.onContactPictureChanged(entity.setJid.split('@')[0])
+		elif isinstance(entity, DeletePictureNotificationProtocolEntity):
+			self.caller.onContactPictureChanged(entity.deleteJid.split('@')[0])
 		elif isinstance(entity, RemoveContactNotificationProtocolEntity):
 			self.caller.onContactRemoved(entity.contactJid.split('@')[0])
 		elif isinstance(entity, AddContactNotificationProtocolEntity):

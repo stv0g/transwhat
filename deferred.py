@@ -67,6 +67,12 @@ class Deferred(object):
 			return args[n]
 		return self.then(helper)
 
+	def when(self, func, *args, **kwargs):
+		""" Calls when func(*args, **kwargs) when deferred gets a value """
+		def helper(*args2, **kwargs2):
+			func(*args, **kwargs)
+		self.then(helper)
+
 	def __getattr__(self, method_name):
 		return getattr(Then(self), method_name)
 
@@ -103,7 +109,7 @@ def call(func, *args, **kwargs):
 		colors = Deferred()
 		colors.append('blue')
 		colors.run(['red', 'green'])
-call(print, colors) #=> ['red', 'green', 'blue']
+		call(print, colors) #=> ['red', 'green', 'blue']
 		call(print, 'hi', colors) #=> hi ['red', 'green', 'blue']
 	"""
 	for i, c in enumerate(args):
