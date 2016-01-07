@@ -296,17 +296,19 @@ class Session(YowsupApp):
 		buddy = image._from.split('@')[0]
 		participant = image.participant
 		if image.caption is None:
-                        image.caption = ''
-		message = image.url + ' ' + image.caption
+			image.caption = ''
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if image._from.split('@')[1] == 'broadcast': # Broadcast message
 				self.sendMessageToXMPP(partname, self.broadcast_prefix, image.timestamp)
-				self.sendMessageToXMPP(partname, message, image.timestamp)
+				self.sendMessageToXMPP(partname, image.url, image.timestamp)
+				self.sendMessageToXMPP(partname, image.caption, image.timestamp)
 			else: # Group message
-				self.sendGroupMessageToXMPP(buddy, partname, message, image.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, image.url, image.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, image.caption, image.timestamp)
 		else:
-			self.sendMessageToXMPP(buddy, message, image.timestamp)
+			self.sendMessageToXMPP(buddy, image.url, image.timestamp)
+			self.sendMessageToXMPP(buddy, image.caption, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)
 
 	# Called by superclass
