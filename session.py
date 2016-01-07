@@ -457,6 +457,11 @@ class Session(YowsupApp):
 		except KeyError:
 			self.logger.debug("%s not in buddy list", number)
 
+	# Called by superclass
+	def onContactPictureChanged(self, number):
+		self.logger.debug("%s changed their profile picture", number)
+		self.buddies.requestVCard(number)
+
 	def onPresenceReceived(self, _type, name, jid, lastseen):
 		self.logger.info("Presence received: %s %s %s %s", _type, name, jid, lastseen)
 		buddy = jid.split("@")[0]
@@ -471,7 +476,7 @@ class Session(YowsupApp):
 		if (lastseen == str(buddy.lastseen)) and (_type == buddy.presence):
 			return
 
-		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")): 
+		if ((lastseen != "deny") and (lastseen != None) and (lastseen != "none")):
 			buddy.lastseen = int(lastseen)
 		if (_type == None):
 			buddy.lastseen = time.time()

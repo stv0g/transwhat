@@ -549,9 +549,16 @@ class YowsupApp(object):
 	def onContactStatusChanged(self, number, status):
 		"""Called when a contacts changes their status
 
-		Args
+		Args:
 			number: (str) the number of the contact who changed their status
 			status: (str) the new status
+		"""
+		pass
+
+	def onContactPictureChanged(self, number):
+		"""Called when a contact changes their profile picture
+		Args
+			number: (str) the number of the contact who changed their picture
 		"""
 		pass
 
@@ -666,6 +673,9 @@ class YowsupAppLayer(YowInterfaceLayer):
 					entity._from.split('@')[0],
 					entity.status
 			)
+		elif (isinstance(entity, SetPictureNotificationProtocolEntity) or
+				isinstance(entity, DeletePictureNotificationProtocolEntity)):
+			self.caller.onContactPictureChanged(entity.setJid.split('@')[0])
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
