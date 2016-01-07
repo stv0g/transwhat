@@ -25,6 +25,7 @@ from Spectrum2.backend import SpectrumBackend
 from Spectrum2 import protocol_pb2
 
 from session import Session
+from registersession import RegisterSession
 
 import logging
 
@@ -43,8 +44,13 @@ class WhatsAppBackend(SpectrumBackend):
 	# RequestsHandlers
 	def handleLoginRequest(self, user, legacyName, password, extra):
 		self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)", user, legacyName)
-		if user not in self.sessions:
-			self.sessions[user] = Session(self, user, legacyName, extra)
+		# Key word means we should register
+		if password == 'register':
+			if user not in self.sessions:
+				self.sessions[user] = RegisterSession(self, user, legacyName, extra)
+		else:
+			if user not in self.sessions:
+				self.sessions[user] = Session(self, user, legacyName, extra)
 
 		self.sessions[user].login(password)
 

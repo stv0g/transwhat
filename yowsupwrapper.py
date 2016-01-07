@@ -42,6 +42,11 @@ from yowsup.layers.protocol_profiles.protocolentities import *
 from yowsup.layers.protocol_receipts.protocolentities  import *
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 
+
+# Registration
+
+from yowsup.registration.coderequest import WACodeRequest
+
 from functools import partial
 
 #from session import MsgIDs
@@ -370,6 +375,19 @@ class YowsupApp(object):
 		"""
 		iq = InfoGroupsIqProtocolEntity(group + '@g.us')
 		self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+
+	def requestSMSCode(self, countryCode, phoneNumber):
+		"""
+		Request an sms regitration code. WARNING: this function is blocking
+
+		Args:
+			countryCode: The country code of the phone you wish to register
+			phoneNumber: phoneNumber of the phone you wish to register without
+				the country code.
+		"""
+		request = WACodeRequest(countryCode, phoneNumber)
+		return request.send()
+
 
 	def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
 		"""
