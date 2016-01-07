@@ -442,6 +442,24 @@ class Session(YowsupApp):
 		self.groups[room].sendParticipantsToSpectrum(self.legacyName)
 
 	# Called by superclass
+	def onSubjectChanged(self, room, subject, subjectOwner, timestamp):
+		self.logger.debug(
+			"onSubjectChange(rrom=%s, subject=%s, subjectOwner=%s, timestamp=%s)",
+			room, subject, subjectOwner, timestamp)
+		try:
+			group = self.groups[room]
+		except KeyError:
+			self.logger.error("Subject of non-existant group (%s) changed", group)
+		else:
+			group.subject = subject
+			group.subjectOwner = subjectOwner
+			if not group.joined:
+				# We have not joined group so we should not send subject
+				return
+		self.backend.handleSubject(self.user, room, subject, subjectOwner)
+		self.backend.handleRoomNicknameChanged(self.user, room, subject)
+
+	# Called by superclass
 	def onParticipantsRemovedFromGroup(self, room, participants):
 		self.logger.debug("Participants removed from group: %s, %s",
 				room, participants)

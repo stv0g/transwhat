@@ -539,10 +539,21 @@ class YowsupApp(object):
 
 	def onParticipantsRemovedFromGroup(self, group, participants):
 		"""Called when participants have been removed from a group
-		
+
 		Args:
 			- group: (str) id of the group (e.g. 27831788123-144024456)
 			- participants: (list) jids of participants that are removed
+		"""
+		pass
+
+	def onSubjectChanged(self, group, subject, subjectOwner, timestamp):
+		"""Called when someone changes the grousp subject
+
+		Args:
+			- group: (str) id of the group (e.g. 27831788123-144024456)
+			- subject: (str) the new subject
+			- subjectOwner: (str) the number of the  person who changed the subject
+			- timestamp: (str) time the subject was changed
 		"""
 		pass
 
@@ -550,8 +561,8 @@ class YowsupApp(object):
 		"""Called when a contacts changes their status
 
 		Args:
-			number: (str) the number of the contact who changed their status
-			status: (str) the new status
+		   number: (str) the number of the contact who changed their status
+		   status: (str) the new status
 		"""
 		pass
 
@@ -693,6 +704,13 @@ class YowsupAppLayer(YowInterfaceLayer):
 			self.caller.onParticipantsRemovedFromGroup(
 					entity.getGroupId().split('@')[0],
 					entity.getParticipants().keys()
+			)
+		elif isinstance(entity, SubjectGroupsNotificationProtocolEntity):
+			self.caller.onSubjectChanged(
+					entity.getGroupId().split('@')[0],
+					entity.getSubject(),
+					entity.getSubjectOwner(full=False),
+					entity.getSubjectTimestamp()
 			)
 		elif isinstance(entity, StatusNotificationProtocolEntity):
 			self.caller.onContactStatusChanged(
