@@ -29,8 +29,8 @@ import logging
 import asyncore
 import sys, os
 import e4u
-import threading
 import Queue
+import threadutils
 
 sys.path.insert(0, os.getcwd())
 
@@ -89,6 +89,7 @@ plugin.handleBackendConfig({
 	],
 })
 
+
 while True:
 	try:
 		asyncore.loop(timeout=1.0, count=10, use_poll = True)
@@ -101,6 +102,13 @@ while True:
 			break
 		if closed:
 			break
+		while True:
+			try:
+				callback = threadutils.eventQueue.get_nowait()
+			except Queue.Empty:
+				break
+			else:
+				callback()
 	except SystemExit:
 		break
 	except:
