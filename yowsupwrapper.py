@@ -304,10 +304,11 @@ class YowsupApp(object):
 		iq = GetSyncIqProtocolEntity(contacts, mode, context)
 		def onSuccess(response, request):
 			# Remove leading plus
-			existing = [s[1:] for s in response.inNumbers.keys()]
-			nonexisting = [s[1:] for s in response.outNumbers.keys()]
-			invalid = [s[1:] for s in response.invalidNumbers]
-			success(existing, nonexisting, invalid)
+			if success is not None:
+				existing = [s[1:] for s in response.inNumbers.keys()]
+				nonexisting = [s[1:] for s in response.outNumbers.keys()]
+				invalid = [s[1:] for s in response.invalidNumbers]
+				success(existing, nonexisting, invalid)
 
 		self.sendIq(iq, onSuccess = onSuccess, onError = failure)
 
@@ -324,11 +325,12 @@ class YowsupApp(object):
 		"""
 		iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
 		def onSuccess(response, request):
-			self.logger.debug("Received Statuses %s", response)
-			s = {}
-			for k, v in response.statuses.iteritems():
-				s[k.split('@')[0]] = v
-			success(s)
+			if success is not None:
+				self.logger.debug("Received Statuses %s", response)
+				s = {}
+				for k, v in response.statuses.iteritems():
+					s[k.split('@')[0]] = v
+				success(s)
 
 		self.sendIq(iq, onSuccess = onSuccess, onError = failure)
 
