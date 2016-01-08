@@ -118,8 +118,8 @@ class WhatsAppBackend(SpectrumBackend):
 		self.sessions[user].requestVCard(buddy, ID)
 
 	def handleVCardUpdatedRequest(self, user, photo, nickname):
-		self.logger.debug("handleVCardUpdatedRequest(user=%s, nickname=%s)", user, photo, nickname)
-		self.session[user].setProfilePicture(photo)
+		self.logger.debug("handleVCardUpdatedRequest(user=%s, nickname=%s)", user, nickname)
+		self.sessions[user].setProfilePicture(photo)
 
 	def relogin(self, user, legacyName, password, extra):
 		"""
