@@ -218,16 +218,26 @@ class Session(YowsupApp):
 		self.backend.handleConnected(self.user)
 		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name,
 										["Admin"], protocol_pb2.STATUS_ONLINE)
-		if self.initialized == False:
-			self.sendOfflineMessages()
-			#self.bot.call("welcome")
-			self.initialized = True
+		# Initialisation?
+		self.requestPrivacyList()
+		self.requestClientConfig()
+		self.requestServerProperties()
+		# ?
+
+		self.logger.debug('Requesting groups list')
+		self.requestGroupsList(self._updateGroups)
+		# self.requestBroadcastList()
+
+		# This should handle, sync, statuses, and presence
 		self.sendPresence(True)
 		for func in self.loginQueue:
 			func()
 
-		self.logger.debug('Requesting groups list')
-		self.requestGroupsList(self._updateGroups)
+		if self.initialized == False:
+			self.sendOfflineMessages()
+			#self.bot.call("welcome")
+			self.initialized = True
+
 		self.loggedIn = True
 
 	# Called by superclass
