@@ -570,16 +570,46 @@ class Session(YowsupApp):
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, False)
 
+	def sendImage(self, message, ID, to):
+		if (".jpg" in message.lower()):
+			imgType = "jpg"
+		if (".webp" in message.lower()):
+			imgType = "webp"
+
+		success = deferred.Deferred()
+		error = deferred.Deferred()
+		self.downloadMedia(message, success.run, error.run)
+
+		# Success
+		path = success.arg(0)
+		call(self.logger.info, "Success: Image downloaded to %s", path)
+		pathWithExt = path.then(lambda p: p + "." + imgType)
+		call(os.rename, path, pathWithExt)
+		pathJpg = path.then(lambda p: p + ".jpg")
+		if imgType != "jpg":
+			im = call(Image.open, pathWithExt)
+			call(im.save, pathJpg)
+			call(os.remove, pathWithExt)
+		call(self.logger.info, "Sending image to %s", to)
+		waId = deferred.Deferred()
+		call(super(Session, self).sendImage, to, pathJpg, onSuccess = waId.run)
+		call(self.setWaId, ID, waId)
+		waId.when(call, os.remove, pathJpg)
+		waId.when(self.logger.info, "Image sent")
+
+		# Error
+		error.when(self.logger.info, "Download Error. Sending message as is.")
+		waId = error.when(self.sendTextMessage, to, message)
+		call(self.setWaId, ID, waId)
+
+	def setWaId(self, XmppId, waId):
+		self.msgIDs[waId] = MsgIDs(XmppId, waId)
+
 	def sendMessageToWA(self, sender, message, ID, xhtml=""):
 		self.logger.info("Message sent from %s to %s: %s (xhtml=%s)",
 						 self.legacyName, sender, message, xhtml)
 
 		message = message.encode("utf-8")
-		# FIXME: Fragile, should pass this in to onDlerror
-		self.dlerror_message = message
-		self.dlerror_sender = sender
-		self.dlerror_ID = ID
-		# End Fragile
 
 		if sender == "bot":
 			self.bot.parse(message)
@@ -616,24 +646,11 @@ class Session(YowsupApp):
 						self.logger.error('Group not found: %s', room)
 
 				if (".jpg" in message.lower()) or (".webp" in message.lower()):
-                                        if (".jpg" in message.lower()):
-                                                self.imgType = "jpg"
-                                        if (".webp" in message.lower()):
-                                                self.imgType = "webp"
-                                        self.imgMsgId = ID
-                                        self.imgBuddy = room + "@g.us"
-
-
-                                        downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
-                                        downloader.download(message)
-                                        #self.imgMsgId = ID
-                                        #self.imgBuddy = room + "@g.us"
-                                elif "geo:" in message.lower():
-                                        self._sendLocation(room + "@g.us", message, ID)
-
-                                else:
-
-                                        self.sendTextMessage(self._lengthenGroupId(room) + '@g.us', message)
+					self.sendImage(message, ID, room + '@g.us')
+				elif "geo:" in message.lower():
+					self._sendLocation(room + "@g.us", message, ID)
+				else:
+					self.sendTextMessage(room + '@g.us', message)
 		else: # private msg
 			buddy = sender
 #			if message == "\\lastseen":
@@ -649,20 +666,8 @@ class Session(YowsupApp):
                                 #self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
                                 self.requestVCard(buddy)
                         else:
-                                if (".jpg" in message.lower()) or (".webp" in message.lower()):
-                                        #waId = self.call("message_imageSend", (buddy + "@s.whatsapp.net", message, None, 0, None))
-                                        #waId = self.call("message_send", (buddy + "@s.whatsapp.net", message))
-                                        if (".jpg" in message.lower()):
-                                                self.imgType = "jpg"
-                                        if (".webp" in message.lower()):
-                                                self.imgType = "webp"
-                                        self.imgMsgId = ID
-                                        self.imgBuddy = buddy + "@s.whatsapp.net"
-
-					downloader = MediaDownloader(self.onDlsuccess, self.onDlerror)
-                                        downloader.download(message)
-                                        #self.imgMsgId = ID
-                                        #self.imgBuddy = buddy + "@s.whatsapp.net"
+				if (".jpg" in message.lower()) or (".webp" in message.lower()):
+					self.sendImage(message, ID, buddy + "@s.whatsapp.net")
                                 elif "geo:" in message.lower():
                                         self._sendLocation(buddy + "@s.whatsapp.net", message, ID)
                                 else:
@@ -804,48 +809,6 @@ class Session(YowsupApp):
 	def requestVCard(self, buddy, ID=None):
 		self.buddies.requestVCard(buddy, ID)
 
-	def onDlsuccess(self, path):
-                self.logger.info("Success: Image downloaded to %s", path)
-                os.rename(path, path+"."+self.imgType)
-                if self.imgType != "jpg":
-                        im = Image.open(path+"."+self.imgType)
-                        im.save(path+".jpg")
-                self.imgPath = path+".jpg"
-                statinfo = os.stat(self.imgPath)
-                name=os.path.basename(self.imgPath)
-		self.logger.info("Buddy %s",self.imgBuddy)
-		self.image_send(self.imgBuddy, self.imgPath)
-
-                #self.logger.info("Sending picture %s of size %s with name %s",self.imgPath, statinfo.st_size, name)
-                #mtype = "image"
-
-                #sha1 = hashlib.sha256()
-                #fp = open(self.imgPath, 'rb')
-                #try:
-                #        sha1.update(fp.read())
-                #        hsh = base64.b64encode(sha1.digest())
-                #        self.call("media_requestUpload", (hsh, mtype, os.path.getsize(self.imgPath)))
-                #finally:
-                #        fp.close()
-
-
-        def onDlerror(self):
-                self.logger.info("Download Error. Sending message as is.")
-		waId = self.sendTextMessage(self.dlerror_sender + '@s.whatsapp.net', self.dlerror_message)
-		self.msgIDs[waId] = MsgIDs(self.dlerror_ID, waId)
-
-
-	def _doSendImage(self, filePath, url, to, ip = None, caption = None):
-		waId = self.doSendImage(filePath, url, to, ip, caption)
-		self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-	def _doSendAudio(self, filePath, url, to, ip = None, caption = None):
-                waId = self.doSendAudio(filePath, url, to, ip, caption)
-                self.msgIDs[waId] = MsgIDs(self.imgMsgId, waId)
-
-
-
-   
 	def createThumb(self, size=100, raw=False):
                 img = Image.open(self.imgPath)
                 width, height = img.size

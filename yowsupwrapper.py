@@ -43,6 +43,7 @@ from yowsup.layers.protocol_privacy.protocolentities import *
 from yowsup.layers.protocol_receipts.protocolentities  import *
 from yowsup.layers.protocol_iq.protocolentities  import *
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
+from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
 
 # Registration
@@ -136,6 +137,10 @@ class YowsupApp(object):
 		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
 		self.sendEntity(receipt)
 
+	def downloadMedia(self, url, onSuccess = None, onFailure = None):
+		downloader = MediaDownloader(onSuccess, onFailure)
+		downloader.download(url)
+
 	def sendTextMessage(self, to, message):
 		"""
 		Sends a text message
@@ -153,26 +158,27 @@ class YowsupApp(object):
 		self.sendEntity(messageEntity)
                 return messageEntity.getId()
 
-	def image_send(self, jid, path, caption = None):
-            	entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
-		successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption)
+	def sendImage(self, jid, path, caption = None, onSuccess = None, onFailure = None):
+		entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
+		successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption, onSuccess, onFailure)
             	errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
 
             	self.sendIq(entity, successFn, errorFn)
 
-	def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None):
+	def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None, onSuccess=None, onFailure=None):
 
         	if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
-            		doSendFn = self._doSendAudio
+            		doSendFn = self.doSendAudio
         	else:
-            		doSendFn = self._doSendImage
+            		doSendFn = self.doSendImage
 
         	if resultRequestUploadIqProtocolEntity.isDuplicate():
             		doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
                              resultRequestUploadIqProtocolEntity.getIp(), caption)
         	else:
-            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption)
-            		mediaUploader = MediaUploader(jid, self.legacyName,  filePath,
+            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+			ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
+            		mediaUploader = MediaUploader(jid, ownNumber, filePath,
                                       resultRequestUploadIqProtocolEntity.getUrl(),
                                       resultRequestUploadIqProtocolEntity.getResumeOffset(),
                                       successFn, self.onUploadError, self.onUploadProgress, async=False)
@@ -190,17 +196,21 @@ class YowsupApp(object):
         	#sys.stdout.flush()
 		pass
 
-	def doSendImage(self, filePath, url, to, ip = None, caption = None):
+	def doSendImage(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
         	entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
         	self.sendEntity(entity)
-		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+			#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+		if onSuccess is not None:
+			onSuccess(entity.getId())
 		return entity.getId()
 
 
-    	def doSendAudio(self, filePath, url, to, ip = None, caption = None):
+    	def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
         	entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
         	self.sendEntity(entity)
 		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+		if onSuccess is not None:
+			onSuccess(entity.getId())
 		return entity.getId()
 
 
@@ -310,7 +320,6 @@ class YowsupApp(object):
 			- success: (func) - Callback; Takes three arguments: existing numbers,
 				non-existing numbers, invalid numbers.
 		"""
-		# TODO: Implement callbacks
 		mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
 		context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
 		# International contacts must be preceded by a plus.  Other numbers are

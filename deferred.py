@@ -71,7 +71,7 @@ class Deferred(object):
 		""" Calls when func(*args, **kwargs) when deferred gets a value """
 		def helper(*args2, **kwargs2):
 			func(*args, **kwargs)
-		self.then(helper)
+		return self.then(helper)
 
 	def __getattr__(self, method_name):
 		return getattr(Then(self), method_name)
@@ -130,7 +130,7 @@ def call(func, *args, **kwargs):
 			def restfunc2(*arg2, **kwarg2):
 				apply_deferred = partial(normalfunc, *arg2, **kwarg2)
 				return call(apply_deferred, **dict(items[i + 1:]))
-			return c.then(restfunc2)
+			return v.then(restfunc2)
 	# No items deferred
 	return func(*args, **kwargs)
 

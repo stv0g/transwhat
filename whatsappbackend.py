@@ -121,6 +121,9 @@ class WhatsAppBackend(SpectrumBackend):
 		self.logger.debug("handleVCardUpdatedRequest(user=%s, nickname=%s)", user, nickname)
 		self.sessions[user].setProfilePicture(photo)
 
+	def handleBuddyBlockToggled(self, user, buddy, blocked):
+		self.logger.debug("handleBuddyBlockedToggled(user=%s, buddy=%s, blocked=%s)", user, buddy, blocked)
+
 	def relogin(self, user, legacyName, password, extra):
 		"""
 		Used to re-initialize the session object. Used when finished with
@@ -137,10 +140,6 @@ class WhatsAppBackend(SpectrumBackend):
 		self.sessions[user].login(password)
 
 	# TODO
-	def handleBuddyBlockToggled(self, user, buddy, blocked):
-		pass
-
-
 	def handleAttentionRequest(self, user, buddy, message):
 		pass
 
