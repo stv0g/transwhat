@@ -45,7 +45,7 @@ class Bot():
 		args = message.strip().split(" ")
 		cmd = args.pop(0)
 
-		if cmd[0] == '\\':
+		if len(cmd) > 0 and cmd[0] == '\\':
 			try:
 				self.call(cmd[1:], args)
 			except KeyError:
