@@ -29,8 +29,8 @@ import logging
 import asyncore
 import sys, os
 import e4u
-import threading
 import Queue
+import threadutils
 
 sys.path.insert(0, os.getcwd())
 
@@ -62,7 +62,13 @@ logging.basicConfig( \
 
 # Handler
 def handleTransportData(data):
-	plugin.handleDataRead(data)
+	try:
+		plugin.handleDataRead(data)
+	except SystemExit as e:
+		raise e
+	except:
+		logger = logging.getLogger('transwhat')
+		logger.error(traceback.format_exc())
 
 e4u.load()
 
@@ -76,7 +82,13 @@ io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
 plugin = WhatsAppBackend(io, args.j)
 
-plugin.handleBackendConfig('features', 'send_buddies_on_login', 1)
+plugin.handleBackendConfig({
+	'features': [
+		('send_buddies_on_login', 1),
+		('muc', 'true'),
+	],
+})
+
 
 while True:
 	try:
@@ -90,6 +102,13 @@ while True:
 			break
 		if closed:
 			break
+		while True:
+			try:
+				callback = threadutils.eventQueue.get_nowait()
+			except Queue.Empty:
+				break
+			else:
+				callback()
 	except SystemExit:
 		break
 	except:

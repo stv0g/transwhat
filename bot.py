@@ -37,13 +37,12 @@ class Bot():
 		self.commands = {
 			"help": self._help,
 			"prune": self._prune,
-			"sync": self._sync,
             "groups": self._groups,
 			"getgroups": self._getgroups
 		}
 
 	def parse(self, message):
-		args = message.split(" ")
+		args = message.strip().split(" ")
 		cmd = args.pop(0)
 
 		if cmd[0] == '\\':
@@ -57,7 +56,7 @@ class Bot():
 			self.send("a valid command starts with a backslash")
 
 	def call(self, cmd, args = []):
-		func = self.commands[cmd]
+		func = self.commands[cmd.lower()]
 		spec = inspect.getargspec(func)
 		maxs = len(spec.args) - 1
 		reqs = maxs - len(spec.defaults or [])
@@ -71,23 +70,10 @@ class Bot():
 		self.session.backend.handleMessage(self.session.user, self.name, message)
 
 	# commands
-	def _sync(self):
-		user = self.session.legacyName
-		password = self.session.password
-
-		count = self.session.buddies.sync(user, password)
-		self.session.updateRoster()
-
-		if count:
-			self.send("sync complete, %d buddies are using WhatsApp" % count)
-		else:
-			self.send("sync failed, sorry something went wrong")
-
 	def _help(self):
 		self.send("""following bot commands are available:
 \\help			show this message
 \\prune			clear your buddylist
-\\sync			sync your imported contacts with WhatsApp
 
 following user commands are available:
 \\lastseen		request last online timestamp from buddy

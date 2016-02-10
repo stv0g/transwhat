@@ -222,11 +222,27 @@ class SpectrumBackend:
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
 		self.send(message)
 
-	def handleBackendConfig(self, section, key, value):
+	def handleBackendConfig(self, data):
+		"""
+		data is a dictionary, whose keys are sections and values are a list of
+		tuples of configuration key and configuration value.
+		"""
 		c = protocol_pb2.BackendConfig()
-		c.config = "[%s]\n%s = %s\n" % (section, key, value)
+		config = []
+		for section, rest in data.items():
+			config.append('[%s]' % section)
+			for key, value in rest:
+				config.append('%s = %s' % (key, value))
+
+		c.config = '\n'.join(config)
 
 		message = WRAP(c.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BACKEND_CONFIG);
+		self.send(message)
+
+	def handleQuery(self, command):
+		c = protocol_pb2.BackendConfig()
+		c.config = command
+		message = WRAP(c.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_QUERY);
 		self.send(message)
 
 	def handleLoginPayload(self, data):
@@ -252,7 +268,6 @@ class SpectrumBackend:
 
 	def handleConvMessagePayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
-		self.logger.error("handleConvMessagePayload")
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return

@@ -63,6 +63,9 @@ Create a new file `/etc/spectrum2/transports/whatsapp.cfg` with the following co
     [logging]
     config = /etc/spectrum2/logging.cfg
     backend_config = /etc/spectrum2/backend-logging.cfg
+    
+    [database]
+    type = sqlite3
 
 ## transWhat
 
@@ -74,7 +77,7 @@ Checkout the latest version of transWhat from GitHub:
     
 Install required dependencies:
 
-    $ pip install --pre e4u protobuf python-dateutil yowsup
+    $ pip install --pre e4u protobuf python-dateutil yowsup2
 
   - **e4u**: is a simple emoji4unicode python bindings
   - [**yowsup**](https://github.com/tgalal/yowsup): is a python library that enables you build application which use WhatsApp service.
