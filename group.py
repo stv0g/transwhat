@@ -67,8 +67,12 @@ class Group():
 				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
 			if number == yourNumber:
 				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
-
-			self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE)
+			
+			try:
+				self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE, 
+					self.backend.sessions[self.user].buddies[number].image_hash)
+			except KeyError:
+				self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE)
 
 	def removeParticipants(self, participants):
 		for jid in participants:
@@ -94,10 +98,10 @@ class Group():
 		self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE, new_nick)
 		self.participants[number] = new_nick
 
-	def _updateParticipant(self, number, flags, status, newNick = ""):
+	def _updateParticipant(self, number, flags, status, imageHash = "", newNick = ""):
 		nick = self.participants[number]
 		# Notice the status message is the buddy's number
 		if self.joined:
 			self.backend.handleParticipantChanged(
 					self.user, nick, self.id, flags,
-					status, number, newname = newNick)
+					status, number, newname = newNick, iconHash = imageHash)

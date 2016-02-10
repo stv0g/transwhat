@@ -154,13 +154,14 @@ class SpectrumBackend:
 		self.send(message);
 
 
-	def handleParticipantChanged(self, user, nickname, room, flags, status, statusMessage = "", newname = ""):
+	def handleParticipantChanged(self, user, nickname, room, flags, status, statusMessage = "", newname = "", iconHash = ""):
 		d = protocol_pb2.Participant()
 		d.userName = user
 		d.nickname = nickname
 		d.room = room
 		d.flag = flags
 		d.newname = newname
+		d.iconHash = iconHash
 		d.status = status
 		d.statusMessage = statusMessage
 
