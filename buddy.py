@@ -172,15 +172,29 @@ class BuddyList(dict):
 			return None
 
 	def requestVCard(self, buddy, ID=None):
-		if buddy == self.user or buddy == self.user.split('@')[0]:
-			buddy = self.session.legacyName
+		if "/" in buddy:
+			room, nick = buddy.split("/")
+			group = self.session.groups[room]
+			buddynr = None
+			for othernumber, othernick in group.participants.iteritems():
+				if othernick == nick:
+					buddynr = othernumber
+					break
+			if buddynr is None:
+				return
+		else:
+			buddynr = buddy
+				
+
+		if buddynr == self.user or buddynr == self.user.split('@')[0]:
+			buddynr = self.session.legacyName
 
 		# Get profile picture
-		self.logger.debug('Requesting profile picture of %s', buddy)
+		self.logger.debug('Requesting profile picture of %s', buddynr)
 		response = deferred.Deferred()
 		# Error probably means image doesn't exist
 		error = deferred.Deferred()
-		self.session.requestProfilePicture(buddy, onSuccess=response.run,
+		self.session.requestProfilePicture(buddynr, onSuccess=response.run,
 				onFailure=error.run)
 		response = response.arg(0)
 
@@ -196,9 +210,9 @@ class BuddyList(dict):
 			error.when(self.backend.handleVCard, self.user, ID, buddy, "", "", "")
 
 		# Send image hash
-		if not buddy == self.session.legacyName:
+		if not buddynr == self.session.legacyName:
 			try:
-				obuddy = self[buddy]
+				obuddy = self[buddynr]
 				nick = obuddy.nick
 				groups = obuddy.groups
 			except KeyError:
@@ -206,10 +220,10 @@ class BuddyList(dict):
 				groups = []
 			image_hash = pictureData.then(utils.sha1hash)
 			call(self.logger.debug, 'Image hash is %s', image_hash)
-			call(self.update, buddy, nick, groups, image_hash)
+			call(self.update, buddynr, nick, groups, image_hash)
 			# No image
 			error.when(self.logger.debug, 'No image')
-			error.when(self.update, buddy, nick, groups, '')
+			error.when(self.update, buddynr, nick, groups, '')
 
 	def refresh(self, number):
 		self.session.unsubscribePresence(number)
