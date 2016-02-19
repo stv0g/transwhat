@@ -78,6 +78,7 @@ class Session(YowsupApp):
 		self.msgIDs = { }
 		self.groupOfflineQueue = { }
 		self.loggedIn = False
+		self.recvMsgIDs = []
 
 		self.timer = None
 		self.password = None
@@ -209,6 +210,12 @@ class Session(YowsupApp):
 			self.onPresenceAvailable(number)
 		else:
 			self.onPresenceUnavailable(number)
+	def sendReadReceipts(self, buddy):
+		for _id, _from, participant in self.recvMsgIDs:
+			if _from == (buddy + '@s.whatsapp.net'):
+				self.sendReceipt(_id, _from, 'read', participant)
+				self.recvMsgIDs.remove((_id, _from, participant))
+				self.logger.debug("Send read receipt to %s (ID: %s)", _from, _id)
 
 	# Called by superclass
 	def onAuthSuccess(self, status, kind, creation,
@@ -285,6 +292,7 @@ class Session(YowsupApp):
 		buddy = _from.split('@')[0]
 		messageContent = utils.softToUni(body)
 		self.sendReceipt(_id, _from, None, participant)
+		self.recvMsgIDs.append((_id, _from, participant))
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
 				buddy, self.legacyName, messageContent, timestamp)
 		if participant is not None: # Group message or broadcast
@@ -320,6 +328,8 @@ class Session(YowsupApp):
 			self.sendMessageToXMPP(buddy, image.url, image.timestamp)
 			self.sendMessageToXMPP(buddy, image.caption, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)
+		self.recvMsgIDs.append((image._id, image._from, image.participant))
+
 
 	# Called by superclass
 	def onAudio(self, audio):
@@ -337,6 +347,8 @@ class Session(YowsupApp):
 		else:
 			self.sendMessageToXMPP(buddy, message, audio.timestamp)
 		self.sendReceipt(audio._id,	 audio._from, None, audio.participant)
+		self.recvMsgIDs.append((audio._id, audio._from, audio.participant))
+
 
 	# Called by superclass
 	def onVideo(self, video):
@@ -355,6 +367,8 @@ class Session(YowsupApp):
 		else:
 			self.sendMessageToXMPP(buddy, message, video.timestamp)
 		self.sendReceipt(video._id,	 video._from, None, video.participant)
+		self.recvMsgIDs.append((video._id, video._from, video.participant))
+
 
 	def onLocation(self, location):
 		buddy = location._from.split('@')[0]
@@ -384,6 +398,8 @@ class Session(YowsupApp):
 				self.sendMessageToXMPP(buddy, url, location.timestamp)
 			self.sendMessageToXMPP(buddy, latlong, location.timestamp)
 		self.sendReceipt(location._id, location._from, None, location.participant)
+		self.recvMsgIDs.append((loaction._id, location._from, location.participant))
+
 
 
 	# Called by superclass
@@ -407,6 +423,8 @@ class Session(YowsupApp):
 #		self.sendMessageToXMPP(buddy, card_data)
 		#self.transferFile(buddy, str(name), card_data)
 		self.sendReceipt(_id, _from, None, participant)
+		self.recvMsgIDs.append((_id, _from, participant))
+
 
 	def transferFile(self, buddy, name, data):
 		# Not working
@@ -560,6 +578,7 @@ class Session(YowsupApp):
 		if buddy != "bot":
 			self.logger.info("Started typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, True)
+			self.sendReadReceipts(buddy)
 		# If he is typing he is present
 		# I really don't know where else to put this.
 		# Ideally, this should be sent if the user is looking at his client
@@ -569,6 +588,7 @@ class Session(YowsupApp):
 		if buddy != "bot":
 			self.logger.info("Stopped typing: %s to %s", self.legacyName, buddy)
 			self.sendTyping(buddy, False)
+			self.sendReadReceipts(buddy)
 
 	def sendImage(self, message, ID, to):
 		if (".jpg" in message.lower()):
@@ -610,6 +630,7 @@ class Session(YowsupApp):
 						 self.legacyName, sender, message, xhtml)
 
 		message = message.encode("utf-8")
+		self.sendReadReceipts(sender)
 
 		if sender == "bot":
 			self.bot.parse(message)
