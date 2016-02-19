@@ -212,7 +212,7 @@ class Session(YowsupApp):
 			self.onPresenceUnavailable(number)
 	def sendReadReceipts(self, buddy):
 		for _id, _from, participant in self.recvMsgIDs:
-			if _from == (buddy + '@s.whatsapp.net'):
+			if _from.split('@')[0] == buddy:
 				self.sendReceipt(_id, _from, 'read', participant)
 				self.recvMsgIDs.remove((_id, _from, participant))
 				self.logger.debug("Send read receipt to %s (ID: %s)", _from, _id)
