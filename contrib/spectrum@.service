@@ -1,0 +1,11 @@
+[Unit]
+description=spectrum2 whatsapp
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/spectrum2 --no-daemonize -j whatsapp.example.com --config /etc/spectrum2/transports/whatsapp.cfg
+Restart=always
+User=spectrum2
+
+[Install]
+WantedBy=multi-user.target
