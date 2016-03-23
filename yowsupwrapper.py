@@ -55,9 +55,19 @@ from functools import partial
 
 #from session import MsgIDs
 
+# Temporary env until yowsup updates
+class UpdatedS40YowsupEnv(env.S40YowsupEnv):
+	_VERSION = "2.13.39"
+	_OS_NAME= "S40"
+	_OS_VERSION = "14.26"
+	_DEVICE_NAME = "302"
+	_MANUFACTURER = "Nokia"
+	_TOKEN_STRING  = "PdA2DJyKoUrwLw1Bg6EIhzh502dF9noR9uFCllGk{phone}"
+	_AXOLOTL = True
+
 class YowsupApp(object):
 	def __init__(self):
-		env.CURRENT_ENV = env.S40YowsupEnv()
+		env.CURRENT_ENV = UpdatedS40YowsupEnv()
 
 		layers = (YowsupAppLayer,
 				YowParallelLayer((YowAuthenticationProtocolLayer,
