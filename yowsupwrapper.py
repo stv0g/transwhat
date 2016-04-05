@@ -752,9 +752,9 @@ class YowsupAppLayer(YowInterfaceLayer):
 	def onReceipt(self, entity):
 		"""Sends ack automatically"""
 		# entity is IncomingReceiptProtocolEntity
-		ack = OutgoingAckProtocolEntity(entity.getId(),
-				'receipt', entity.getType(), entity.getFrom())
-		self.toLower(ack)
+		#ack = OutgoingAckProtocolEntity(entity.getId(),
+		#		'receipt', entity.getType(), entity.getFrom())
+		self.toLower(entity.ack())
 		_id = entity._id
 		_from = entity._from
 		timestamp = entity.timestamp
