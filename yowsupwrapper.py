@@ -174,9 +174,9 @@ class YowsupApp(object):
 
         	if resultRequestUploadIqProtocolEntity.isDuplicate():
             		doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
-                             resultRequestUploadIqProtocolEntity.getIp(), caption)
+                             resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
         	else:
-            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+            		successFn = lambda filePath, jid, url: doSendFn(filePath, url.encode('ascii','ignore'), jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
 			ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
             		mediaUploader = MediaUploader(jid, ownNumber, filePath,
                                       resultRequestUploadIqProtocolEntity.getUrl(),

@@ -283,14 +283,16 @@ class Session(YowsupApp):
 	# Called by superclass
 	def onTextMessage(self, _id, _from, to, notify, timestamp, participant,
 					  offline, retry, body):
-		self.logger.debug('received TextMessage' +
-			' '.join(map(str, [
-				_id, _from, to, notify, timestamp,
-				participant, offline, retry, body
-			]))
-		)
+		self.logger.debug('received TextMessage')
+		#self.logger.debug('received TextMessage' +
+		#	' '.join(map(str, [
+		#		_id, _from, to, notify, timestamp,
+		#		participant, offline, retry, body
+		#	]))
+		#)
 		buddy = _from.split('@')[0]
-		messageContent = utils.softToUni(body)
+		messageContent = body #utils.softToUni(body)
+                self.logger.debug('received TextMessage 2')
 		self.sendReceipt(_id, _from, None, participant)
 		self.recvMsgIDs.append((_id, _from, participant))
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)",
@@ -315,17 +317,27 @@ class Session(YowsupApp):
 		participant = image.participant
 		if image.caption is None:
 			image.caption = ''
+		if image.isEncrypted():
+			self.logger.debug('Received encrypted image message')
+			ipath = "uploads/" + str(image.timestamp)  + image.getExtension()
+	                self.logger.debug('Received encrypted image message22')
+
+			with open("/srv/www/htdocs/" + ipath,"wb") as f:
+            			f.write(image.getMediaContent())
+			url = "http://www/" + ipath
+		else:
+			url = image.url
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if image._from.split('@')[1] == 'broadcast': # Broadcast message
 				self.sendMessageToXMPP(partname, self.broadcast_prefix, image.timestamp)
-				self.sendMessageToXMPP(partname, image.url, image.timestamp)
+				self.sendMessageToXMPP(partname, url, image.timestamp)
 				self.sendMessageToXMPP(partname, image.caption, image.timestamp)
 			else: # Group message
-				self.sendGroupMessageToXMPP(buddy, partname, image.url, image.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, url, image.timestamp)
 				self.sendGroupMessageToXMPP(buddy, partname, image.caption, image.timestamp)
 		else:
-			self.sendMessageToXMPP(buddy, image.url, image.timestamp)
+			self.sendMessageToXMPP(buddy, url, image.timestamp)
 			self.sendMessageToXMPP(buddy, image.caption, image.timestamp)
 		self.sendReceipt(image._id,	 image._from, None, image.participant)
 		self.recvMsgIDs.append((image._id, image._from, image.participant))
