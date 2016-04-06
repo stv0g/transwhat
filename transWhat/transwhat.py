@@ -47,7 +47,7 @@ parser.add_argument('--host', type=str, required=True)
 parser.add_argument('--port', type=int, required=True)
 parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
 parser.add_argument('config', type=str)
-parser.add_argument('-j', type=str, required=True)
+parser.add_argument('-j', type=str, metavar="JID", required=True)
 
 args, unknown = parser.parse_known_args()
 
