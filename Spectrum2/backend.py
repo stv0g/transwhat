@@ -277,13 +277,11 @@ class SpectrumBackend:
 		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml, payload.id)
 	
 	def handleConvMessageAckPayload(self, data):
-                payload = protocol_pb2.ConversationMessage()
-                if (payload.ParseFromString(data) == False):
-                        #TODO: ERROR
-                        return
-                self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
-
-
+		payload = protocol_pb2.ConversationMessage()
+		if (payload.ParseFromString(data) == False):
+			#TODO: ERROR
+			return
+		self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
 
 	def handleAttentionPayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
@@ -452,7 +450,7 @@ class SpectrumBackend:
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
 				self.handleExitRequest()
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK:
-                                self.handleConvMessageAckPayload(wrapper.payload)
+				self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_BUDDIES:
@@ -543,14 +541,14 @@ class SpectrumBackend:
 		raise NotImplementedError, "Implement me"
 
 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
-                """
-                Called when XMPP user sends message to legacy network.
-                @param user: XMPP JID of user for which this event occurs.
-                @param legacyName: Legacy network name of buddy or room.
-                @param ID: message ID
-                """
+		"""
+		Called when XMPP user sends message to legacy network.
+		@param user: XMPP JID of user for which this event occurs.
+		@param legacyName: Legacy network name of buddy or room.
+		@param ID: message ID
+		"""
 
-                # raise NotImplementedError, "Implement me"
+		# raise NotImplementedError, "Implement me"
 		pass
 
 

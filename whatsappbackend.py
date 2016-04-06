@@ -160,7 +160,7 @@ class WhatsAppBackend(SpectrumBackend):
 		pass
 
  	def handleMessageAckRequest(self, user, legacyName, ID = 0):
-                self.logger.info("Meassage ACK request for %s !!",legacyName)
+		self.logger.info("Meassage ACK request for %s !!",legacyName)
 
 	def sendData(self, data):
 		self.io.sendData(data)

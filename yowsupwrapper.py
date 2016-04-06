@@ -185,64 +185,63 @@ class YowsupApp(object):
 	def sendLocation(self, to, latitude, longitude):
 		messageEntity = LocationMediaMessageProtocolEntity(latitude,longitude, None, None, "raw", to = to)
 		self.sendEntity(messageEntity)
-                return messageEntity.getId()
+
+		return messageEntity.getId()
 
 	def sendImage(self, jid, path, caption = None, onSuccess = None, onFailure = None):
 		entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
 		successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption, onSuccess, onFailure)
-            	errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
+		errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
 
-            	self.sendIq(entity, successFn, errorFn)
+		self.sendIq(entity, successFn, errorFn)
 
 	def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None, onSuccess=None, onFailure=None):
+		if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
+			doSendFn = self.doSendAudio
+		else:
+			doSendFn = self.doSendImage
 
-        	if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
-            		doSendFn = self.doSendAudio
-        	else:
-            		doSendFn = self.doSendImage
+		if resultRequestUploadIqProtocolEntity.isDuplicate():
+			doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
+			resultRequestUploadIqProtocolEntity.getIp(), caption)
+		else:
+			successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
 
-        	if resultRequestUploadIqProtocolEntity.isDuplicate():
-            		doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
-                             resultRequestUploadIqProtocolEntity.getIp(), caption)
-        	else:
-            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
-			ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
-            		mediaUploader = MediaUploader(jid, ownNumber, filePath,
-                                      resultRequestUploadIqProtocolEntity.getUrl(),
-                                      resultRequestUploadIqProtocolEntity.getResumeOffset(),
-                                      successFn, self.onUploadError, self.onUploadProgress, async=False)
-            		mediaUploader.start()
+		ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
 
-    	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
-        	self.logger.error("Request upload for file %s for %s failed" % (path, jid))
+		mediaUploader = MediaUploader(jid, ownNumber, filePath,
+							resultRequestUploadIqProtocolEntity.getUrl(),
+							resultRequestUploadIqProtocolEntity.getResumeOffset(),
+							successFn, self.onUploadError, self.onUploadProgress, async=False)
 
-    	def onUploadError(self, filePath, jid, url):
-        	#logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
-		self.logger.error("Upload Error!")
+		mediaUploader.start()
 
-    	def onUploadProgress(self, filePath, jid, url, progress):
-        	#sys.stdout.write("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
-        	#sys.stdout.flush()
-		pass
+		def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
+			self.logger.error("Request upload for file %s for %s failed" % (path, jid))
 
-	def doSendImage(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        	entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
-        	self.sendEntity(entity)
+		def onUploadError(self, filePath, jid, url):
+			self.logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
+
+		def onUploadProgress(self, filePath, jid, url, progress):
+			#sys.stdout.write("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
+			#sys.stdout.flush()
+			pass
+
+		def doSendImage(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
+			entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
+			self.sendEntity(entity)
 			#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
-		if onSuccess is not None:
-			onSuccess(entity.getId())
-		return entity.getId()
+			if onSuccess is not None:
+				onSuccess(entity.getId())
+			return entity.getId()
 
-
-    	def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        	entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
-        	self.sendEntity(entity)
-		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
-		if onSuccess is not None:
-			onSuccess(entity.getId())
-		return entity.getId()
-
-
+		def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
+			entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
+			self.sendEntity(entity)
+			#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+			if onSuccess is not None:
+				onSuccess(entity.getId())
+			return entity.getId()
 
 	def sendPresence(self, available):
 		"""

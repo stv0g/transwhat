@@ -45,13 +45,10 @@ from yowsupwrapper import YowsupApp
 
 
 class MsgIDs:
-        def __init__(self, xmppId, waId):
-                self.xmppId = xmppId
-                self.waId = waId
-                self.cnt = 0
-
-
-
+	def __init__(self, xmppId, waId):
+		self.xmppId = xmppId
+		self.waId = waId
+		self.cnt = 0
 
 class Session(YowsupApp):
 	broadcast_prefix = u'\U0001F4E2 '
@@ -335,7 +332,7 @@ class Session(YowsupApp):
 	def onAudio(self, audio):
 		self.logger.debug('Received audio message %s', str(audio))
 		buddy = audio._from.split('@')[0]
-                participant = audio.participant
+		participant = audio.participant
 		message = audio.url
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
@@ -354,7 +351,7 @@ class Session(YowsupApp):
 	def onVideo(self, video):
 		self.logger.debug('Received video message %s', str(video))
 		buddy = video._from.split('@')[0]
-                participant = video.participant
+		participant = video.participant
 
 		message = video.url
 		if participant is not None: # Group message
@@ -375,12 +372,10 @@ class Session(YowsupApp):
 		latitude = location.getLatitude()
 		longitude = location.getLongitude()
 		url = location.getLocationURL()
-                participant = location.participant
+		participant = location.participant
 		latlong = 'geo:' + latitude + ',' + longitude
 
-		self.logger.debug("Location received from %s: %s, %s",
-						  buddy, latitude, longitude)
-
+		self.logger.debug("Location received from %s: %s, %s", buddy, latitude, longitude)
 
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
@@ -563,8 +558,6 @@ class Session(YowsupApp):
 		else:
 			self.onPresenceAvailable(buddy)
 
-
-
 	def onPresenceAvailable(self, buddy):
 		self.logger.info("Is available: %s", buddy)
 		self.buddies.updateSpectrum(buddy)
@@ -674,60 +667,46 @@ class Session(YowsupApp):
 					self.sendTextMessage(room + '@g.us', message)
 		else: # private msg
 			buddy = sender
-#			if message == "\\lastseen":
-#				self.call("presence_request", buddy = (buddy + "@s.whatsapp.net",))
-#			else:
 			if message.split(" ").pop(0) == "\\lastseen":
-                                self.presenceRequested.append(buddy)
-                                #self.call("presence_request", (buddy + "@s.whatsapp.net",))
-                                self._requestLastSeen(buddy)
-                        elif message.split(" ").pop(0) == "\\gpp":
-                                self.logger.info("Get Profile Picture! ")
-                                self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
-                                #self.call("contact_getProfilePicture", (buddy + "@s.whatsapp.net",))
-                                self.requestVCard(buddy)
-                        else:
-				if (".jpg" in message.lower()) or (".webp" in message.lower()):
-					self.sendImage(message, ID, buddy + "@s.whatsapp.net")
-                                elif "geo:" in message.lower():
-                                        self._sendLocation(buddy + "@s.whatsapp.net", message, ID)
-                                else:
-                                        waId = self.sendTextMessage(sender + '@s.whatsapp.net', message)
-                                        self.msgIDs[waId] = MsgIDs( ID, waId)
+				self.presenceRequested.append(buddy)
+				self._requestLastSeen(buddy)
+			elif message.split(" ").pop(0) == "\\gpp":
+				self.sendMessageToXMPP(buddy, "Fetching Profile Picture")
+				self.requestVCard(buddy)
+			elif (".jpg" in message.lower()) or (".webp" in message.lower()):
+				self.sendImage(message, ID, buddy + "@s.whatsapp.net")
+			elif "geo:" in message.lower():
+				self._sendLocation(buddy + "@s.whatsapp.net", message, ID)
+			else:
+				waId = self.sendTextMessage(sender + '@s.whatsapp.net', message)
+				self.msgIDs[waId] = MsgIDs(ID, waId)
 
-                                        self.logger.info("WA Message send to %s with ID %s", buddy, waId)
-			#self.sendTextMessage(sender + '@s.whatsapp.net', message)
+			self.logger.info("WA Message send to %s with ID %s", buddy, waId)
 	
 	def executeCommand(self, command, room):
 		if command == '\\leave':
 			self.logger.debug("Leaving room %s", room)
-			# Leave group on whatsapp side
-			self.leaveGroup(room)
-			# Delete Room on spectrum side
+			self.leaveGroup(room) # Leave group on whatsapp side
 			group = self.groups[room]
-			group.leaveRoom()
+			group.leaveRoom() # Delete Room on spectrum side
 			del self.groups[room]
 
 	def _requestLastSeen(self, buddy):
-		
-            	def onSuccess(buddy, lastseen):
+		def onSuccess(buddy, lastseen):
 			timestamp = time.localtime(time.localtime()-lastseen)
-                        timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-                        self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, utils.ago(lastseen),str(lastseen)))
-            	def onError(errorIqEntity, originalIqEntity):
-                	self.sendMessageToXMPP(errorIqEntity.getFrom(), "LastSeen Error")
+			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
+			self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, utils.ago(lastseen),str(lastseen)))
+
+		def onError(errorIqEntity, originalIqEntity):
+			self.sendMessageToXMPP(errorIqEntity.getFrom(), "LastSeen Error")
 
 		self.requestLastSeen(buddy, onSuccess, onError)
 
 	def _sendLocation(self, buddy, message, ID):
-                #with open('/opt/transwhat/map.jpg', 'rb') as imageFile:
-                #        raw = base64.b64encode(imageFile.read())
-                latitude,longitude = message.split(':')[1].split(',')
-                waId = self.sendLocation(buddy, float(latitude), float(longitude))
-                self.msgIDs[waId] = MsgIDs( ID, waId)
-                self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
-
-
+		latitude,longitude = message.split(':')[1].split(',')
+		waId = self.sendLocation(buddy, float(latitude), float(longitude))
+		self.msgIDs[waId] = MsgIDs( ID, waId)
+		self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
 
 	def sendMessageToXMPP(self, buddy, messageContent, timestamp = "", nickname = ""):
 		if timestamp:
@@ -831,24 +810,24 @@ class Session(YowsupApp):
 		self.buddies.requestVCard(buddy, ID)
 
 	def createThumb(self, size=100, raw=False):
-                img = Image.open(self.imgPath)
-                width, height = img.size
-                img_thumbnail = self.imgPath + '_thumbnail'
+		img = Image.open(self.imgPath)
+		width, height = img.size
+		img_thumbnail = self.imgPath + '_thumbnail'
 
-                if width > height:
-                        nheight = float(height) / width * size
-                        nwidth = size
-                else:
-                        nwidth = float(width) / height * size
-                        nheight = size
+		if width > height:
+			nheight = float(height) / width * size
+			nwidth = size
+		else:
+			nwidth = float(width) / height * size
+			nheight = size
 
-                img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
-                img.save(img_thumbnail, 'JPEG')
+		img.thumbnail((nwidth, nheight), Image.ANTIALIAS)
+		img.save(img_thumbnail, 'JPEG')
 
-                with open(img_thumbnail, 'rb') as imageFile:
-                        raw = base64.b64encode(imageFile.read())
+		with open(img_thumbnail, 'rb') as imageFile:
+			raw = base64.b64encode(imageFile.read())
 
-                return raw
+		return raw
 
 	# Not used
 	def onLocationReceived(self, messageId, jid, name, preview, latitude, longitude, receiptRequested, isBroadcast):
@@ -857,15 +836,16 @@ class Session(YowsupApp):
 
 		url = "http://maps.google.de?%s" % urllib.urlencode({ "q": "%s %s" % (latitude, longitude) })
 		self.sendMessageToXMPP(buddy, utils.shorten(url))
-		if receiptRequested: self.call("message_ack", (jid, messageId))
-
+		if receiptRequested:
+			self.call("message_ack", (jid, messageId))
 
 	def onGroupSubjectReceived(self, messageId, gjid, jid, subject, timestamp, receiptRequested):
 		room = gjid.split("@")[0]
 		buddy = jid.split("@")[0]
 
 		self.backend.handleSubject(self.user, room, subject, buddy)
-		if receiptRequested: self.call("subject_ack", (gjid, messageId))
+		if receiptRequested:
+			self.call("subject_ack", (gjid, messageId))
 
 	# Yowsup Notifications
 	def onGroupParticipantRemoved(self, gjid, jid, author, timestamp, messageId, receiptRequested):
@@ -875,15 +855,15 @@ class Session(YowsupApp):
 		self.logger.info("Removed %s from room %s", buddy, room)
 
 		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_NONE) # TODO
+
 		if receiptRequested: self.call("notification_ack", (gjid, messageId))
 
 	def onContactProfilePictureUpdated(self, jid, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
-		if receiptRequested: self.call("notification_ack", (jid, messageId))
+		if receiptRequested:
+			self.call("notification_ack", (jid, messageId))
 
 	def onGroupPictureUpdated(self, jid, author, timestamp, messageId, pictureId, receiptRequested):
 		# TODO
-		if receiptRequested: self.call("notification_ack", (jid, messageId))
-
-
-
+		if receiptRequested:
+			self.call("notification_ack", (jid, messageId))
