@@ -2,6 +2,16 @@
 
 transWhat is a WhatsApp XMPP Gateway based on Spectrum2                         
 
+#### Branches
+
+ - [yowsup-1](http://github.com/stv0g/transwhat/tree/yowsup-1) My original version which is based on @tgalal first Yowsup version (**deprecated** and broken).
+ - [yowsup-2](http://github.com/stv0g/transwhat/tree/yowsup-2) Major rewrite from @moyamo for @tgalal's new Yowsup 2 (**recommended**).
+ - [develop](http://github.com/stv0g/transwhat/tree/develop) A develop branch with the latest fixes and improvements. This branch is based on `yowsup-2`.
+
+For production, please use the `yowsup-2` branch.
+
+Please file bugreports against the `develop` branch.
+
 ## Dependencies
 
 #### Spectrum 2
