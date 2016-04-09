@@ -79,7 +79,7 @@ class BuddyList(dict):
 		self.session.sendSync(contacts, delta=False, interactive=True,
 				success=self.onSync)
 
-		self.logger.debug("Roster add: %s", str(list(contacts)))
+		self.logger.debug("Roster add: %s",list(contacts))
 
 		for number in contacts:
 			buddy = self[number]
