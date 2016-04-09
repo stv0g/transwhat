@@ -65,7 +65,7 @@ class BuddyList(dict):
 		for buddy in buddies:
 			number = buddy.buddyName
 			nick = buddy.alias
-			statusMsg = buddy.statusMessage.decode('utf-8')
+			statusMsg = buddy.statusMessage
 			groups = [g for g in buddy.group]
 			image_hash = buddy.iconHash
 			self[number] = Buddy(self.owner, number, nick, statusMsg,
@@ -79,7 +79,7 @@ class BuddyList(dict):
 		self.session.sendSync(contacts, delta=False, interactive=True,
 				success=self.onSync)
 
-		self.logger.debug("Roster add: %s", str(list(contacts)))
+		self.logger.debug("Roster add: %s" % list(contacts))
 
 		for number in contacts:
 			buddy = self[number]
@@ -90,21 +90,21 @@ class BuddyList(dict):
 
 		for number in existing:
 			self.session.subscribePresence(number)
-		self.logger.debug("%s is requesting statuses of: %s", self.user, existing)
+		self.logger.debug("%s is requesting statuses of: %s" % (self.user, existing))
 		self.session.requestStatuses(existing, success = self.onStatus)
 
-		self.logger.debug("Removing nonexisting buddies %s", nonexisting)
+		self.logger.debug("Removing nonexisting buddies %s" % nonexisting)
 		for number in nonexisting:
 			self.remove(number)
 			del self[number]
 
-		self.logger.debug("Removing invalid buddies %s", invalid)
+		self.logger.debug("Removing invalid buddies %s" % invalid)
 		for number in invalid:
 			self.remove(number)
 			del self[number]
 
 	def onStatus(self, contacts):
-		self.logger.debug("%s received statuses of: %s", self.user, contacts)
+		self.logger.debug("%s received statuses of: %s" % (self.user, contacts))
 		for number, (status, time) in contacts.iteritems():
 			buddy = self[number]
 			if status is None:
@@ -127,7 +127,7 @@ class BuddyList(dict):
 		else:
 			buddy = Buddy(self.owner, number, nick, "",  groups, image_hash)
 			self[number] = buddy
-			self.logger.debug("Roster add: %s", buddy)
+			self.logger.debug("Roster add: %s" % buddy)
 			self.session.sendSync([number], delta = True, interactive = True)
 			self.session.subscribePresence(number)
 			self.session.requestStatuses([number], success = self.onStatus)
@@ -151,9 +151,9 @@ class BuddyList(dict):
 
 		iconHash = buddy.image_hash if buddy.image_hash is not None else ""
 
-		self.logger.debug("Updating buddy %s (%s) in %s, image_hash = %s",
-				buddy.nick, buddy.number, buddy.groups, iconHash)
-		self.logger.debug("Status Message: %s", statusmsg)
+		self.logger.debug("Updating buddy %s (%s) in %s, image_hash = %s" %
+				(buddy.nick, buddy.number, buddy.groups, iconHash))
+		self.logger.debug("Status Message: %s" % statusmsg)
 		self.backend.handleBuddyChanged(self.user, buddy.number, buddy.nick,
 			buddy.groups, status, statusMessage=statusmsg, iconHash=iconHash)
 
@@ -190,7 +190,7 @@ class BuddyList(dict):
 			buddynr = self.session.legacyName
 
 		# Get profile picture
-		self.logger.debug('Requesting profile picture of %s', buddynr)
+		self.logger.debug('Requesting profile picture of %s' % buddynr)
 		response = deferred.Deferred()
 		# Error probably means image doesn't exist
 		error = deferred.Deferred()
@@ -201,12 +201,12 @@ class BuddyList(dict):
 		pictureData = response.pictureData()
 		# Send VCard
 		if ID != None:
-			call(self.logger.debug, 'Sending VCard (%s) with image id %s: %s',
-					ID, response.pictureId(), pictureData.then(base64.b64encode))
+			call(self.logger.debug, 'Sending VCard (%s) with image id %s: %s' %
+					(ID, response.pictureId(), pictureData.then(base64.b64encode)))
 			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
 					pictureData)
 			# If error
-			error.when(self.logger.debug, 'Sending VCard (%s) without image', ID)
+			error.when(self.logger.debug, 'Sending VCard (%s) without image' % ID)
 			error.when(self.backend.handleVCard, self.user, ID, buddy, "", "", "")
 
 		# Send image hash
@@ -219,7 +219,7 @@ class BuddyList(dict):
 				nick = ""
 				groups = []
 			image_hash = pictureData.then(utils.sha1hash)
-			call(self.logger.debug, 'Image hash is %s', image_hash)
+			call(self.logger.debug, 'Image hash is %s' % image_hash)
 			call(self.update, buddynr, nick, groups, image_hash)
 			# No image
 			error.when(self.logger.debug, 'No image')

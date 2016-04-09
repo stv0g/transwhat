@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import logging
 
 from yowsup import env
@@ -264,7 +267,7 @@ class YowsupApp(object):
 			- phone_number: (str) The cellphone number of the person to
 				subscribe to
 		"""
-		self.logger.debug("Subscribing to Presence updates from %s", (phone_number))
+		self.logger.debug("Subscribing to Presence updates from %s" % phone_number)
 		jid = phone_number + '@s.whatsapp.net'
 		entity = SubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
@@ -394,7 +397,7 @@ class YowsupApp(object):
 		iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
 		def onSuccess(response, request):
 			if success is not None:
-				self.logger.debug("Received Statuses %s", response)
+				self.logger.debug("Received Statuses %s" % response)
 				s = {}
 				for k, v in response.statuses.iteritems():
 					s[k.split('@')[0]] = v
@@ -706,7 +709,7 @@ class YowsupApp(object):
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
-			entity = entity
+			entity = bytearray(entity)
 		))
 
 	def sendIq(self, iq, onSuccess = None, onError = None):
@@ -798,7 +801,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
-		self.logger.debug("Received notification (%s): %s", type(entity), entity)
+		self.logger.debug("Received notification (%s): %s" % (type(entity), entity))
 		self.toLower(entity.ack())
 		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
 			self.caller.onAddedToGroup(entity)
@@ -840,7 +843,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
-		self.logger.debug("Received Message: %s", entity)
+		self.logger.debug("Received Message: %s" % entity)
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,

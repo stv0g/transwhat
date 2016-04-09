@@ -1,3 +1,5 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
 from functools import partial
 
 class Deferred(object):

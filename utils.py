@@ -1,3 +1,7 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
@@ -25,6 +29,7 @@ import e4u
 import base64
 import hashlib
 
+
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
 	lengths = [60, 60, 24, 7,4.35, 12, 10]
@@ -43,11 +48,10 @@ def ago(secs):
 	return "%d %s ago" % (diff, period)
 
 def softToUni(message):
-	message = message.decode("utf-8")
 	return e4u.translate(message, reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
 
 def decodePassword(password):
-	return base64.b64decode(bytes(password.encode("utf-8")))
+	return base64.b64decode(bytes(password))
 
 def sha1hash(data):
 	return hashlib.sha1(data).hexdigest()

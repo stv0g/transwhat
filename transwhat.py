@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
@@ -23,6 +27,7 @@ __email__ = "post@steffenvogel.de"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
+
 import argparse
 import traceback
 import logging
@@ -43,25 +48,21 @@ from yowsup.stacks import YowStack
 # Arguments
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug', action='store_true')
-parser.add_argument('--log', type=str)
 parser.add_argument('--host', type=str, required=True)
 parser.add_argument('--port', type=int, required=True)
 parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
 parser.add_argument('config', type=str)
-parser.add_argument('-j', type=str, required=True)
+parser.add_argument('-j', type=str, metavar="JID", required=True)
 
 args, unknown = parser.parse_known_args()
 
 YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
-
-if args.log is None:
-	args.log = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
-
+loggingfile = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
 # Logging
-logging.basicConfig(
-	filename=args.log,
-	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s",
-	level = logging.DEBUG if args.debug else logging.INFO
+logging.basicConfig( \
+	filename=loggingfile,\
+	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s", \
+	level = logging.DEBUG if args.debug else logging.INFO \
 )
 
 # Handler
