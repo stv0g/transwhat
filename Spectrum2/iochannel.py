@@ -15,7 +15,7 @@ class IOChannel(asyncore.dispatcher):
 
 		self.callback = callback
 		self.closeCallback = closeCallback
-		self.buffer = ""
+		self.buffer = bytes("")
 
 	def sendData(self, data):
 		self.buffer += data
