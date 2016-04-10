@@ -27,7 +27,7 @@ class SpectrumBackend:
 
 	def __init__(self):
 		self.m_pingReceived = False
-		self.m_data = ""
+		self.m_data = bytes("")
 		self.m_init_res = 0
 		self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -388,7 +388,7 @@ class SpectrumBackend:
 
 
 	def handleDataRead(self, data):
-		self.m_data += data
+		self.m_data += bytes(data)
 		while len(self.m_data) != 0:
 			expected_size = 0
 			if (len(self.m_data) >= 4):
