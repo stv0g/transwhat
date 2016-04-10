@@ -794,7 +794,7 @@ class Session(YowsupApp):
 		if (statusMessage != self.statusMessage) or (self.initialized == False):
 			self.statusMessage = statusMessage
 			self.setStatus(statusMessage)
-			self.logger.info("Status message changed: {0}".format(statusMessage))
+			self.logger.info("Status message changed: %s" % statusMessage)
 
 			#if self.initialized == False:
 			#	self.sendOfflineMessages()
