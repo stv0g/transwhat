@@ -113,7 +113,8 @@ class BuddyList(dict):
 	def onStatus(self, contacts):
 		self.logger.debug("%s received statuses of: %s" % (self.user, contacts))
 		for number, (status, time) in contacts.iteritems():
-			buddy = self[number]
+			try: buddy = self[number]
+			except KeyError: self.logger.warn("received status of buddy not in list: %s" % number)
 			if status is None:
 				buddy.statusMsg = ""
 			else:
