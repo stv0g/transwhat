@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
@@ -50,7 +53,8 @@ class Buddy():
 			self.image_hash = image_hash
 
 	def __str__(self):
-		return "%s (nick=%s)" % (self.number, self.nick)
+		# we must return str here
+		return str("%s (nick=%s)") % (self.number, self.nick)
 
 class BuddyList(dict):
 
@@ -96,12 +100,15 @@ class BuddyList(dict):
 		self.logger.debug("Removing nonexisting buddies %s" % nonexisting)
 		for number in nonexisting:
 			self.remove(number)
-			del self[number]
+			try: del self[number]
+			except KeyError: self.logger.warn("non-existing buddy really didn't exist: %s" % number)
 
 		self.logger.debug("Removing invalid buddies %s" % invalid)
 		for number in invalid:
 			self.remove(number)
-			del self[number]
+			try: del self[number]
+			except KeyError: self.logger.warn("non-existing buddy really didn't exist: %s" % number)
+
 
 	def onStatus(self, contacts):
 		self.logger.debug("%s received statuses of: %s" % (self.user, contacts))
