@@ -181,7 +181,7 @@ class YowsupApp(object):
 			- to: (xxxxxxxxxx@s.whatsapp.net) who to send the message to
 			- message: (str) the body of the message
 		"""
-		messageEntity = TextMessageProtocolEntity(message, to = to)
+		messageEntity = TextMessageProtocolEntity(message.encode('utf-8'), to = to)
 		self.sendEntity(messageEntity)
 		return messageEntity.getId()
 
@@ -566,7 +566,7 @@ class YowsupApp(object):
 		"""
 		pass
 
-	def	onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+	def onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
 		"""
 		Called when text message is received
 
@@ -709,7 +709,7 @@ class YowsupApp(object):
 	def sendEntity(self, entity):
 		"""Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
 		self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
-			entity = bytearray(entity)
+			entity = entity
 		))
 
 	def sendIq(self, iq, onSuccess = None, onError = None):

@@ -36,7 +36,7 @@ class RegisterSession(YowsupApp):
 				self.backend.handleMessage(self.user, 'bot',
 						'Country code must be a number')
 			else: # Succeded in decoding country code
-				country_code = str(country_code)
+				country_code = "%s" % country_code
 				if country_code != self.number[:len(country_code)]:
 					self.backend.handleMessage(self.user,
 							'bot', 'Number does not start with provided country code')

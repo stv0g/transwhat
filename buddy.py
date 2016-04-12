@@ -39,7 +39,7 @@ class Buddy():
 	def __init__(self, owner, number, nick, statusMsg, groups, image_hash):
 		self.nick = nick
 		self.owner = owner
-		self.number = number
+		self.number = "%s" % number
 		self.groups = groups
 		self.image_hash = image_hash if image_hash is not None else ""
 		self.statusMsg = u""

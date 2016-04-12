@@ -388,7 +388,7 @@ class SpectrumBackend:
 
 
 	def handleDataRead(self, data):
-		self.m_data += bytes(data)
+		self.m_data += data
 		while len(self.m_data) != 0:
 			expected_size = 0
 			if (len(self.m_data) >= 4):
