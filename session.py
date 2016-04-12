@@ -318,12 +318,16 @@ class Session(YowsupApp):
 			image.caption = ''
 		if image.isEncrypted():
 			self.logger.debug('Received encrypted image message')
-			ipath = "uploads/" + str(image.timestamp)  + image.getExtension()
-	                self.logger.debug('Received encrypted image message22')
+			if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
+				ipath = "/" + str(image.timestamp)  + image.getExtension()
 
-			with open("/srv/www/htdocs/" + ipath,"wb") as f:
-            			f.write(image.getMediaContent())
-			url = "http://www/" + ipath
+				with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
+            				f.write(image.getMediaContent())
+				url = self.backend.specConf.__getitem__("service.web_url") + ipath
+			else:
+				self.logger.warn('Received encrypted image: web storage not set in config!')
+				url = image.url
+
 		else:
 			url = image.url
 		if participant is not None: # Group message
