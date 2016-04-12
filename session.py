@@ -311,7 +311,7 @@ class Session(YowsupApp):
 
 	# Called by superclass
 	def onImage(self, image):
-		self.logger.debug('Received image message %s', str(image))
+		#self.logger.debug('Received image message %s', str(image))
 		buddy = image._from.split('@')[0]
 		participant = image.participant
 		if image.caption is None:
