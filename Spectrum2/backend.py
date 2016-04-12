@@ -6,6 +6,8 @@ import os
 import logging
 import google.protobuf
 
+import resource
+
 def WRAP(MESSAGE, TYPE):
 	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
@@ -621,7 +623,7 @@ class SpectrumBackend:
 		pass
 
 	def handleMemoryUsage(self):
-		return (0,0)
+		return (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, 0)
 
 	def handleExitRequest(self):
 		sys.exit(1)

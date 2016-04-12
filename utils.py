@@ -50,4 +50,4 @@ def decodePassword(password):
 	return base64.b64decode(bytes(password.encode("utf-8")))
 
 def sha1hash(data):
-    return hashlib.sha1(data).hexdigest()
+	return hashlib.sha1(data).hexdigest()
