@@ -14,7 +14,7 @@ import resource
 def WRAP(MESSAGE, TYPE):
 	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
-	wrap.payload = MESSAGE
+	wrap.payload = bytes(MESSAGE)
 	return wrap.SerializeToString()
 	
 class SpectrumBackend:
