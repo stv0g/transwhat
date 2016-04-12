@@ -30,7 +30,7 @@ from registersession import RegisterSession
 import logging
 
 class WhatsAppBackend(SpectrumBackend):
-	def __init__(self, io, spectrum_jida, specConf):
+	def __init__(self, io, spectrum_jid, specConf):
 		SpectrumBackend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
