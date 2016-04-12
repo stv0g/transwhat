@@ -70,7 +70,7 @@ class SpectrumBackend:
 		vcard.id = ID
 		vcard.fullname = fullName
 		vcard.nickname = nickname
-		vcard.photo = photo 
+		vcard.photo = bytes(photo)
 
 		message = WRAP(vcard.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_VCARD)
 		self.send(message)
@@ -223,7 +223,7 @@ class SpectrumBackend:
 	def handleFTData(self, ftID, data):
 		d = protocol_pb2.FileTransferData()
 		d.ftid = ftID
-		d.data = data
+		d.data = bytes(data)
 
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
 		self.send(message)
