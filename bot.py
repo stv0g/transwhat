@@ -92,9 +92,9 @@ following group commands are available
 		for group in self.session.groups:
 			buddy = self.session.groups[group].owner
 			try:
-                           nick = self.session.buddies[buddy].nick
-                        except KeyError:
-                           nick = buddy
+				nick = self.session.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
 
 			self.send(self.session.groups[group].id + "@" + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
 
