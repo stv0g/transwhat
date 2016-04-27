@@ -815,7 +815,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
-		self.logger.debug("Received Message: %s" % entity)
+		self.logger.debug("Received Message: %s" % unicode(entity))
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,
