@@ -457,7 +457,7 @@ class Session(YowsupApp):
 		subject = utils.softToUni(group.getSubject())
 
 		self.groups[room] = Group(room, owner, subject, subjectOwner, self.backend, self.user)
-		self.groups[room].addParticipants(group.getParticipants, self.buddies, self.legacyName)
+		self.groups[room].addParticipants(group.getParticipants(), self.buddies, self.legacyName)
 		self.bot.send("You have been added to group: %s@%s (%s)"
 					  % (self._shortenGroupId(room), subject, self.backend.spectrum_jid))
 
