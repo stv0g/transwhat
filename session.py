@@ -268,7 +268,7 @@ class Session(YowsupApp):
 		self.logger.debug('received TextMessage' +
 			' '.join(map(str, [
 				_id, _from, to, notify, timestamp,
-				participant, offline, retry, body
+				participant, offline, retry, body.encode("utf-8")
 			]))
 		)
 		buddy = _from.split('@')[0]
