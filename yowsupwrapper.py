@@ -1,13 +1,14 @@
 import logging
 
 from yowsup import env
+from yowsup.env import S40YowsupEnv
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.auth import AuthError
 
 # Layers
-from yowsup.layers.axolotl					   import YowAxolotlLayer
+# from yowsup.layers.axolotl					   import YowAxolotlLayer
 from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
 from yowsup.layers.coder					   import YowCoderLayer
 from yowsup.layers.logger					   import YowLoggerLayer
@@ -46,62 +47,47 @@ from functools import partial
 #from session import MsgIDs
 
 # Temporarily work around yowsup padding bugs with new protocol
-class UpdatedYowAxolotlLayer(YowAxolotlLayer):
-	def decodeInt7bit(self, string):
-		idx = 0
-		while ord(string[idx]) >= 128:
-			idx += 1
-		consumedBytes = idx + 1
-		value = 0
-		while idx >= 0:
-			value <<= 7
-			value += ord(string[idx]) % 128
-			idx -= 1
-		return value, consumedBytes
-
-	def unpadV2Plaintext(self, v2plaintext):
-		end = -ord(v2plaintext[-1]) # length of the left padding
-		length,consumed = self.decodeInt7bit(v2plaintext[1:])
-		return v2plaintext[1+consumed:end]
+# class UpdatedYowAxolotlLayer(YowAxolotlLayer):
+# 	def decodeInt7bit(self, string):
+# 		idx = 0
+# 		while ord(string[idx]) >= 128:
+# 			idx += 1
+# 		consumedBytes = idx + 1
+# 		value = 0
+# 		while idx >= 0:
+# 			value <<= 7
+# 			value += ord(string[idx]) % 128
+# 			idx -= 1
+# 		return value, consumedBytes
+#
+# 	def unpadV2Plaintext(self, v2plaintext):
+# 		end = -ord(v2plaintext[-1]) # length of the left padding
+# 		length,consumed = self.decodeInt7bit(v2plaintext[1:])
+# 		return v2plaintext[1+consumed:end]
 
 # Temporary env until yowsup updates
-class UpdatedS40YowsupEnv(env.S40YowsupEnv):
-	_VERSION = "2.13.39"
-	_OS_NAME= "S40"
-	_OS_VERSION = "14.26"
-	_DEVICE_NAME = "302"
-	_MANUFACTURER = "Nokia"
-	_TOKEN_STRING  = "PdA2DJyKoUrwLw1Bg6EIhzh502dF9noR9uFCllGk{phone}"
-	_AXOLOTL = True
+# class UpdatedS40YowsupEnv(env.S40YowsupEnv):
+# 	_VERSION = "2.13.39"
+# 	_OS_NAME= "S40"
+# 	_OS_VERSION = "14.26"
+# 	_DEVICE_NAME = "302"
+# 	_MANUFACTURER = "Nokia"
+# 	_TOKEN_STRING  = "PdA2DJyKoUrwLw1Bg6EIhzh502dF9noR9uFCllGk{phone}"
+# 	_AXOLOTL = True
+from yowsup.stacks import YowStackBuilder
+
 
 class YowsupApp(object):
 	def __init__(self):
-		env.CURRENT_ENV = UpdatedS40YowsupEnv()
+		env.CURRENT_ENV = env.S40YowsupEnv()
 
-		layers = (YowsupAppLayer,
-				YowParallelLayer((YowAuthenticationProtocolLayer,
-					YowMessagesProtocolLayer,
-					YowReceiptProtocolLayer,
-					YowAckProtocolLayer,
-					YowMediaProtocolLayer,
-					YowIbProtocolLayer,
-					YowIqProtocolLayer,
-					YowNotificationsProtocolLayer,
-					YowContactsIqProtocolLayer,
-					YowChatstateProtocolLayer,
-					YowCallsProtocolLayer,
-					YowPrivacyProtocolLayer,
-					YowProfilesProtocolLayer,
-					YowGroupsProtocolLayer,
-					YowPresenceProtocolLayer)),
-				UpdatedYowAxolotlLayer,
-				YowCoderLayer,
-				YowCryptLayer,
-				YowStanzaRegulator,
-				YowNetworkLayer
-		)
 		self.logger = logging.getLogger(self.__class__.__name__)
-		self.stack = YowStack(layers)
+		stackBuilder = YowStackBuilder()
+
+		self.stack = stackBuilder \
+			.pushDefaultLayers(True) \
+			.push(YowsupAppLayer) \
+			.build()
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
 		)
