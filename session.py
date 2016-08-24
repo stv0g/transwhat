@@ -298,7 +298,11 @@ class Session(YowsupApp):
 		participant = image.participant
 		if image.caption is None:
                         image.caption = ''
-		message = image.url + ' ' + image.caption
+        # Add to message data for descrypt
+		iv, cipherKey = image.getDecryptData();
+		ivHexString = "".join("{:02x}".format(ord(c)) for c in iv)
+		cipherKeyHexString = "".join("{:02x}".format(ord(c)) for c in cipherKey)
+		message = image.url + ';' + ivHexString + ';' + cipherKeyHexString
 		if participant is not None: # Group message
                         partname = participant.split('@')[0]
                         self.sendGroupMessageToXMPP(buddy, partname, message, image.timestamp)
