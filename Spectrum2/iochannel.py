@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import asyncore, socket
 import logging
 import sys
@@ -12,7 +15,7 @@ class IOChannel(asyncore.dispatcher):
 
 		self.callback = callback
 		self.closeCallback = closeCallback
-		self.buffer = ""
+		self.buffer = bytes("")
 
 	def sendData(self, data):
 		self.buffer += data
