@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import protocol_pb2
 import socket
 import struct
@@ -11,7 +14,7 @@ import resource
 def WRAP(MESSAGE, TYPE):
 	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
-	wrap.payload = MESSAGE
+	wrap.payload = bytes(MESSAGE)
 	return wrap.SerializeToString()
 	
 class SpectrumBackend:
@@ -24,7 +27,7 @@ class SpectrumBackend:
 
 	def __init__(self):
 		self.m_pingReceived = False
-		self.m_data = ""
+		self.m_data = bytes("")
 		self.m_init_res = 0
 		self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -67,7 +70,7 @@ class SpectrumBackend:
 		vcard.id = ID
 		vcard.fullname = fullName
 		vcard.nickname = nickname
-		vcard.photo = photo 
+		vcard.photo = bytes(photo)
 
 		message = WRAP(vcard.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_VCARD)
 		self.send(message)
@@ -220,7 +223,7 @@ class SpectrumBackend:
 	def handleFTData(self, ftID, data):
 		d = protocol_pb2.FileTransferData()
 		d.ftid = ftID
-		d.data = data
+		d.data = bytes(data)
 
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
 		self.send(message)

@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import logging
 
 from yowsup import env
@@ -7,7 +10,7 @@ from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.auth import AuthError
 
 # Layers
-from yowsup.layers.axolotl					   import YowAxolotlLayer
+from yowsup.layers.axolotl					   import AxolotlSendLayer, AxolotlControlLayer, AxolotlReceivelayer
 from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
 from yowsup.layers.coder					   import YowCoderLayer
 from yowsup.layers.logger					   import YowLoggerLayer
@@ -55,38 +58,9 @@ from functools import partial
 
 #from session import MsgIDs
 
-# Temporarily work around yowsup padding bugs with new protocol
-class UpdatedYowAxolotlLayer(YowAxolotlLayer):
-	def decodeInt7bit(self, string):
-		idx = 0
-		while ord(string[idx]) >= 128:
-			idx += 1
-		consumedBytes = idx + 1
-		value = 0
-		while idx >= 0:
-			value <<= 7
-			value += ord(string[idx]) % 128
-			idx -= 1
-		return value, consumedBytes
-
-	def unpadV2Plaintext(self, v2plaintext):
-		end = -ord(v2plaintext[-1]) # length of the left padding
-		length,consumed = self.decodeInt7bit(v2plaintext[1:])
-		return v2plaintext[1+consumed:end]
-
-# Temporary env until yowsup updates
-class UpdatedS40YowsupEnv(env.S40YowsupEnv):
-	_VERSION = "2.13.39"
-	_OS_NAME= "S40"
-	_OS_VERSION = "14.26"
-	_DEVICE_NAME = "302"
-	_MANUFACTURER = "Nokia"
-	_TOKEN_STRING  = "PdA2DJyKoUrwLw1Bg6EIhzh502dF9noR9uFCllGk{phone}"
-	_AXOLOTL = True
-
 class YowsupApp(object):
 	def __init__(self):
-		env.CURRENT_ENV = UpdatedS40YowsupEnv()
+		env.CURRENT_ENV = env.AndroidYowsupEnv()
 
 		layers = (YowsupAppLayer,
 				YowParallelLayer((YowAuthenticationProtocolLayer,
@@ -104,7 +78,8 @@ class YowsupApp(object):
 					YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
 					YowPresenceProtocolLayer)),
-				UpdatedYowAxolotlLayer,
+				AxolotlControlLayer,
+				YowParallelLayer((AxolotlSendLayer, AxolotlReceivelayer)),
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
@@ -178,7 +153,7 @@ class YowsupApp(object):
 			- to: (xxxxxxxxxx@s.whatsapp.net) who to send the message to
 			- message: (str) the body of the message
 		"""
-		messageEntity = TextMessageProtocolEntity(message, to = to)
+		messageEntity = TextMessageProtocolEntity(message.encode('utf-8'), to = to)
 		self.sendEntity(messageEntity)
 		return messageEntity.getId()
 
@@ -263,7 +238,7 @@ class YowsupApp(object):
 			- phone_number: (str) The cellphone number of the person to
 				subscribe to
 		"""
-		self.logger.debug("Subscribing to Presence updates from %s", (phone_number))
+		self.logger.debug("Subscribing to Presence updates from %s" % phone_number)
 		jid = phone_number + '@s.whatsapp.net'
 		entity = SubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
@@ -393,7 +368,7 @@ class YowsupApp(object):
 		iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
 		def onSuccess(response, request):
 			if success is not None:
-				self.logger.debug("Received Statuses %s", response)
+				self.logger.debug("Received Statuses %s" % response)
 				s = {}
 				for k, v in response.statuses.iteritems():
 					s[k.split('@')[0]] = v
@@ -562,7 +537,7 @@ class YowsupApp(object):
 		"""
 		pass
 
-	def	onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+	def onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
 		"""
 		Called when text message is received
 
@@ -797,7 +772,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
-		self.logger.debug("Received notification (%s): %s", type(entity), entity)
+		self.logger.debug("Received notification (%s): %s" % (type(entity), entity))
 		self.toLower(entity.ack())
 		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
 			self.caller.onAddedToGroup(entity)
@@ -839,7 +814,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
-		self.logger.debug("Received Message: %s", entity)
+		self.logger.debug("Received Message: %s" % unicode(entity))
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,

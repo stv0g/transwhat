@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
@@ -22,6 +26,7 @@ __email__ = "post@steffenvogel.de"
  You should have received a copy of the GNU General Public License
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
+
 
 import argparse
 import traceback
@@ -48,7 +53,7 @@ parser.add_argument('--host', type=str, required=True)
 parser.add_argument('--port', type=int, required=True)
 parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
 parser.add_argument('config', type=str)
-parser.add_argument('-j', type=str, required=True)
+parser.add_argument('-j', type=str, metavar="JID", required=True)
 
 args, unknown = parser.parse_known_args()
 
@@ -59,7 +64,7 @@ if args.log is None:
 
 # Logging
 logging.basicConfig(
-	filename=args.log,
+	filename = args.log,
 	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s",
 	level = logging.DEBUG if args.debug else logging.INFO
 )

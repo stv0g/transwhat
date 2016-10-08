@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015, Steffen Vogel"
 __license__ = "GPLv3"
