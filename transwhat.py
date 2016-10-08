@@ -40,7 +40,7 @@ import threadutils
 sys.path.insert(0, os.getcwd())
 
 from Spectrum2.iochannel import IOChannel
-
+from config import SpectrumConfig
 from whatsappbackend import WhatsAppBackend
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
@@ -69,6 +69,11 @@ logging.basicConfig(
 	level = logging.DEBUG if args.debug else logging.INFO
 )
 
+if args.config is not None:
+	specConf = SpectrumConfig(args.config)
+else:
+	specConf = None
+
 # Handler
 def handleTransportData(data):
 	try:
@@ -89,7 +94,7 @@ def connectionClosed():
 # Main
 io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
-plugin = WhatsAppBackend(io, args.j)
+plugin = WhatsAppBackend(io, args.j, specConf)
 
 plugin.handleBackendConfig({
 	'features': [

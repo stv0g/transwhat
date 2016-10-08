@@ -133,7 +133,7 @@ class YowsupApp(object):
 		"""
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
 
-	def sendReceipt(self, _id, _from, read, participant):
+	def sendReceipt(self, _id, _from, read, participant, t):
 		"""
 		Send a receipt (delivered: double-tick, read: blue-ticks)
 
@@ -142,8 +142,10 @@ class YowsupApp(object):
 			- _from: jid of person who sent the message
 			- read: ('read' or None) None is just delivered, 'read' is read
 			- participant
+			- t: The time the original message was sent.
 		"""
-		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
+		self.logger.debug(u'Sending receipt to whatsapp: %s', [_id, _from, read, participant, t])
+		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant, t=t)
 		self.sendEntity(receipt)
 
 	def downloadMedia(self, url, onSuccess = None, onFailure = None):
@@ -183,9 +185,27 @@ class YowsupApp(object):
 
 		if resultRequestUploadIqProtocolEntity.isDuplicate():
 			doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
-			resultRequestUploadIqProtocolEntity.getIp(), caption)
+			   resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
 		else:
-			successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+			successFn = lambda filePath, jid, url: doSendFn(filePath, url.encode('ascii','ignore'), jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+			ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
+			mediaUploader = MediaUploader(jid, ownNumber, filePath,
+					  resultRequestUploadIqProtocolEntity.getUrl(),
+					  resultRequestUploadIqProtocolEntity.getResumeOffset(),
+					  successFn, self.onUploadError, self.onUploadProgress, async=False)
+			mediaUploader.start()
+
+	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
+		self.logger.error("Request upload for file %s for %s failed" % (path, jid))
+
+	def onUploadError(self, filePath, jid, url):
+		#logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
+		self.logger.error("Upload Error!")
+
+	def onUploadProgress(self, filePath, jid, url, progress):
+		#sys.stdout.write("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
+		#sys.stdout.flush()
+		pass
 
 		ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
 
