@@ -48,7 +48,7 @@ def ago(secs):
 	return "%d %s ago" % (diff, period)
 
 def softToUni(message):
-	return e4u.translate(message, reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
+	return e4u.translate(message.encode("utf-8"), reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
 
 def decodePassword(password):
 	return base64.b64decode(bytes(password))

@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 import logging
 
 from yowsup import env
+from yowsup.env import S40YowsupEnv
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
@@ -56,8 +57,6 @@ from yowsup.registration import WARegRequest
 
 from functools import partial
 
-#from session import MsgIDs
-
 class YowsupApp(object):
 	def __init__(self):
 		env.CURRENT_ENV = env.AndroidYowsupEnv()
@@ -85,8 +84,14 @@ class YowsupApp(object):
 				YowStanzaRegulator,
 				YowNetworkLayer
 		)
+
 		self.logger = logging.getLogger(self.__class__.__name__)
-		self.stack = YowStack(layers)
+		stackBuilder = YowStackBuilder()
+
+		self.stack = stackBuilder \
+			.pushDefaultLayers(True) \
+			.push(YowsupAppLayer) \
+			.build()
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
 		)

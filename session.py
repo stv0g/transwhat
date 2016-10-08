@@ -29,7 +29,7 @@ import logging
 import urllib
 import time
 
-from PIL import Image
+# from PIL import Image
 import sys
 import os
 
@@ -281,9 +281,11 @@ class Session(YowsupApp):
 	def onTextMessage(self, _id, _from, to, notify, timestamp, participant,
 					  offline, retry, body):
 
-		self.logger.debug('received TextMessage: %s' %
-				  [_id, _from, to, notify, timestamp,
-				    participant, offline, retry, body]
+		self.logger.debug('received TextMessage' +
+			' '.join(map(str, [
+				_id, _from, to, notify, timestamp,
+				participant, offline, retry, body.encode("utf-8")
+			]))
 		)
 		buddy = _from.split('@')[0]
 		messageContent = utils.softToUni(body)
@@ -311,6 +313,13 @@ class Session(YowsupApp):
 		participant = image.participant
 		if image.caption is None:
 			image.caption = ''
+		
+		# Add to message data for descrypt
+		iv, cipherKey = image.getDecryptData();
+		ivHexString = "".join("{:02x}".format(ord(c)) for c in iv)
+		cipherKeyHexString = "".join("{:02x}".format(ord(c)) for c in cipherKey)
+		message = image.url + ';' + ivHexString + ';' + cipherKeyHexString
+
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if image._from.split('@')[1] == 'broadcast': # Broadcast message
