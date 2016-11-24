@@ -1,8 +1,8 @@
+import pypandoc
 from setuptools import setup
 
 def readme():
-	with open('README.md') as f:
-		return f.read()
+	return pypandoc.convert('README.md', 'rst')
 
 setup(name='transwhat',
 	version='0.2',
