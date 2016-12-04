@@ -1,13 +1,22 @@
-import pypandoc
+import os
+import codecs
 from setuptools import setup
 
-def readme():
-	return pypandoc.convert('README.md', 'rst')
+
+def read_file(filename, encoding='utf8'):
+    """Read unicode from given file."""
+    with codecs.open(filename, encoding=encoding) as fd:
+        return fd.read()
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+readme = read_file(os.path.join(here, 'README.rst'))
+
 
 setup(name='transwhat',
 	version='0.2',
 	description='A gateway between the XMPP and the WhatsApp IM networks',
-	long_description=readme(),
+	long_description=readme,
 	keywords='whatsapp xmpp im gateway transport yowsup',
 	url='https://github.com/stv0g/transwhat',
 	author='Steffen Vogel',
