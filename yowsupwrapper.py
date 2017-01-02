@@ -109,12 +109,6 @@ class YowsupApp(object):
 		  """
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
 							(username, password))
-		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
-							YowConstants.ENDPOINTS[0])
-		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
-							YowConstants.DOMAIN)
-		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
-							env.CURRENT_ENV.getResource())
 #		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 
 		try:
