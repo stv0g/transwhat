@@ -1,3 +1,6 @@
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 __author__ = "Steffen Vogel"
 __copyright__ = "Copyright 2015-2017, Steffen Vogel"
 __license__ = "GPLv3"
@@ -21,8 +24,6 @@ __email__ = "post@steffenvogel.de"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
-# use unicode encoding for all literals by default (for python2.x)
-from __future__ import unicode_literals
 from Spectrum2 import protocol_pb2
 
 from yowsupwrapper import YowsupApp
