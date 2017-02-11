@@ -130,7 +130,7 @@ class YowsupApp(object):
 		"""
 		self.stack.broadcastEvent(YowLayerEvent(YowNetworkLayer.EVENT_STATE_DISCONNECT))
 
-	def sendReceipt(self, _id, _from, read, participant, t):
+	def sendReceipt(self, _id, _from, read, participant):
 		"""
 		Send a receipt (delivered: double-tick, read: blue-ticks)
 
@@ -139,10 +139,9 @@ class YowsupApp(object):
 			- _from: jid of person who sent the message
 			- read: ('read' or None) None is just delivered, 'read' is read
 			- participant
-			- t: The time the original message was sent.
 		"""
-		self.logger.debug(u'Sending receipt to whatsapp: %s', [_id, _from, read, participant, t])
-		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant, t=t)
+		self.logger.debug(u'Sending receipt to whatsapp: %s', [_id, _from, read, participant])
+		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
 		self.sendEntity(receipt)
 
 	def downloadMedia(self, url, onSuccess = None, onFailure = None):
