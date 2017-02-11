@@ -1,13 +1,43 @@
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
+
+"""
+ This file is part of transWhat
+
+ transWhat is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ any later version.
+
+ transwhat is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with transWhat. If not, see <http://www.gnu.org/licenses/>.
+"""
+
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import logging
 
 from yowsup import env
+from yowsup.env import S40YowsupEnv
 from yowsup.stacks import YowStack
 from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 from yowsup.layers.auth import AuthError
+from yowsup.stacks import YowStack
+from yowsup.stacks import YowStackBuilder
+from yowsup.common import YowConstants
 
 # Layers
-from yowsup.layers.axolotl					   import YowAxolotlLayer
+from yowsup.layers.axolotl					   import AxolotlSendLayer, AxolotlControlLayer, AxolotlReceivelayer
 from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
 from yowsup.layers.coder					   import YowCoderLayer
 from yowsup.layers.logger					   import YowLoggerLayer
@@ -53,40 +83,9 @@ from yowsup.registration import WARegRequest
 
 from functools import partial
 
-#from session import MsgIDs
-
-# Temporarily work around yowsup padding bugs with new protocol
-class UpdatedYowAxolotlLayer(YowAxolotlLayer):
-	def decodeInt7bit(self, string):
-		idx = 0
-		while ord(string[idx]) >= 128:
-			idx += 1
-		consumedBytes = idx + 1
-		value = 0
-		while idx >= 0:
-			value <<= 7
-			value += ord(string[idx]) % 128
-			idx -= 1
-		return value, consumedBytes
-
-	def unpadV2Plaintext(self, v2plaintext):
-		end = -ord(v2plaintext[-1]) # length of the left padding
-		length,consumed = self.decodeInt7bit(v2plaintext[1:])
-		return v2plaintext[1+consumed:end]
-
-# Temporary env until yowsup updates
-class UpdatedS40YowsupEnv(env.S40YowsupEnv):
-	_VERSION = "2.13.39"
-	_OS_NAME= "S40"
-	_OS_VERSION = "14.26"
-	_DEVICE_NAME = "302"
-	_MANUFACTURER = "Nokia"
-	_TOKEN_STRING  = "PdA2DJyKoUrwLw1Bg6EIhzh502dF9noR9uFCllGk{phone}"
-	_AXOLOTL = True
-
 class YowsupApp(object):
 	def __init__(self):
-		env.CURRENT_ENV = UpdatedS40YowsupEnv()
+		env.CURRENT_ENV = env.AndroidYowsupEnv()
 
 		layers = (YowsupAppLayer,
 				YowParallelLayer((YowAuthenticationProtocolLayer,
@@ -104,14 +103,21 @@ class YowsupApp(object):
 					YowProfilesProtocolLayer,
 					YowGroupsProtocolLayer,
 					YowPresenceProtocolLayer)),
-				UpdatedYowAxolotlLayer,
+				AxolotlControlLayer,
+				YowParallelLayer((AxolotlSendLayer, AxolotlReceivelayer)),
 				YowCoderLayer,
 				YowCryptLayer,
 				YowStanzaRegulator,
 				YowNetworkLayer
 		)
+
 		self.logger = logging.getLogger(self.__class__.__name__)
-		self.stack = YowStack(layers)
+		stackBuilder = YowStackBuilder()
+
+		self.stack = stackBuilder \
+			.pushDefaultLayers(True) \
+			.push(YowsupAppLayer) \
+			.build()
 		self.stack.broadcastEvent(
 			YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
 		)
@@ -129,12 +135,6 @@ class YowsupApp(object):
 		  """
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
 							(username, password))
-		self.stack.setProp(YowNetworkLayer.PROP_ENDPOINT,
-							YowConstants.ENDPOINTS[0])
-		self.stack.setProp(YowCoderLayer.PROP_DOMAIN,
-							YowConstants.DOMAIN)
-		self.stack.setProp(YowCoderLayer.PROP_RESOURCE,
-							env.CURRENT_ENV.getResource())
 #		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 
 		try:
@@ -163,6 +163,7 @@ class YowsupApp(object):
 			- read: ('read' or None) None is just delivered, 'read' is read
 			- participant
 		"""
+		self.logger.debug(u'Sending receipt to whatsapp: %s', [_id, _from, read, participant])
 		receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
 		self.sendEntity(receipt)
 
@@ -178,71 +179,66 @@ class YowsupApp(object):
 			- to: (xxxxxxxxxx@s.whatsapp.net) who to send the message to
 			- message: (str) the body of the message
 		"""
-		messageEntity = TextMessageProtocolEntity(message, to = to)
+		messageEntity = TextMessageProtocolEntity(message.encode('utf-8'), to = to)
 		self.sendEntity(messageEntity)
 		return messageEntity.getId()
 
 	def sendLocation(self, to, latitude, longitude):
 		messageEntity = LocationMediaMessageProtocolEntity(latitude,longitude, None, None, "raw", to = to)
 		self.sendEntity(messageEntity)
-                return messageEntity.getId()
+
+		return messageEntity.getId()
 
 	def sendImage(self, jid, path, caption = None, onSuccess = None, onFailure = None):
 		entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
 		successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption, onSuccess, onFailure)
-            	errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
+		errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
 
-            	self.sendIq(entity, successFn, errorFn)
+		self.sendIq(entity, successFn, errorFn)
 
 	def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None, onSuccess=None, onFailure=None):
+		if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
+			doSendFn = self.doSendAudio
+		else:
+			doSendFn = self.doSendImage
 
-        	if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
-            		doSendFn = self.doSendAudio
-        	else:
-            		doSendFn = self.doSendImage
-
-        	if resultRequestUploadIqProtocolEntity.isDuplicate():
-            		doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
-                             resultRequestUploadIqProtocolEntity.getIp(), caption)
-        	else:
-            		successFn = lambda filePath, jid, url: doSendFn(filePath, url, jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+		if resultRequestUploadIqProtocolEntity.isDuplicate():
+			doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
+			   resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+		else:
+			successFn = lambda filePath, jid, url: doSendFn(filePath, url.encode('ascii','ignore'), jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
 			ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
-            		mediaUploader = MediaUploader(jid, ownNumber, filePath,
-                                      resultRequestUploadIqProtocolEntity.getUrl(),
-                                      resultRequestUploadIqProtocolEntity.getResumeOffset(),
-                                      successFn, self.onUploadError, self.onUploadProgress, async=False)
-            		mediaUploader.start()
+			mediaUploader = MediaUploader(jid, ownNumber, filePath,
+					  resultRequestUploadIqProtocolEntity.getUrl(),
+					  resultRequestUploadIqProtocolEntity.getResumeOffset(),
+					  successFn, self.onUploadError, self.onUploadProgress, async=False)
+			mediaUploader.start()
 
-    	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
-        	self.logger.error("Request upload for file %s for %s failed" % (path, jid))
+	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
+		self.logger.error("Request upload for file %s for %s failed" % (path, jid))
 
-    	def onUploadError(self, filePath, jid, url):
-        	#logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
-		self.logger.error("Upload Error!")
+	def onUploadError(self, filePath, jid, url):
+		self.logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
 
-    	def onUploadProgress(self, filePath, jid, url, progress):
-        	#sys.stdout.write("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
-        	#sys.stdout.flush()
+	def onUploadProgress(self, filePath, jid, url, progress):
+		self.logger.info("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
 		pass
 
 	def doSendImage(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        	entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
-        	self.sendEntity(entity)
-			#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
-		if onSuccess is not None:
-			onSuccess(entity.getId())
-		return entity.getId()
-
-
-    	def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        	entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
-        	self.sendEntity(entity)
+		entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
+		self.sendEntity(entity)
 		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
 		if onSuccess is not None:
 			onSuccess(entity.getId())
 		return entity.getId()
 
-
+	def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
+		entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
+		self.sendEntity(entity)
+		#self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+		if onSuccess is not None:
+			onSuccess(entity.getId())
+		return entity.getId()
 
 	def sendPresence(self, available):
 		"""
@@ -264,7 +260,7 @@ class YowsupApp(object):
 			- phone_number: (str) The cellphone number of the person to
 				subscribe to
 		"""
-		self.logger.debug("Subscribing to Presence updates from %s", (phone_number))
+		self.logger.debug("Subscribing to Presence updates from %s" % phone_number)
 		jid = phone_number + '@s.whatsapp.net'
 		entity = SubscribePresenceProtocolEntity(jid)
 		self.sendEntity(entity)
@@ -394,7 +390,7 @@ class YowsupApp(object):
 		iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
 		def onSuccess(response, request):
 			if success is not None:
-				self.logger.debug("Received Statuses %s", response)
+				self.logger.debug("Received Statuses %s" % response)
 				s = {}
 				for k, v in response.statuses.iteritems():
 					s[k.split('@')[0]] = v
@@ -563,7 +559,7 @@ class YowsupApp(object):
 		"""
 		pass
 
-	def	onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+	def onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
 		"""
 		Called when text message is received
 
@@ -798,7 +794,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		"""
 		Sends ack automatically
 		"""
-		self.logger.debug("Received notification (%s): %s", type(entity), entity)
+		self.logger.debug("Received notification (%s): %s" % (type(entity), entity))
 		self.toLower(entity.ack())
 		if isinstance(entity, CreateGroupsNotificationProtocolEntity):
 			self.caller.onAddedToGroup(entity)
@@ -840,7 +836,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 
 	@ProtocolEntityCallback('message')
 	def onMessageReceived(self, entity):
-		self.logger.debug("Received Message: %s", entity)
+		self.logger.debug("Received Message: %s" % unicode(entity))
 		if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
 			self.caller.onTextMessage(
 				entity._id,

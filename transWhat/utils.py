@@ -1,5 +1,5 @@
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2015, Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
@@ -21,9 +21,13 @@ __email__ = "post@steffenvogel.de"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import e4u
 import base64
 import hashlib
+
 
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
@@ -43,11 +47,10 @@ def ago(secs):
 	return "%d %s ago" % (diff, period)
 
 def softToUni(message):
-	message = message.decode("utf-8")
-	return e4u.translate(message, reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
+	return e4u.translate(message.encode("utf-8"), reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
 
 def decodePassword(password):
-	return base64.b64decode(bytes(password.encode("utf-8")))
+	return base64.b64decode(bytes(password))
 
 def sha1hash(data):
-    return hashlib.sha1(data).hexdigest()
+	return hashlib.sha1(data).hexdigest()

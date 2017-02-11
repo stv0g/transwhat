@@ -1,3 +1,28 @@
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
+
+"""
+ This file is part of transWhat
+
+ transWhat is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ any later version.
+
+ transwhat is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with transWhat. If not, see <http://www.gnu.org/licenses/>.
+"""
+
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
 from Spectrum2 import protocol_pb2
 
 from yowsupwrapper import YowsupApp
@@ -34,13 +59,13 @@ class RegisterSession(YowsupApp):
 				self.backend.handleMessage(self.user, 'bot',
 						'Country code must be a number')
 			else: # Succeded in decoding country code
-				country_code = str(country_code)
+				country_code = "%s" % country_code
 				if country_code != self.number[:len(country_code)]:
 					self.backend.handleMessage(self.user,
 							'bot', 'Number does not start with provided country code')
 				else:
 					self.backend.handleMessage(self.user, 'bot', 'Requesting sms code')
-					self.logger.debug('Requesting SMS code for %s', self.user)
+					self.logger.debug('Requesting SMS code for %s' % self.user)
 					self.countryCode = country_code
 					self._requestSMSCodeNonBlock()
 		elif buddy == 'bot' and self.state == self.WANT_SMS:
@@ -51,7 +76,7 @@ class RegisterSession(YowsupApp):
 				self.backend.handleMessage(self.user,
 						'bot', 'Invalid code. Must be of the form XXX-XXX.')
 		else:
-			self.logger.warn('Unauthorised user (%s) attempting to send messages',
+			self.logger.warn('Unauthorised user (%s) attempting to send messages' %
 					self.user)
 			self.backend.handleMessage(self.user, buddy,
 			'You are not logged in yet. You can only send messages to bot.')
@@ -104,7 +129,7 @@ class RegisterSession(YowsupApp):
 		for k, v in result.items():
 			if v is None:
 				continue
-			out.append("%s: %s" %(k, v.encode("utf-8") if type(v) is unistr else v))
+			out.append("%s: %s" % (k, v))
 
 		return "\n".join(out)
 

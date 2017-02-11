@@ -1,5 +1,5 @@
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2015, Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
@@ -21,6 +21,9 @@ __email__ = "post@steffenvogel.de"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import threading
 import inspect
 import re
@@ -37,7 +40,7 @@ class Bot():
 		self.commands = {
 			"help": self._help,
 			"prune": self._prune,
-            "groups": self._groups,
+			"groups": self._groups,
 			"getgroups": self._getgroups
 		}
 
@@ -92,9 +95,9 @@ following group commands are available
 		for group in self.session.groups:
 			buddy = self.session.groups[group].owner
 			try:
-                           nick = self.session.buddies[buddy].nick
-                        except KeyError:
-                           nick = buddy
+				nick = self.session.buddies[buddy].nick
+			except KeyError:
+				nick = buddy
 
 			self.send(self.session.groups[group].id + "@" + self.session.backend.spectrum_jid + " " + self.session.groups[group].subject + " Owner: " + nick )
 

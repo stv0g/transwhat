@@ -1,3 +1,29 @@
+__author__ = "Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
+__license__ = "GPLv3"
+__maintainer__ = "Steffen Vogel"
+__email__ = "post@steffenvogel.de"
+
+"""
+ This file is part of transWhat
+
+ transWhat is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ any later version.
+
+ transwhat is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with transWhat. If not, see <http://www.gnu.org/licenses/>.
+"""
+
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
+
 import protocol_pb2
 import socket
 import struct
@@ -11,7 +37,7 @@ import resource
 def WRAP(MESSAGE, TYPE):
 	wrap = protocol_pb2.WrapperMessage()
 	wrap.type = TYPE
-	wrap.payload = MESSAGE
+	wrap.payload = bytes(MESSAGE)
 	return wrap.SerializeToString()
 	
 class SpectrumBackend:
@@ -24,7 +50,7 @@ class SpectrumBackend:
 
 	def __init__(self):
 		self.m_pingReceived = False
-		self.m_data = ""
+		self.m_data = bytes("")
 		self.m_init_res = 0
 		self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -67,7 +93,7 @@ class SpectrumBackend:
 		vcard.id = ID
 		vcard.fullname = fullName
 		vcard.nickname = nickname
-		vcard.photo = photo 
+		vcard.photo = bytes(photo)
 
 		message = WRAP(vcard.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_VCARD)
 		self.send(message)
@@ -220,7 +246,7 @@ class SpectrumBackend:
 	def handleFTData(self, ftID, data):
 		d = protocol_pb2.FileTransferData()
 		d.ftid = ftID
-		d.data = data
+		d.data = bytes(data)
 
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
 		self.send(message)
@@ -277,13 +303,11 @@ class SpectrumBackend:
 		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml, payload.id)
 	
 	def handleConvMessageAckPayload(self, data):
-                payload = protocol_pb2.ConversationMessage()
-                if (payload.ParseFromString(data) == False):
-                        #TODO: ERROR
-                        return
-                self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
-
-
+		payload = protocol_pb2.ConversationMessage()
+		if (payload.ParseFromString(data) == False):
+			#TODO: ERROR
+			return
+		self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
 
 	def handleAttentionPayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
@@ -452,7 +476,7 @@ class SpectrumBackend:
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
 				self.handleExitRequest()
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK:
-                                self.handleConvMessageAckPayload(wrapper.payload)
+				self.handleConvMessageAckPayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
 				self.handleRawXmlRequest(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_BUDDIES:
@@ -543,14 +567,14 @@ class SpectrumBackend:
 		raise NotImplementedError, "Implement me"
 
 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
-                """
-                Called when XMPP user sends message to legacy network.
-                @param user: XMPP JID of user for which this event occurs.
-                @param legacyName: Legacy network name of buddy or room.
-                @param ID: message ID
-                """
+		"""
+		Called when XMPP user sends message to legacy network.
+		@param user: XMPP JID of user for which this event occurs.
+		@param legacyName: Legacy network name of buddy or room.
+		@param ID: message ID
+		"""
 
-                # raise NotImplementedError, "Implement me"
+		# raise NotImplementedError, "Implement me"
 		pass
 
 
