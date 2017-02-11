@@ -39,7 +39,6 @@ class Bot():
 
 		self.commands = {
 			"help": self._help,
-			"prune": self._prune,
 			"groups": self._groups,
 			"getgroups": self._getgroups
 		}
@@ -76,7 +75,6 @@ class Bot():
 	def _help(self):
 		self.send("""following bot commands are available:
 \\help			show this message
-\\prune			clear your buddylist
 
 following user commands are available:
 \\lastseen		request last online timestamp from buddy
@@ -85,11 +83,6 @@ following group commands are available
 \\leave			permanently leave group chat
 \\groups		print all attended groups
 \\getgroups		get current groups from WA""")
-
-	def _prune(self):
-		self.session.buddies.prune()
-		self.session.updateRoster()
-		self.send("buddy list cleared")
 
 	def _groups(self):
 		for group in self.session.groups:
