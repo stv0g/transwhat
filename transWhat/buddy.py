@@ -109,7 +109,6 @@ class BuddyList(dict):
 			try: del self[number]
 			except KeyError: self.logger.warn("non-existing buddy really didn't exist: %s" % number)
 
-
 	def onStatus(self, contacts):
 		self.logger.debug("%s received statuses of: %s" % (self.user, contacts))
 		for number, (status, time) in contacts.iteritems():
@@ -120,7 +119,6 @@ class BuddyList(dict):
 			else:
 				buddy.statusMsg = utils.softToUni(status)
 			self.updateSpectrum(buddy)
-
 
 	def load(self, buddies):
 		if self.session.loggedIn:
@@ -165,7 +163,6 @@ class BuddyList(dict):
 		self.backend.handleBuddyChanged(self.user, buddy.number, buddy.nick,
 			buddy.groups, status, statusMessage=statusmsg, iconHash=iconHash)
 
-
 	def remove(self, number):
 		try:
 			buddy = self[number]
@@ -174,7 +171,7 @@ class BuddyList(dict):
 											protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
 			self.session.unsubscribePresence(number)
-#			TODO Sync remove
+			# TODO Sync remove
 			return buddy
 		except KeyError:
 			return None
