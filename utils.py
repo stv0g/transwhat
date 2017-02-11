@@ -1,9 +1,5 @@
-# use unicode encoding for all literals by default (for python2.x)
-from __future__ import unicode_literals
-
-
 __author__ = "Steffen Vogel"
-__copyright__ = "Copyright 2015, Steffen Vogel"
+__copyright__ = "Copyright 2015-2017, Steffen Vogel"
 __license__ = "GPLv3"
 __maintainer__ = "Steffen Vogel"
 __email__ = "post@steffenvogel.de"
@@ -24,6 +20,9 @@ __email__ = "post@steffenvogel.de"
  You should have received a copy of the GNU General Public License
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
+
+# use unicode encoding for all literals by default (for python2.x)
+from __future__ import unicode_literals
 
 import e4u
 import base64
