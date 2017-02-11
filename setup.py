@@ -14,7 +14,7 @@ readme = read_file(os.path.join(here, 'README.rst'))
 
 
 setup(name='transwhat',
-	version='0.2',
+	version='0.2.2',
 	description='A gateway between the XMPP and the WhatsApp IM networks',
 	long_description=readme,
 	keywords='whatsapp xmpp im gateway transport yowsup',
