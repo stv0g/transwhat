@@ -25,6 +25,7 @@ __email__ = "post@steffenvogel.de"
 """
 
 import logging
+import os
 
 from yowsup import env
 from yowsup.env import S40YowsupEnv
