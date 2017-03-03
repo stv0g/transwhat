@@ -38,7 +38,7 @@ import threadutils
 sys.path.insert(0, os.getcwd())
 
 from Spectrum2.iochannel import IOChannel
-from config import SpectrumConfig
+from Spectrum2.config import SpectrumConfig
 from whatsappbackend import WhatsAppBackend
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
