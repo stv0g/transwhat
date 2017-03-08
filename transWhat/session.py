@@ -33,6 +33,9 @@ import time
 import sys
 import os
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
