@@ -690,7 +690,7 @@ class Session(YowsupApp):
 				waId = self.sendTextMessage(sender + '@s.whatsapp.net', message)
 				self.msgIDs[waId] = MsgIDs(ID, waId)
 
-			self.logger.info("WA Message send to %s with ID %s", buddy, waId)
+			# self.logger.info("WA Message send to %s with ID %s", buddy, waId)
 	
 	def executeCommand(self, command, room):
 		if command == '\\leave':
