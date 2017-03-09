@@ -165,7 +165,7 @@ class WhatsAppBackend(SpectrumBackend):
 	def handleRawXmlRequest(self, xml):
 		pass
 
- 	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+	def handleMessageAckRequest(self, user, legacyName, ID = 0):
 		self.logger.info("Meassage ACK request for %s !!" % legacyName)
 
 	def sendData(self, data):
