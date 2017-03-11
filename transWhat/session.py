@@ -33,6 +33,9 @@ import time
 import sys
 import os
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
@@ -302,81 +305,56 @@ class Session(YowsupApp):
 
 	# Called by superclass
 	def onImage(self, image):
-		self.logger.debug('Received image message: %s' % image)
-		buddy = image._from.split('@')[0]
-		participant = image.participant
 		if image.caption is None:
 			image.caption = ''
 
-		if image.isEncrypted():
-			self.logger.debug('Received encrypted image message')
-			if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
-				ipath = "/" + str(image.timestamp)  + image.getExtension()
-
-				with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
-					f.write(image.getMediaContent())
-				url = self.backend.specConf.__getitem__("service.web_url") + ipath
-			else:
-				self.logger.warn('Received encrypted image: web storage not set in config!')
-				url = image.url
-
-		else:
-			url = image.url
-
-		if participant is not None: # Group message
-			partname = participant.split('@')[0]
-			if image._from.split('@')[1] == 'broadcast': # Broadcast message
-				self.sendMessageToXMPP(partname, self.broadcast_prefix, image.timestamp)
-				self.sendMessageToXMPP(partname, url, image.timestamp)
-				self.sendMessageToXMPP(partname, image.caption, image.timestamp)
-			else: # Group message
-				self.sendGroupMessageToXMPP(buddy, partname, url, image.timestamp)
-				self.sendGroupMessageToXMPP(buddy, partname, image.caption, image.timestamp)
-		else:
-			self.sendMessageToXMPP(buddy, url, image.timestamp)
-			self.sendMessageToXMPP(buddy, image.caption, image.timestamp)
-		self.sendReceipt(image._id,	 image._from, None, image.participant)
-		self.recvMsgIDs.append((image._id, image._from, image.participant, image.timestamp))
+		self.onMedia(image, "image")
 
 
 	# Called by superclass
 	def onAudio(self, audio):
-		self.logger.debug('Received audio message: %s' % audio)
-		buddy = audio._from.split('@')[0]
-		participant = audio.participant
-		message = audio.url
-		if participant is not None: # Group message
-			partname = participant.split('@')[0]
-			if audio._from.split('@')[1] == 'broadcast': # Broadcast message
-				self.sendMessageToXMPP(partname, self.broadcast_prefix, audio.timestamp)
-				self.sendMessageToXMPP(partname, message, audio.timestamp)
-			else: # Group message
-				self.sendGroupMessageToXMPP(buddy, partname, message, audio.timestamp)
-		else:
-			self.sendMessageToXMPP(buddy, message, audio.timestamp)
-		self.sendReceipt(audio._id,	 audio._from, None, audio.participant)
-		self.recvMsgIDs.append((audio._id, audio._from, audio.participant, audio.timestamp))
+		self.onMedia(audio, "audio")
 
 
 	# Called by superclass
 	def onVideo(self, video):
-		self.logger.debug('Received video message: %s' % video)
-		buddy = video._from.split('@')[0]
-		participant = video.participant
+		self.onMedia(video, "video")
 
-		message = video.url
+		
+	def onMedia(self, media, type):
+		self.logger.debug('Received %s message: %s' % (type, media))
+		buddy = media._from.split('@')[0]
+		participant = media.participant
+
+		if media.isEncrypted():
+			self.logger.debug('Received encrypted media message')
+			if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
+				ipath = "/" + str(media.timestamp)  + media.getExtension()
+
+				with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
+					f.write(media.getMediaContent())
+				url = self.backend.specConf.__getitem__("service.web_url") + ipath
+			else:
+				self.logger.warn('Received encrypted media: web storage not set in config!')
+				url = media.url
+
+		else:
+			url = media.url
+
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
-			if video._from.split('@')[1] == 'broadcast': # Broadcast message
-				self.sendMessageToXMPP(partname, self.broadcast_prefix, video.timestamp)
-				self.sendMessageToXMPP(partname, message, video.timestamp)
+			if media._from.split('@')[1] == 'broadcast': # Broadcast message
+				self.sendMessageToXMPP(partname, self.broadcast_prefix, media.timestamp)
+				self.sendMessageToXMPP(partname, url, media.timestamp)
+				self.sendMessageToXMPP(partname, media.caption, media.timestamp)
 			else: # Group message
-				self.sendGroupMessageToXMPP(buddy, partname, message, video.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, url, media.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, media.caption, media.timestamp)
 		else:
-			self.sendMessageToXMPP(buddy, message, video.timestamp)
-		self.sendReceipt(video._id,	 video._from, None, video.participant)
-		self.recvMsgIDs.append((video._id, video._from, video.participant, video.timestamp))
-
+			self.sendMessageToXMPP(buddy, url, media.timestamp)
+			self.sendMessageToXMPP(buddy, media.caption, media.timestamp)
+		self.sendReceipt(media._id,	 media._from, None, media.participant)
+		self.recvMsgIDs.append((media._id, media._from, media.participant, media.timestamp))
 
 	def onLocation(self, location):
 		buddy = location._from.split('@')[0]
