@@ -69,7 +69,7 @@ following content:
     port = 5221
 
     backend_host = localhost
-    backend = /location/to/transwhat/transwhat.py
+    backend = /usr/bin/transwhat
 
     users_per_backend = 10
     more_resources = 1
