@@ -33,6 +33,9 @@ setup(name='transwhat',
 		'transWhat',
 		'Spectrum2'
 	],
+        scripts=[
+		'transWhat/transwhat.py'	
+	],
 	install_requires=[
 		'protobuf',
 		'yowsup2',
