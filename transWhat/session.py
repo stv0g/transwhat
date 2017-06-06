@@ -350,13 +350,13 @@ class Session(YowsupApp):
 			if media._from.split('@')[1] == 'broadcast': # Broadcast message
 				self.sendMessageToXMPP(partname, self.broadcast_prefix, media.timestamp)
 				self.sendMessageToXMPP(partname, url, media.timestamp)
-				self.sendMessageToXMPP(partname, media.caption, media.timestamp)
+				self.sendMessageToXMPP(partname, caption, media.timestamp)
 			else: # Group message
 				self.sendGroupMessageToXMPP(buddy, partname, url, media.timestamp)
-				self.sendGroupMessageToXMPP(buddy, partname, media.caption, media.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, caption, media.timestamp)
 		else:
 			self.sendMessageToXMPP(buddy, url, media.timestamp)
-			self.sendMessageToXMPP(buddy, media.caption, media.timestamp)
+			self.sendMessageToXMPP(buddy, caption, media.timestamp)
 
 		self.sendReceipt(media._id,	 media._from, None, media.participant)
 		self.recvMsgIDs.append((media._id, media._from, media.participant, media.timestamp))
