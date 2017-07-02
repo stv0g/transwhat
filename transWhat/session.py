@@ -135,39 +135,34 @@ class Session(YowsupApp):
 		          "\n".join(text) + "\nIf you do not join them you will lose messages"
 		#self.bot.send(message)
 
-	def _updateGroups(self, response, request):
+	def _updateGroups(self, response, _):
 		self.logger.debug('Received groups list %s' % response)
 		groups = response.getGroups()
 		for group in groups:
 			room = group.getId()
-			owner = group.getOwner().split('@')[0]
-			subjectOwner = group.getSubjectOwner().split('@')[0]
-			subject = utils.softToUni(group.getSubject())
-
-			if room in self.groups:
-				oroom = self.groups[room]
-				oroom.owner = owner
-				oroom.subjectOwner = subjectOwner
-				oroom.subject = subject
-			else:
-				self.groups[room] = Group(room, owner, subject, subjectOwner, self.backend, self.user)
-#				self.joinRoom(self._shortenGroupId(room), self.user.split("@")[0])
+			# ensure self.groups[room] exists
+			if room not in self.groups:
+				owner = group.getOwner().split('@')[0]
+				subjectOwner = group.getSubjectOwner().split('@')[0]
+				subject = utils.softToUni(group.getSubject())
+				self.groups[room] = Group(room, owner, subject, subjectOwner,
+							  self.backend, self.user)
+			# add/update room participants
 			self.groups[room].addParticipants(group.getParticipants().keys(),
-					self.buddies, self.legacyName)
-
-			#self._addParticipantsToRoom(room, group.getParticipants())
-
-			if room in self.groupOfflineQueue:
-				while self.groupOfflineQueue[room]:
-					msg = self.groupOfflineQueue[room].pop(0)
-					self.backend.handleMessage(self.user, room, msg[1],
-											   msg[0], "", msg[2])
-					self.logger.debug("Send queued group message to: %s %s %s" %
-									 (msg[0],msg[1], msg[2]))
+							  self.buddies, self.legacyName)
 		self.gotGroupList = True
-		for room, nick in self.joinRoomQueue:
-			self.joinRoom(room, nick)
-		self.joinRoomQueue = []
+		# join rooms
+		while self.joinRoomQueue:
+			self.joinRoom(*self.joinRoomQueue.pop(0))
+		# deliver queued offline messages
+		for room in self.groupOfflineQueue:
+			while self.groupOfflineQueue[room]:
+				msg = self.groupOfflineQueue[room].pop(0)
+				self.backend.handleMessage(self.user, room, msg[1], msg[0], "",
+							   msg[2])
+				self.logger.debug("Send queued group message to: %s %s %s" %
+						  (msg[0], msg[1], msg[2]))
+		# pass update to backend
 		self.updateRoomList()
 
 	def joinRoom(self, room, nick):
