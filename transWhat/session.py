@@ -285,21 +285,18 @@ class Session(YowsupApp):
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)" %
 				(buddy, self.legacyName, messageContent, timestamp))
 
-		try:
-			if participant is not None: # Group message or broadcast
-				partname = participant.split('@')[0]
-				if _from.split('@')[1] == 'broadcast': # Broadcast message
-					message = self.broadcast_prefix + messageContent
-					self.sendMessageToXMPP(partname, message, timestamp)
-				else: # Group message
-					if notify is None:
-						notify = ""
-					self.sendGroupMessageToXMPP(buddy, partname, messageContent,
-											    timestamp, notify)
-			else:
-			    self.sendMessageToXMPP(buddy, messageContent, timestamp)
-		except Exception as ex:
-		    self.logger.error("textMessage not delivered to XMPP: %s" % ex)
+		if participant is not None: # Group message or broadcast
+			partname = participant.split('@')[0]
+			if _from.split('@')[1] == 'broadcast': # Broadcast message
+				message = self.broadcast_prefix + messageContent
+				self.sendMessageToXMPP(partname, message, timestamp)
+			else: # Group message
+				if notify is None:
+					notify = ""
+				self.sendGroupMessageToXMPP(buddy, partname, messageContent,
+											timestamp, notify)
+		else:
+			self.sendMessageToXMPP(buddy, messageContent, timestamp)
 
 	# Called by superclass
 	def onImage(self, image):
