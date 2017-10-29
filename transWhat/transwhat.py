@@ -58,36 +58,36 @@ args, unknown = parser.parse_known_args()
 YowConstants.PATH_STORAGE='/var/lib/spectrum2/' + args.j
 
 if args.log is None:
-	args.log = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
+    args.log = '/var/log/spectrum2/' + args.j + '/backends/backend.log'
 
 # Logging
 logging.basicConfig(
-	filename = args.log,
-	format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s",
-	level = logging.DEBUG if args.debug else logging.INFO
+    filename = args.log,
+    format = "%(asctime)-15s %(levelname)s %(name)s: %(message)s",
+    level = logging.DEBUG if args.debug else logging.INFO
 )
 
 if args.config is not None:
-	specConf = SpectrumConfig(args.config)
+    specConf = SpectrumConfig(args.config)
 else:
-	specConf = None
+    specConf = None
 
 # Handler
 def handleTransportData(data):
-	try:
-		plugin.handleDataRead(data)
-	except SystemExit as e:
-		raise e
-	except:
-		logger = logging.getLogger('transwhat')
-		logger.error(traceback.format_exc())
+    try:
+        plugin.handleDataRead(data)
+    except SystemExit as e:
+        raise e
+    except:
+        logger = logging.getLogger('transwhat')
+        logger.error(traceback.format_exc())
 
 e4u.load()
 
 closed = False
 def connectionClosed():
-	global closed
-	closed = True
+    global closed
+    closed = True
 
 # Main
 io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
@@ -95,34 +95,34 @@ io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 plugin = WhatsAppBackend(io, args.j, specConf)
 
 plugin.handleBackendConfig({
-	'features': [
-		('send_buddies_on_login', 1),
-		('muc', 'true'),
-	],
+    'features': [
+        ('send_buddies_on_login', 1),
+        ('muc', 'true'),
+    ],
 })
 
-
-while True:
-	try:
-		asyncore.loop(timeout=1.0, count=10, use_poll = True)
-		try:
-			callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
-			callback()
-		except Queue.Empty:
-			pass
-		else:
-			break
-		if closed:
-			break
-		while True:
-			try:
-				callback = threadutils.eventQueue.get_nowait()
-			except Queue.Empty:
-				break
-			else:
-				callback()
-	except SystemExit:
-		break
-	except:
-		logger = logging.getLogger('transwhat')
-		logger.error(traceback.format_exc())
+def main():
+    while True:
+        try:
+            asyncore.loop(timeout=1.0, count=10, use_poll = True)
+            try:
+                callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
+                callback()
+            except Queue.Empty:
+                pass
+            else:
+                break
+            if closed:
+                break
+            while True:
+                try:
+                    callback = threadutils.eventQueue.get_nowait()
+                except Queue.Empty:
+                    break
+                else:
+                    callback()
+        except SystemExit:
+            break
+        except:
+            logger = logging.getLogger('transwhat')
+            logger.error(traceback.format_exc())

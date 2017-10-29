@@ -54,7 +54,8 @@ from yowsup.layers.protocol_contacts		   import YowContactsIqProtocolLayer
 from yowsup.layers.protocol_chatstate		   import YowChatstateProtocolLayer
 from yowsup.layers.protocol_privacy			   import YowPrivacyProtocolLayer
 from yowsup.layers.protocol_profiles		   import YowProfilesProtocolLayer
-from yowsup.layers.protocol_calls import YowCallsProtocolLayer
+from yowsup.layers.protocol_calls              import YowCallsProtocolLayer
+from yowsup.layers.axolotl.props               import PROP_IDENTITY_AUTOTRUST
 
 # ProtocolEntities
 from yowsup.layers.protocol_acks.protocolentities import *
@@ -130,6 +131,7 @@ class YowsupApp(object):
 		"""
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
 							(username, password))
+		self.stack.setProp(PROP_IDENTITY_AUTOTRUST, True)
 #		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 
 		try:

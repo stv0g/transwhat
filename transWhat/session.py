@@ -320,6 +320,7 @@ class Session(YowsupApp):
 		self.logger.debug('Received %s message: %s' % (type, media))
 		buddy = media._from.split('@')[0]
 		participant = media.participant
+		caption = ''
 
 		if media.isEncrypted():
 			self.logger.debug('Received encrypted media message')
@@ -336,18 +337,22 @@ class Session(YowsupApp):
 		else:
 			url = media.url
 
+		if type == 'image':
+		    caption = media.caption
+
 		if participant is not None: # Group message
 			partname = participant.split('@')[0]
 			if media._from.split('@')[1] == 'broadcast': # Broadcast message
 				self.sendMessageToXMPP(partname, self.broadcast_prefix, media.timestamp)
 				self.sendMessageToXMPP(partname, url, media.timestamp)
-				self.sendMessageToXMPP(partname, media.caption, media.timestamp)
+				self.sendMessageToXMPP(partname, caption, media.timestamp)
 			else: # Group message
 				self.sendGroupMessageToXMPP(buddy, partname, url, media.timestamp)
-				self.sendGroupMessageToXMPP(buddy, partname, media.caption, media.timestamp)
+				self.sendGroupMessageToXMPP(buddy, partname, caption, media.timestamp)
 		else:
 			self.sendMessageToXMPP(buddy, url, media.timestamp)
-			self.sendMessageToXMPP(buddy, media.caption, media.timestamp)
+			self.sendMessageToXMPP(buddy, caption, media.timestamp)
+
 		self.sendReceipt(media._id,	 media._from, None, media.participant)
 		self.recvMsgIDs.append((media._id, media._from, media.participant, media.timestamp))
 
