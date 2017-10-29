@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import codecs
 from setuptools import setup
@@ -34,7 +36,7 @@ setup(name='transwhat',
 		'Spectrum2'
 	],
         scripts=[
-		'transWhat/transwhat.py'	
+		'transWhat/transwhat.py'
 	],
 	install_requires=[
 		'protobuf',
