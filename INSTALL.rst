@@ -2,7 +2,7 @@ Installation and configuration guide
 ====================================
 
 I assume that you have a basic understanding of XMPP and the the concept
-of a XMPP component / transport. If not, please get a book about Jabber
+of a XMPP component/transport. If not, please get a book about Jabber
 or read the standards.
 
 transWhat is a XMPP transport. By this means it extends the
@@ -44,14 +44,14 @@ Spectrum 2
 ----------
 
 Installation
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 Manual compile latest version from `Github`_. You can use the following
 guide:
 http://spectrum.im/documentation/installation/from\_source\_code.html.
 
 Configuration
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 Create a new file ``/etc/spectrum2/transports/whatsapp.cfg`` with the
 following content:
@@ -106,11 +106,12 @@ Install required dependencies:
 
     $ pip install --pre e4u protobuf python-dateutil yowsup2
 
--  **e4u**: is a simple emoji4unicode python bindings
--  `**yowsup**`_: is a python library that enables you build application
+-  e4u_: is a simple emoji4unicode python bindings
+-  yowsup_: is a python library that enables you build application
    which use WhatsApp service.
 
 .. _Spectrum 2: http://www.spectrum.im
 .. _Yowsup 2: https://github.com/tgalal/yowsup
 .. _Github: https://github.com/hanzz/libtransport
-.. _**yowsup**: https://github.com/tgalal/yowsup
+.. _yowsup: https://github.com/tgalal/yowsup
+.. _e4u: https://pypi.python.org/pypi/e4u
