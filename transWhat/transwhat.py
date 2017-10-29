@@ -33,13 +33,13 @@ import asyncore
 import sys, os
 import e4u
 import Queue
-import threadutils
+import transWhat.threadutils
 
 sys.path.insert(0, os.getcwd())
 
 from Spectrum2.iochannel import IOChannel
 from Spectrum2.config import SpectrumConfig
-from whatsappbackend import WhatsAppBackend
+from transWhat.whatsappbackend import WhatsAppBackend
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
 
@@ -116,7 +116,7 @@ def main():
                 break
             while True:
                 try:
-                    callback = threadutils.eventQueue.get_nowait()
+                    callback = transWhat.threadutils.eventQueue.get_nowait()
                 except Queue.Empty:
                     break
                 else:
