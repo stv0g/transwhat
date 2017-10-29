@@ -57,7 +57,6 @@ from yowsup.layers.protocol_profiles		   import YowProfilesProtocolLayer
 from yowsup.layers.protocol_calls import YowCallsProtocolLayer
 
 # ProtocolEntities
-
 from yowsup.layers.protocol_acks.protocolentities import *
 from yowsup.layers.protocol_chatstate.protocolentities import *
 from yowsup.layers.protocol_contacts.protocolentities import *
@@ -73,9 +72,7 @@ from yowsup.layers.protocol_iq.protocolentities  import *
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
-
 # Registration
-
 from yowsup.registration import WACodeRequest
 from yowsup.registration import WARegRequest
 
@@ -130,7 +127,7 @@ class YowsupApp(object):
 				  and cellphone number)
 
 			- password: (str) base64 encoded password
-		  """
+		"""
 		self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
 							(username, password))
 #		self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
