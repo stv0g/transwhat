@@ -44,14 +44,14 @@ Spectrum 2
 ----------
 
 Installation
-^^^^^^^^^^^^
+~~~~~~~~~~~~
 
 Manual compile latest version from `Github`_. You can use the following
 guide:
 http://spectrum.im/documentation/installation/from\_source\_code.html.
 
 Configuration
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 Create a new file ``/etc/spectrum2/transports/whatsapp.cfg`` with the
 following content:
