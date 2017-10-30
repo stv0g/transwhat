@@ -3,6 +3,20 @@ transWhat
 
 transWhat is a WhatsApp XMPP Gateway based on `Spectrum 2`_ and `Yowsup 2`_.
 
+Support
+-------
+
+For support and discussions please join the XMPP MUC: **transwhat@conference.0l.de**.
+
+Features
+--------
+
+-  Typing notifications
+-  Receive images, audio & video
+-  Set/get online status
+-  Set status message
+-  Groupchats
+
 Installation
 ------------
 
@@ -20,15 +34,6 @@ Branches
    (**recommended**).
 
 For production, please use the ``yowsup-2`` branch.
-
-Features
---------
-
--  Typing notifications
--  Receive images, audio & video
--  Set/get online status
--  Set status message
--  Groupchats
 
 Contributors
 ------------
@@ -51,8 +56,8 @@ transWhat is licensed under the GPLv3_ license.
 Links
 -----
 
-- An *outdated* project wiki is available `here`_.
-- An *outdated* writeup of this project is also availabe at my `blog`_.
+-  An *outdated* project wiki is available `here`_.
+-  An *outdated* writeup of this project is also availabe at my `blog`_.
 
 .. _Spectrum 2: http://www.spectrum.im
 .. _Yowsup 2: https://github.com/tgalal/yowsup
