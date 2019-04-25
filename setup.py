@@ -39,8 +39,7 @@ setup(name='transwhat',
         'protobuf',
         'yowsup',
         'pyspectrum2',
-        'Pillow',
-        'python-dateutil'
+        'python-dateutil',
     ],
     entry_points={
         'console_scripts': ['transwhat=transWhat.transwhat:main'],

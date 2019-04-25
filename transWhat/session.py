@@ -1,8 +1,6 @@
 import logging
 import urllib
 import time
-
-# from PIL import Image
 import sys
 import os
 
