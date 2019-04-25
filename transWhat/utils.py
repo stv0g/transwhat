@@ -25,7 +25,6 @@ import e4u
 import base64
 import hashlib
 
-
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
 	lengths = [60, 60, 24, 7,4.35, 12, 10]

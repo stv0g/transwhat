@@ -4,16 +4,13 @@ import os
 import codecs
 from setuptools import setup
 
-
 def read_file(filename, encoding='utf8'):
     """Read unicode from given file."""
     with codecs.open(filename, encoding=encoding) as fd:
         return fd.read()
 
-
 here = os.path.abspath(os.path.dirname(__file__))
 readme = read_file(os.path.join(here, 'README.rst'))
-
 
 setup(name='transwhat',
     version='0.2.2',
