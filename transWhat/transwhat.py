@@ -21,8 +21,8 @@ parser.add_argument('--log', type=str)
 parser.add_argument('--host', type=str, required=True)
 parser.add_argument('--port', type=int, required=True)
 parser.add_argument('--service.backend_id', metavar="ID", type=int, required=True)
-parser.add_argument('config', type=str)
 parser.add_argument('-j', type=str, metavar="JID", required=True)
+parser.add_argument('config', type=str)
 
 args, unknown = parser.parse_known_args()
 
@@ -75,14 +75,16 @@ def main():
         try:
             asyncore.loop(timeout=1.0, count=10, use_poll = True)
             try:
-                callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
+                callback = YowStack._YowStack__detachedQueue.get(False) # doesn't block
                 callback()
             except queue.Empty:
                 pass
             else:
                 break
+
             if closed:
                 break
+
             while True:
                 try:
                     callback = threadutils.eventQueue.get_nowait()
