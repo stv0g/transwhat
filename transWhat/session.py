@@ -23,6 +23,23 @@ import deferred
 from deferred import call
 from yowsupwrapper import YowsupApp
 
+def ago(secs):
+	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
+	lengths = [60, 60, 24, 7,4.35, 12, 10]
+
+	j = 0
+	diff = secs
+
+	while diff >= lengths[j]:
+		diff /= lengths[j]
+		diff = round(diff)
+		j += 1
+
+	period = periods[j]
+	if diff > 1: period += "s"
+
+	return "%d %s ago" % (diff, period)
+
 
 class MsgIDs:
 	def __init__(self, xmppId, waId):
@@ -656,7 +673,7 @@ class Session(YowsupApp):
 		def onSuccess(buddy, lastseen):
 			timestamp = time.localtime(time.localtime()-lastseen)
 			timestring = time.strftime("%a, %d %b %Y %H:%M:%S", timestamp)
-			self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, utils.ago(lastseen), str(lastseen)))
+			self.sendMessageToXMPP(buddy, "%s (%s) %s" % (timestring, ago(lastseen), str(lastseen)))
 
 		def onError(errorIqEntity, originalIqEntity):
 			self.sendMessageToXMPP(errorIqEntity.getFrom(), "LastSeen Error")

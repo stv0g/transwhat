@@ -4,10 +4,13 @@ import logging
 import time
 import utils
 import base64
+import hashlib
 
 import deferred
 from deferred import call
 
+def sha1hash(data):
+	hashlib.sha1(data).hexdigest()
 
 class Buddy():
 	def __init__(self, owner, number, nick, statusMsg, groups, image_hash):
@@ -197,7 +200,7 @@ class BuddyList(dict):
 			except KeyError:
 				nick = ""
 				groups = []
-			image_hash = pictureData.then(utils.sha1hash)
+			image_hash = pictureData.then(sha1hash)
 			call(self.logger.debug, 'Image hash is %s' % image_hash)
 			call(self.update, buddynr, nick, groups, image_hash)
 			# No image
