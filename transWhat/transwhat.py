@@ -5,6 +5,7 @@ import traceback
 import logging
 import asyncore
 import sys
+import queue
 
 import Spectrum2
 from yowsup.common import YowConstants
@@ -76,7 +77,7 @@ def main():
             try:
                 callback = YowStack._YowStack__detachedQueue.get(False) #doesn't block
                 callback()
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             else:
                 break
@@ -84,8 +85,8 @@ def main():
                 break
             while True:
                 try:
-                    callback = transWhat.threadutils.eventQueue.get_nowait()
-                except Queue.Empty:
+                    callback = threadutils.eventQueue.get_nowait()
+                except queue.Empty:
                     break
                 else:
                     callback()
