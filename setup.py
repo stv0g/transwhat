@@ -30,8 +30,7 @@ setup(name='transwhat',
     ],
     license='GPL-3+',
     packages=[
-        'transWhat',
-        'Spectrum2'
+        'transWhat'
     ],
     scripts=[
         'transWhat/transwhat.py'
@@ -39,6 +38,7 @@ setup(name='transwhat',
     install_requires=[
         'protobuf',
         'yowsup',
+        'pyspectrum2'
         'Pillow',
         'python-dateutil'
     ],
