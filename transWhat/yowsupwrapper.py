@@ -178,7 +178,7 @@ class YowsupApp(object):
 			mediaUploader = MediaUploader(jid, ownNumber, filePath,
 					  resultRequestUploadIqProtocolEntity.getUrl(),
 					  resultRequestUploadIqProtocolEntity.getResumeOffset(),
-					  successFn, self.onUploadError, self.onUploadProgress, async=False)
+					  successFn, self.onUploadError, self.onUploadProgress, asynchronous=False)
 			mediaUploader.start()
 
 	def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):

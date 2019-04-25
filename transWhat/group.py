@@ -1,4 +1,4 @@
-from Spectrum2 import protocol_pb2
+import Spectrum2
 
 class Group():
 
@@ -39,40 +39,40 @@ class Group():
 	def sendParticipantsToSpectrum(self, yourNumber):
 		for number, nick in self.participants.iteritems():
 			if number == self.owner:
-				flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+				flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 			else:
-				flags = protocol_pb2.PARTICIPANT_FLAG_NONE
+				flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
 			if number == yourNumber:
-				flags = flags | protocol_pb2.PARTICIPANT_FLAG_ME
+				flags = flags | Spectrum2.protocol_pb2.PARTICIPANT_FLAG_ME
 			
 			try:
-				self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE, 
+				self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE, 
 					self.backend.sessions[self.user].buddies[number].image_hash)
 			except KeyError:
-				self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE)
+				self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE)
 
 	def removeParticipants(self, participants):
 		for jid in participants:
 			number = jid.split('@')[0]
 			nick = self.participants[number]
-			flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-			self._updateParticipant(number, flags, protocol_pb2.STATUS_NONE)
+			flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
+			self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_NONE)
 			del self.participants[number]
 
 	def leaveRoom(self):
 		for number in self.participants:
 			nick = self.participants[number]
-			flags = protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
-			self._updateParticipant(number, flags, protocol_pb2.STATUS_NONE)
+			flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_ROOM_NOT_FOUND
+			self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_NONE)
 
 	def changeNick(self, number, new_nick):
 		if self.participants[number] == new_nick:
 			return
 		if number == self.owner:
-			flags = protocol_pb2.PARTICIPANT_FLAG_MODERATOR
+			flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_MODERATOR
 		else:
-			flags = protocol_pb2.PARTICIPANT_FLAG_NONE
-		self._updateParticipant(number, flags, protocol_pb2.STATUS_ONLINE, new_nick)
+			flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
+		self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE, new_nick)
 		self.participants[number] = new_nick
 
 	def _updateParticipant(self, number, flags, status, imageHash = "", newNick = ""):

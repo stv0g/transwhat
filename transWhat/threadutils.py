@@ -1,8 +1,8 @@
-import Queue
+import queue
 import threading
 
 # This queue is for other threads that want to execute code in the main thread
-eventQueue = Queue.Queue()
+eventQueue = queue.Queue()
 
 def runInThread(threadFunc, callback):
 	"""
@@ -15,5 +15,6 @@ def runInThread(threadFunc, callback):
 		result = threadFunc()
 		# Queue callback to be call in main thread
 		eventQueue.put(lambda: callback(result))
+
 	thread = threading.Thread(target=helper)
 	thread.start()

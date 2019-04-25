@@ -4,17 +4,15 @@ import argparse
 import traceback
 import logging
 import asyncore
-import sys, os
-import Queue
-import transWhat.threadutils
-
-sys.path.insert(0, os.getcwd())
+import sys
 
 from Spectrum2.iochannel import IOChannel
 from Spectrum2.config import SpectrumConfig
-from transWhat.whatsappbackend import WhatsAppBackend
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
+
+from .whatsappbackend import WhatsAppBackend
+from . import threadutils
 
 # Arguments
 parser = argparse.ArgumentParser()

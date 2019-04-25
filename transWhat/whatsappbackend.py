@@ -1,11 +1,8 @@
-from Spectrum2.backend import SpectrumBackend
-from Spectrum2 import protocol_pb2
-
-from session import Session
-from registersession import RegisterSession
-
 import logging
+from Spectrum2.backend import SpectrumBackend
 
+from .session import Session
+from .registersession import RegisterSession
 
 class WhatsAppBackend(SpectrumBackend):
 	def __init__(self, io, spectrum_jid, specConf):

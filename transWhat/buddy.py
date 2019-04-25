@@ -1,15 +1,10 @@
-from Spectrum2 import protocol_pb2
-
 import logging
 import time
 import base64
 import hashlib
+import Spectrum2
 
-import deferred
-from deferred import call
-
-def sha1hash(data):
-	hashlib.sha1(data).hexdigest()
+from . import deferred
 
 class Buddy():
 	def __init__(self, owner, number, nick, statusMsg, groups, image_hash):
@@ -120,11 +115,11 @@ class BuddyList(dict):
 
 	def updateSpectrum(self, buddy):
 		if buddy.presence == 0:
-			status = protocol_pb2.STATUS_NONE
+			status = Spectrum2.protocol_pb2.STATUS_NONE
 		elif buddy.presence == 'unavailable':
-			status = protocol_pb2.STATUS_AWAY
+			status = Spectrum2.protocol_pb2.STATUS_AWAY
 		else:
-			status = protocol_pb2.STATUS_ONLINE
+			status = Spectrum2.protocol_pb2.STATUS_ONLINE
 
 		statusmsg = buddy.statusMsg
 		if buddy.lastseen != 0:
@@ -144,7 +139,7 @@ class BuddyList(dict):
 			buddy = self[number]
 			del self[number]
 			self.backend.handleBuddyChanged(self.user, number, "", [],
-											protocol_pb2.STATUS_NONE)
+											Spectrum2.protocol_pb2.STATUS_NONE)
 			self.backend.handleBuddyRemoved(self.user, number)
 			self.session.unsubscribePresence(number)
 			# TODO Sync remove
@@ -182,9 +177,9 @@ class BuddyList(dict):
 		pictureData = response.pictureData()
 		# Send VCard
 		if ID != None:
-			call(self.logger.debug, 'Sending VCard (%s) with image id %s: %s' %
+			deferred.call(self.logger.debug, 'Sending VCard (%s) with image id %s: %s' %
 					(ID, response.pictureId(), pictureData.then(base64.b64encode)))
-			call(self.backend.handleVCard, self.user, ID, buddy, "", "",
+			deferred.call(self.backend.handleVCard, self.user, ID, buddy, "", "",
 					pictureData)
 			# If error
 			error.when(self.logger.debug, 'Sending VCard (%s) without image' % ID)
@@ -199,9 +194,14 @@ class BuddyList(dict):
 			except KeyError:
 				nick = ""
 				groups = []
+
+			def sha1hash(data):
+				hashlib.sha1(data).hexdigest()
+
 			image_hash = pictureData.then(sha1hash)
-			call(self.logger.debug, 'Image hash is %s' % image_hash)
-			call(self.update, buddynr, nick, groups, image_hash)
+
+			deferred.call(self.logger.debug, 'Image hash is %s' % image_hash)
+			deferred.call(self.update, buddynr, nick, groups, image_hash)
 			# No image
 			error.when(self.logger.debug, 'No image')
 			error.when(self.update, buddynr, nick, groups, '')

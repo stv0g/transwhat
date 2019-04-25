@@ -1,24 +1,18 @@
 import logging
 import urllib
 import time
-import sys
 import os
-
-reload(sys)
-sys.setdefaultencoding("utf-8")
 
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
-from Spectrum2 import protocol_pb2
+import Spectrum2
 
-from buddy import BuddyList
-from threading import Timer
-from group import Group
-from bot import Bot
-import deferred
-from deferred import call
-from yowsupwrapper import YowsupApp
+from . import deferred 
+from .buddy import BuddyList
+from .group import Group
+from .bot import Bot
+from .yowsupwrapper import YowsupApp
 
 def ago(secs):
 	periods = ["second", "minute", "hour", "day", "week", "month", "year", "decade"]
@@ -56,7 +50,7 @@ class Session(YowsupApp):
 		self.user = user
 		self.legacyName = legacyName
 
-		self.status = protocol_pb2.STATUS_NONE
+		self.status = Spectrum2.protocol_pb2.STATUS_NONE
 		self.statusMessage = ''
 
 		self.groups = {}
@@ -210,7 +204,7 @@ class Session(YowsupApp):
 
 		self.backend.handleConnected(self.user)
 		self.backend.handleBuddyChanged(self.user, "bot", self.bot.name,
-						["Admin"], protocol_pb2.STATUS_ONLINE)
+						["Admin"], Spectrum2.protocol_pb2.STATUS_ONLINE)
 		# Initialisation?
 		self.requestPrivacyList()
 		self.requestClientConfig()
@@ -418,7 +412,7 @@ class Session(YowsupApp):
 		self.logger.info("Paused typing: %s" % buddy)
 		if buddy != 'bot':
 			self.backend.handleBuddyTyped(self.user, buddy)
-			self.timer = Timer(3, self.backend.handleBuddyStoppedTyping,
+			self.timer = threading.Timer(3, self.backend.handleBuddyStoppedTyping,
 							   (self.user, buddy)).start()
 
 	# Called by superclass
@@ -744,8 +738,8 @@ class Session(YowsupApp):
 			self.logger.info("Status changed: %s" % status)
 			self.status = status
 
-			if status == protocol_pb2.STATUS_ONLINE \
-					or status == protocol_pb2.STATUS_FFC:
+			if status == Spectrum2.protocol_pb2.STATUS_ONLINE \
+					or status == Spectrum2.protocol_pb2.STATUS_FFC:
 				self.sendPresence(True)
 			else:
 				self.sendPresence(False)
@@ -829,7 +823,7 @@ class Session(YowsupApp):
 
 		self.logger.info("Removed %s from room %s" % (buddy, room))
 
-		self.backend.handleParticipantChanged(self.user, buddy, room, protocol_pb2.PARTICIPANT_FLAG_NONE, protocol_pb2.STATUS_NONE) # TODO
+		self.backend.handleParticipantChanged(self.user, buddy, room, Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE, Spectrum2.protocol_pb2.STATUS_NONE) # TODO
 
 		if receiptRequested: self.call("notification_ack", (gjid, messageId))
 

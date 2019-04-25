@@ -1,9 +1,11 @@
-from Spectrum2 import protocol_pb2
-
-from yowsupwrapper import YowsupApp
-import logging
-import threadutils
 import sys
+import logging
+import Spectrum2
+
+from .yowsupwrapper import YowsupApp
+
+from . import threadutils
+
 
 class RegisterSession(YowsupApp):
 	"""
@@ -22,7 +24,7 @@ class RegisterSession(YowsupApp):
 	def login(self, password=""):
 		self.backend.handleConnected(self.user)
 		self.backend.handleBuddyChanged(self.user, 'bot', 'bot',
-				['Admin'], protocol_pb2.STATUS_ONLINE)
+				['Admin'], Spectrum2.protocol_pb2.STATUS_ONLINE)
 		self.backend.handleMessage(self.user, 'bot',
 				'Please enter your country code')
 
