@@ -38,7 +38,7 @@ setup(name='transwhat',
     install_requires=[
         'protobuf',
         'yowsup',
-        'pyspectrum2'
+        'pyspectrum2',
         'Pillow',
         'python-dateutil'
     ],
