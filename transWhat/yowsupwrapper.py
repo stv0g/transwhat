@@ -28,20 +28,18 @@ import logging
 import os
 
 from yowsup import env
-from yowsup.env import S40YowsupEnv
+from yowsup.env import YowsupEnv
 from yowsup.stacks import YowStack, YowStackBuilder
 from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
-from yowsup.layers.auth import AuthError
 
 # Layers
 from yowsup.layers.axolotl					   import AxolotlSendLayer, AxolotlControlLayer, AxolotlReceivelayer
-from yowsup.layers.auth						   import YowCryptLayer, YowAuthenticationProtocolLayer
+from yowsup.layers.auth						   import YowAuthenticationProtocolLayer
 from yowsup.layers.coder					   import YowCoderLayer
 from yowsup.layers.logger					   import YowLoggerLayer
 from yowsup.layers.network					   import YowNetworkLayer
 from yowsup.layers.protocol_messages		   import YowMessagesProtocolLayer
-from yowsup.layers.stanzaregulator			   import YowStanzaRegulator
 from yowsup.layers.protocol_media			   import YowMediaProtocolLayer
 from yowsup.layers.protocol_acks			   import YowAckProtocolLayer
 from yowsup.layers.protocol_receipts		   import YowReceiptProtocolLayer
@@ -102,8 +100,6 @@ class YowsupApp(object):
 				AxolotlControlLayer,
 				YowParallelLayer((AxolotlSendLayer, AxolotlReceivelayer)),
 				YowCoderLayer,
-				YowCryptLayer,
-				YowStanzaRegulator,
 				YowNetworkLayer
 		)
 
@@ -111,7 +107,7 @@ class YowsupApp(object):
 		stackBuilder = YowStackBuilder()
 
 		self.stack = stackBuilder \
-			.pushDefaultLayers(True) \
+			.pushDefaultLayers() \
 			.push(YowsupAppLayer) \
 			.build()
 		self.stack.broadcastEvent(
@@ -745,12 +741,12 @@ class YowsupAppLayer(YowInterfaceLayer):
 	@ProtocolEntityCallback('success')
 	def onAuthSuccess(self, entity):
 		# entity is SuccessProtocolEntity
-		status = entity.status
-		kind = entity.kind
+		status = entity.location
+		kind = "" #entity.kind
 		creation = entity.creation
-		expiration = entity.expiration
+		expiration = "" #entity.expiration
 		props = entity.props
-		nonce = entity.nonce
+		nonce = "" #entity.nonce
 		t = entity.t # I don't know what this is
 		self.caller.onAuthSuccess(status, kind, creation, expiration, props, nonce, t)
 
@@ -766,7 +762,7 @@ class YowsupAppLayer(YowInterfaceLayer):
 		# entity is IncomingReceiptProtocolEntity
 		#ack = OutgoingAckProtocolEntity(entity.getId(),
 		#		'receipt', entity.getType(), entity.getFrom())
-		self.toLower(entity.ack())
+		#self.toLower(entity.ack())
 		_id = entity._id
 		_from = entity._from
 		timestamp = entity.timestamp
