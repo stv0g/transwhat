@@ -8,7 +8,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -20,9 +19,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='protocol.proto',
   package='pbnetwork',
   syntax='proto2',
-  serialized_pb=_b('\n\x0eprotocol.proto\x12\tpbnetwork\"\x19\n\tConnected\x12\x0c\n\x04user\x18\x01 \x02(\t\"<\n\x0c\x44isconnected\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\r\n\x05\x65rror\x18\x02 \x02(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"P\n\x05Login\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\x12\x10\n\x08password\x18\x03 \x02(\t\x12\x13\n\x0b\x65xtraFields\x18\x04 \x03(\t\"*\n\x06Logout\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\"\xab\x01\n\x05\x42uddy\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\r\n\x05\x61lias\x18\x03 \x01(\t\x12\r\n\x05group\x18\x04 \x03(\t\x12%\n\x06status\x18\x05 \x01(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x10\n\x08iconHash\x18\x07 \x01(\t\x12\x0f\n\x07\x62locked\x18\x08 \x01(\x08\"*\n\x07\x42uddies\x12\x1f\n\x05\x62uddy\x18\x01 \x03(\x0b\x32\x10.pbnetwork.Buddy\"\xa9\x01\n\x13\x43onversationMessage\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\r\n\x05xhtml\x18\x05 \x01(\t\x12\x11\n\ttimestamp\x18\x06 \x01(\t\x12\x10\n\x08headline\x18\x07 \x01(\x08\x12\n\n\x02id\x18\x08 \x01(\t\x12\n\n\x02pm\x18\t \x01(\x08\"J\n\x04Room\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x10\n\x08nickname\x18\x02 \x02(\t\x12\x0c\n\x04room\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x01(\t\"4\n\x08RoomList\x12\x0c\n\x04room\x18\x01 \x03(\t\x12\x0c\n\x04name\x18\x02 \x03(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\"\xbd\x01\n\x0bParticipant\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x0c\n\x04room\x18\x02 \x02(\t\x12\x10\n\x08nickname\x18\x03 \x02(\t\x12\x0c\n\x04\x66lag\x18\x04 \x02(\x05\x12%\n\x06status\x18\x05 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x0f\n\x07newname\x18\x07 \x01(\t\x12\x10\n\x08iconHash\x18\x08 \x01(\t\x12\r\n\x05\x61lias\x18\t \x01(\t\"k\n\x05VCard\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\n\n\x02id\x18\x03 \x02(\x05\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\x12\x10\n\x08nickname\x18\x05 \x01(\t\x12\r\n\x05photo\x18\x06 \x01(\x0c\"X\n\x06Status\x12\x10\n\x08userName\x18\x01 \x02(\t\x12%\n\x06status\x18\x03 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x04 \x01(\t\"B\n\x05Stats\x12\x0b\n\x03res\x18\x01 \x02(\x05\x12\x10\n\x08init_res\x18\x02 \x02(\x05\x12\x0e\n\x06shared\x18\x03 \x02(\x05\x12\n\n\x02id\x18\x04 \x02(\t\"Y\n\x04\x46ile\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x10\n\x08\x66ileName\x18\x03 \x02(\t\x12\x0c\n\x04size\x18\x04 \x02(\x05\x12\x0c\n\x04\x66tID\x18\x05 \x01(\x05\".\n\x10\x46ileTransferData\x12\x0c\n\x04\x66tID\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x1f\n\rBackendConfig\x12\x0e\n\x06\x63onfig\x18\x01 \x02(\t\"\x1d\n\nAPIVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xc2\x06\n\x0eWrapperMessage\x12,\n\x04type\x18\x01 \x02(\x0e\x32\x1e.pbnetwork.WrapperMessage.Type\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\xf0\x05\n\x04Type\x12\x12\n\x0eTYPE_CONNECTED\x10\x01\x12\x15\n\x11TYPE_DISCONNECTED\x10\x02\x12\x0e\n\nTYPE_LOGIN\x10\x03\x12\x0f\n\x0bTYPE_LOGOUT\x10\x04\x12\x16\n\x12TYPE_BUDDY_CHANGED\x10\x06\x12\x16\n\x12TYPE_BUDDY_REMOVED\x10\x07\x12\x15\n\x11TYPE_CONV_MESSAGE\x10\x08\x12\r\n\tTYPE_PING\x10\t\x12\r\n\tTYPE_PONG\x10\n\x12\x12\n\x0eTYPE_JOIN_ROOM\x10\x0b\x12\x13\n\x0fTYPE_LEAVE_ROOM\x10\x0c\x12\x1c\n\x18TYPE_PARTICIPANT_CHANGED\x10\r\x12\x1e\n\x1aTYPE_ROOM_NICKNAME_CHANGED\x10\x0e\x12\x1d\n\x19TYPE_ROOM_SUBJECT_CHANGED\x10\x0f\x12\x0e\n\nTYPE_VCARD\x10\x10\x12\x17\n\x13TYPE_STATUS_CHANGED\x10\x11\x12\x15\n\x11TYPE_BUDDY_TYPING\x10\x12\x12\x1d\n\x19TYPE_BUDDY_STOPPED_TYPING\x10\x13\x12\x14\n\x10TYPE_BUDDY_TYPED\x10\x14\x12\x15\n\x11TYPE_AUTH_REQUEST\x10\x15\x12\x12\n\x0eTYPE_ATTENTION\x10\x16\x12\x0e\n\nTYPE_STATS\x10\x17\x12\x11\n\rTYPE_FT_START\x10\x18\x12\x12\n\x0eTYPE_FT_FINISH\x10\x19\x12\x10\n\x0cTYPE_FT_DATA\x10\x1a\x12\x11\n\rTYPE_FT_PAUSE\x10\x1b\x12\x14\n\x10TYPE_FT_CONTINUE\x10\x1c\x12\r\n\tTYPE_EXIT\x10\x1d\x12\x17\n\x13TYPE_BACKEND_CONFIG\x10\x1e\x12\x0e\n\nTYPE_QUERY\x10\x1f\x12\x12\n\x0eTYPE_ROOM_LIST\x10 \x12\x19\n\x15TYPE_CONV_MESSAGE_ACK\x10!\x12\x10\n\x0cTYPE_RAW_XML\x10\"\x12\x10\n\x0cTYPE_BUDDIES\x10#\x12\x14\n\x10TYPE_API_VERSION\x10$*\xb3\x05\n\x0f\x43onnectionError\x12\"\n\x1e\x43ONNECTION_ERROR_NETWORK_ERROR\x10\x00\x12%\n!CONNECTION_ERROR_INVALID_USERNAME\x10\x01\x12*\n&CONNECTION_ERROR_AUTHENTICATION_FAILED\x10\x02\x12.\n*CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE\x10\x03\x12#\n\x1f\x43ONNECTION_ERROR_NO_SSL_SUPPORT\x10\x04\x12%\n!CONNECTION_ERROR_ENCRYPTION_ERROR\x10\x05\x12 \n\x1c\x43ONNECTION_ERROR_NAME_IN_USE\x10\x06\x12%\n!CONNECTION_ERROR_INVALID_SETTINGS\x10\x07\x12&\n\"CONNECTION_ERROR_CERT_NOT_PROVIDED\x10\x08\x12#\n\x1f\x43ONNECTION_ERROR_CERT_UNTRUSTED\x10\t\x12!\n\x1d\x43ONNECTION_ERROR_CERT_EXPIRED\x10\n\x12\'\n#CONNECTION_ERROR_CERT_NOT_ACTIVATED\x10\x0b\x12+\n\'CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH\x10\x0c\x12.\n*CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH\x10\r\x12%\n!CONNECTION_ERROR_CERT_SELF_SIGNED\x10\x0e\x12%\n!CONNECTION_ERROR_CERT_OTHER_ERROR\x10\x0f\x12 \n\x1c\x43ONNECTION_ERROR_OTHER_ERROR\x10\x10*\x86\x01\n\nStatusType\x12\x11\n\rSTATUS_ONLINE\x10\x00\x12\x0f\n\x0bSTATUS_AWAY\x10\x01\x12\x0e\n\nSTATUS_FFC\x10\x02\x12\r\n\tSTATUS_XA\x10\x03\x12\x0e\n\nSTATUS_DND\x10\x04\x12\x0f\n\x0bSTATUS_NONE\x10\x05\x12\x14\n\x10STATUS_INVISIBLE\x10\x06*\x88\x02\n\x0fParticipantFlag\x12\x19\n\x15PARTICIPANT_FLAG_NONE\x10\x00\x12\x1e\n\x1aPARTICIPANT_FLAG_MODERATOR\x10\x01\x12\x1d\n\x19PARTICIPANT_FLAG_CONFLICT\x10\x02\x12\x1b\n\x17PARTICIPANT_FLAG_BANNED\x10\x04\x12#\n\x1fPARTICIPANT_FLAG_NOT_AUTHORIZED\x10\x08\x12\x17\n\x13PARTICIPANT_FLAG_ME\x10\x10\x12\x1b\n\x17PARTICIPANT_FLAG_KICKED\x10 \x12#\n\x1fPARTICIPANT_FLAG_ROOM_NOT_FOUND\x10@')
+  serialized_options=None,
+  serialized_pb=_b('\n\x0eprotocol.proto\x12\tpbnetwork\"\x19\n\tConnected\x12\x0c\n\x04user\x18\x01 \x02(\t\"<\n\x0c\x44isconnected\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\r\n\x05\x65rror\x18\x02 \x02(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t\"P\n\x05Login\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\x12\x10\n\x08password\x18\x03 \x02(\t\x12\x13\n\x0b\x65xtraFields\x18\x04 \x03(\t\"*\n\x06Logout\x12\x0c\n\x04user\x18\x01 \x02(\t\x12\x12\n\nlegacyName\x18\x02 \x02(\t\"\xab\x01\n\x05\x42uddy\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\r\n\x05\x61lias\x18\x03 \x01(\t\x12\r\n\x05group\x18\x04 \x03(\t\x12%\n\x06status\x18\x05 \x01(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x10\n\x08iconHash\x18\x07 \x01(\t\x12\x0f\n\x07\x62locked\x18\x08 \x01(\x08\"*\n\x07\x42uddies\x12\x1f\n\x05\x62uddy\x18\x01 \x03(\x0b\x32\x10.pbnetwork.Buddy\"\xb9\x01\n\x13\x43onversationMessage\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x0f\n\x07message\x18\x03 \x02(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\r\n\x05xhtml\x18\x05 \x01(\t\x12\x11\n\ttimestamp\x18\x06 \x01(\t\x12\x10\n\x08headline\x18\x07 \x01(\x08\x12\n\n\x02id\x18\x08 \x01(\t\x12\n\n\x02pm\x18\t \x01(\x08\x12\x0e\n\x06\x63\x61rbon\x18\n \x01(\x08\"J\n\x04Room\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x10\n\x08nickname\x18\x02 \x02(\t\x12\x0c\n\x04room\x18\x03 \x02(\t\x12\x10\n\x08password\x18\x04 \x01(\t\"4\n\x08RoomList\x12\x0c\n\x04room\x18\x01 \x03(\t\x12\x0c\n\x04name\x18\x02 \x03(\t\x12\x0c\n\x04user\x18\x03 \x01(\t\"\xbd\x01\n\x0bParticipant\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x0c\n\x04room\x18\x02 \x02(\t\x12\x10\n\x08nickname\x18\x03 \x02(\t\x12\x0c\n\x04\x66lag\x18\x04 \x02(\x05\x12%\n\x06status\x18\x05 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x06 \x01(\t\x12\x0f\n\x07newname\x18\x07 \x01(\t\x12\x10\n\x08iconHash\x18\x08 \x01(\t\x12\r\n\x05\x61lias\x18\t \x01(\t\"k\n\x05VCard\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\n\n\x02id\x18\x03 \x02(\x05\x12\x10\n\x08\x66ullname\x18\x04 \x01(\t\x12\x10\n\x08nickname\x18\x05 \x01(\t\x12\r\n\x05photo\x18\x06 \x01(\x0c\"X\n\x06Status\x12\x10\n\x08userName\x18\x01 \x02(\t\x12%\n\x06status\x18\x03 \x02(\x0e\x32\x15.pbnetwork.StatusType\x12\x15\n\rstatusMessage\x18\x04 \x01(\t\"B\n\x05Stats\x12\x0b\n\x03res\x18\x01 \x02(\x05\x12\x10\n\x08init_res\x18\x02 \x02(\x05\x12\x0e\n\x06shared\x18\x03 \x02(\x05\x12\n\n\x02id\x18\x04 \x02(\t\"Y\n\x04\x46ile\x12\x10\n\x08userName\x18\x01 \x02(\t\x12\x11\n\tbuddyName\x18\x02 \x02(\t\x12\x10\n\x08\x66ileName\x18\x03 \x02(\t\x12\x0c\n\x04size\x18\x04 \x02(\x05\x12\x0c\n\x04\x66tID\x18\x05 \x01(\x05\".\n\x10\x46ileTransferData\x12\x0c\n\x04\x66tID\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\"\x1f\n\rBackendConfig\x12\x0e\n\x06\x63onfig\x18\x01 \x02(\t\"\x1d\n\nAPIVersion\x12\x0f\n\x07version\x18\x01 \x02(\x05\"\xc2\x06\n\x0eWrapperMessage\x12,\n\x04type\x18\x01 \x02(\x0e\x32\x1e.pbnetwork.WrapperMessage.Type\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"\xf0\x05\n\x04Type\x12\x12\n\x0eTYPE_CONNECTED\x10\x01\x12\x15\n\x11TYPE_DISCONNECTED\x10\x02\x12\x0e\n\nTYPE_LOGIN\x10\x03\x12\x0f\n\x0bTYPE_LOGOUT\x10\x04\x12\x16\n\x12TYPE_BUDDY_CHANGED\x10\x06\x12\x16\n\x12TYPE_BUDDY_REMOVED\x10\x07\x12\x15\n\x11TYPE_CONV_MESSAGE\x10\x08\x12\r\n\tTYPE_PING\x10\t\x12\r\n\tTYPE_PONG\x10\n\x12\x12\n\x0eTYPE_JOIN_ROOM\x10\x0b\x12\x13\n\x0fTYPE_LEAVE_ROOM\x10\x0c\x12\x1c\n\x18TYPE_PARTICIPANT_CHANGED\x10\r\x12\x1e\n\x1aTYPE_ROOM_NICKNAME_CHANGED\x10\x0e\x12\x1d\n\x19TYPE_ROOM_SUBJECT_CHANGED\x10\x0f\x12\x0e\n\nTYPE_VCARD\x10\x10\x12\x17\n\x13TYPE_STATUS_CHANGED\x10\x11\x12\x15\n\x11TYPE_BUDDY_TYPING\x10\x12\x12\x1d\n\x19TYPE_BUDDY_STOPPED_TYPING\x10\x13\x12\x14\n\x10TYPE_BUDDY_TYPED\x10\x14\x12\x15\n\x11TYPE_AUTH_REQUEST\x10\x15\x12\x12\n\x0eTYPE_ATTENTION\x10\x16\x12\x0e\n\nTYPE_STATS\x10\x17\x12\x11\n\rTYPE_FT_START\x10\x18\x12\x12\n\x0eTYPE_FT_FINISH\x10\x19\x12\x10\n\x0cTYPE_FT_DATA\x10\x1a\x12\x11\n\rTYPE_FT_PAUSE\x10\x1b\x12\x14\n\x10TYPE_FT_CONTINUE\x10\x1c\x12\r\n\tTYPE_EXIT\x10\x1d\x12\x17\n\x13TYPE_BACKEND_CONFIG\x10\x1e\x12\x0e\n\nTYPE_QUERY\x10\x1f\x12\x12\n\x0eTYPE_ROOM_LIST\x10 \x12\x19\n\x15TYPE_CONV_MESSAGE_ACK\x10!\x12\x10\n\x0cTYPE_RAW_XML\x10\"\x12\x10\n\x0cTYPE_BUDDIES\x10#\x12\x14\n\x10TYPE_API_VERSION\x10$*\xb3\x05\n\x0f\x43onnectionError\x12\"\n\x1e\x43ONNECTION_ERROR_NETWORK_ERROR\x10\x00\x12%\n!CONNECTION_ERROR_INVALID_USERNAME\x10\x01\x12*\n&CONNECTION_ERROR_AUTHENTICATION_FAILED\x10\x02\x12.\n*CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE\x10\x03\x12#\n\x1f\x43ONNECTION_ERROR_NO_SSL_SUPPORT\x10\x04\x12%\n!CONNECTION_ERROR_ENCRYPTION_ERROR\x10\x05\x12 \n\x1c\x43ONNECTION_ERROR_NAME_IN_USE\x10\x06\x12%\n!CONNECTION_ERROR_INVALID_SETTINGS\x10\x07\x12&\n\"CONNECTION_ERROR_CERT_NOT_PROVIDED\x10\x08\x12#\n\x1f\x43ONNECTION_ERROR_CERT_UNTRUSTED\x10\t\x12!\n\x1d\x43ONNECTION_ERROR_CERT_EXPIRED\x10\n\x12\'\n#CONNECTION_ERROR_CERT_NOT_ACTIVATED\x10\x0b\x12+\n\'CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH\x10\x0c\x12.\n*CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH\x10\r\x12%\n!CONNECTION_ERROR_CERT_SELF_SIGNED\x10\x0e\x12%\n!CONNECTION_ERROR_CERT_OTHER_ERROR\x10\x0f\x12 \n\x1c\x43ONNECTION_ERROR_OTHER_ERROR\x10\x10*\x86\x01\n\nStatusType\x12\x11\n\rSTATUS_ONLINE\x10\x00\x12\x0f\n\x0bSTATUS_AWAY\x10\x01\x12\x0e\n\nSTATUS_FFC\x10\x02\x12\r\n\tSTATUS_XA\x10\x03\x12\x0e\n\nSTATUS_DND\x10\x04\x12\x0f\n\x0bSTATUS_NONE\x10\x05\x12\x14\n\x10STATUS_INVISIBLE\x10\x06*\x88\x02\n\x0fParticipantFlag\x12\x19\n\x15PARTICIPANT_FLAG_NONE\x10\x00\x12\x1e\n\x1aPARTICIPANT_FLAG_MODERATOR\x10\x01\x12\x1d\n\x19PARTICIPANT_FLAG_CONFLICT\x10\x02\x12\x1b\n\x17PARTICIPANT_FLAG_BANNED\x10\x04\x12#\n\x1fPARTICIPANT_FLAG_NOT_AUTHORIZED\x10\x08\x12\x17\n\x13PARTICIPANT_FLAG_ME\x10\x10\x12\x1b\n\x17PARTICIPANT_FLAG_KICKED\x10 \x12#\n\x1fPARTICIPANT_FLAG_ROOM_NOT_FOUND\x10@')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _CONNECTIONERROR = _descriptor.EnumDescriptor(
   name='ConnectionError',
@@ -32,77 +31,77 @@ _CONNECTIONERROR = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_NETWORK_ERROR', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_INVALID_USERNAME', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_AUTHENTICATION_FAILED', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE', index=3, number=3,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_NO_SSL_SUPPORT', index=4, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_ENCRYPTION_ERROR', index=5, number=5,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_NAME_IN_USE', index=6, number=6,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_INVALID_SETTINGS', index=7, number=7,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_NOT_PROVIDED', index=8, number=8,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_UNTRUSTED', index=9, number=9,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_EXPIRED', index=10, number=10,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_NOT_ACTIVATED', index=11, number=11,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_HOSTNAME_MISMATCH', index=12, number=12,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_FINGERPRINT_MISMATCH', index=13, number=13,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_SELF_SIGNED', index=14, number=14,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_CERT_OTHER_ERROR', index=15, number=15,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='CONNECTION_ERROR_OTHER_ERROR', index=16, number=16,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=2264,
-  serialized_end=2955,
+  serialized_options=None,
+  serialized_start=2280,
+  serialized_end=2971,
 )
 _sym_db.RegisterEnumDescriptor(_CONNECTIONERROR)
 
@@ -115,37 +114,37 @@ _STATUSTYPE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='STATUS_ONLINE', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_AWAY', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_FFC', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_XA', index=3, number=3,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_DND', index=4, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_NONE', index=5, number=5,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='STATUS_INVISIBLE', index=6, number=6,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=2958,
-  serialized_end=3092,
+  serialized_options=None,
+  serialized_start=2974,
+  serialized_end=3108,
 )
 _sym_db.RegisterEnumDescriptor(_STATUSTYPE)
 
@@ -158,41 +157,41 @@ _PARTICIPANTFLAG = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_NONE', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_MODERATOR', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_CONFLICT', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_BANNED', index=3, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_NOT_AUTHORIZED', index=4, number=8,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_ME', index=5, number=16,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_KICKED', index=6, number=32,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='PARTICIPANT_FLAG_ROOM_NOT_FOUND', index=7, number=64,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=3095,
-  serialized_end=3359,
+  serialized_options=None,
+  serialized_start=3111,
+  serialized_end=3375,
 )
 _sym_db.RegisterEnumDescriptor(_PARTICIPANTFLAG)
 
@@ -239,149 +238,149 @@ _WRAPPERMESSAGE_TYPE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='TYPE_CONNECTED', index=0, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_DISCONNECTED', index=1, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_LOGIN', index=2, number=3,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_LOGOUT', index=3, number=4,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDY_CHANGED', index=4, number=6,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDY_REMOVED', index=5, number=7,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_CONV_MESSAGE', index=6, number=8,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_PING', index=7, number=9,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_PONG', index=8, number=10,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_JOIN_ROOM', index=9, number=11,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_LEAVE_ROOM', index=10, number=12,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_PARTICIPANT_CHANGED', index=11, number=13,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_ROOM_NICKNAME_CHANGED', index=12, number=14,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_ROOM_SUBJECT_CHANGED', index=13, number=15,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_VCARD', index=14, number=16,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_STATUS_CHANGED', index=15, number=17,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDY_TYPING', index=16, number=18,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDY_STOPPED_TYPING', index=17, number=19,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDY_TYPED', index=18, number=20,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_AUTH_REQUEST', index=19, number=21,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_ATTENTION', index=20, number=22,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_STATS', index=21, number=23,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_FT_START', index=22, number=24,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_FT_FINISH', index=23, number=25,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_FT_DATA', index=24, number=26,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_FT_PAUSE', index=25, number=27,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_FT_CONTINUE', index=26, number=28,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_EXIT', index=27, number=29,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BACKEND_CONFIG', index=28, number=30,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_QUERY', index=29, number=31,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_ROOM_LIST', index=30, number=32,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_CONV_MESSAGE_ACK', index=31, number=33,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_RAW_XML', index=32, number=34,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_BUDDIES', index=33, number=35,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='TYPE_API_VERSION', index=34, number=36,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=1509,
-  serialized_end=2261,
+  serialized_options=None,
+  serialized_start=1525,
+  serialized_end=2277,
 )
 _sym_db.RegisterEnumDescriptor(_WRAPPERMESSAGE_TYPE)
 
@@ -399,14 +398,14 @@ _CONNECTED = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -430,28 +429,28 @@ _DISCONNECTED = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='error', full_name='pbnetwork.Disconnected.error', index=1,
       number=2, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='message', full_name='pbnetwork.Disconnected.message', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -475,35 +474,35 @@ _LOGIN = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='legacyName', full_name='pbnetwork.Login.legacyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='password', full_name='pbnetwork.Login.password', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='extraFields', full_name='pbnetwork.Login.extraFields', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -527,21 +526,21 @@ _LOGOUT = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='legacyName', full_name='pbnetwork.Logout.legacyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -565,63 +564,63 @@ _BUDDY = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='buddyName', full_name='pbnetwork.Buddy.buddyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='alias', full_name='pbnetwork.Buddy.alias', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='group', full_name='pbnetwork.Buddy.group', index=3,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='status', full_name='pbnetwork.Buddy.status', index=4,
       number=5, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='statusMessage', full_name='pbnetwork.Buddy.statusMessage', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='iconHash', full_name='pbnetwork.Buddy.iconHash', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='blocked', full_name='pbnetwork.Buddy.blocked', index=7,
       number=8, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -645,14 +644,14 @@ _BUDDIES = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -676,77 +675,84 @@ _CONVERSATIONMESSAGE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='buddyName', full_name='pbnetwork.ConversationMessage.buddyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='message', full_name='pbnetwork.ConversationMessage.message', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nickname', full_name='pbnetwork.ConversationMessage.nickname', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='xhtml', full_name='pbnetwork.ConversationMessage.xhtml', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='timestamp', full_name='pbnetwork.ConversationMessage.timestamp', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='headline', full_name='pbnetwork.ConversationMessage.headline', index=6,
       number=7, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='pbnetwork.ConversationMessage.id', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='pm', full_name='pbnetwork.ConversationMessage.pm', index=8,
       number=9, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='carbon', full_name='pbnetwork.ConversationMessage.carbon', index=9,
+      number=10, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=463,
-  serialized_end=632,
+  serialized_end=648,
 )
 
 
@@ -763,42 +769,42 @@ _ROOM = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nickname', full_name='pbnetwork.Room.nickname', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='room', full_name='pbnetwork.Room.room', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='password', full_name='pbnetwork.Room.password', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=634,
-  serialized_end=708,
+  serialized_start=650,
+  serialized_end=724,
 )
 
 
@@ -815,35 +821,35 @@ _ROOMLIST = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='name', full_name='pbnetwork.RoomList.name', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='user', full_name='pbnetwork.RoomList.user', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=710,
-  serialized_end=762,
+  serialized_start=726,
+  serialized_end=778,
 )
 
 
@@ -860,77 +866,77 @@ _PARTICIPANT = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='room', full_name='pbnetwork.Participant.room', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nickname', full_name='pbnetwork.Participant.nickname', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='flag', full_name='pbnetwork.Participant.flag', index=3,
       number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='status', full_name='pbnetwork.Participant.status', index=4,
       number=5, type=14, cpp_type=8, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='statusMessage', full_name='pbnetwork.Participant.statusMessage', index=5,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='newname', full_name='pbnetwork.Participant.newname', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='iconHash', full_name='pbnetwork.Participant.iconHash', index=7,
       number=8, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='alias', full_name='pbnetwork.Participant.alias', index=8,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=765,
-  serialized_end=954,
+  serialized_start=781,
+  serialized_end=970,
 )
 
 
@@ -947,56 +953,56 @@ _VCARD = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='buddyName', full_name='pbnetwork.VCard.buddyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='pbnetwork.VCard.id', index=2,
       number=3, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='fullname', full_name='pbnetwork.VCard.fullname', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='nickname', full_name='pbnetwork.VCard.nickname', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='photo', full_name='pbnetwork.VCard.photo', index=5,
       number=6, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=956,
-  serialized_end=1063,
+  serialized_start=972,
+  serialized_end=1079,
 )
 
 
@@ -1013,35 +1019,35 @@ _STATUS = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='status', full_name='pbnetwork.Status.status', index=1,
       number=3, type=14, cpp_type=8, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='statusMessage', full_name='pbnetwork.Status.statusMessage', index=2,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1065,
-  serialized_end=1153,
+  serialized_start=1081,
+  serialized_end=1169,
 )
 
 
@@ -1058,42 +1064,42 @@ _STATS = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='init_res', full_name='pbnetwork.Stats.init_res', index=1,
       number=2, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='shared', full_name='pbnetwork.Stats.shared', index=2,
       number=3, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='pbnetwork.Stats.id', index=3,
       number=4, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1155,
-  serialized_end=1221,
+  serialized_start=1171,
+  serialized_end=1237,
 )
 
 
@@ -1110,49 +1116,49 @@ _FILE = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='buddyName', full_name='pbnetwork.File.buddyName', index=1,
       number=2, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='fileName', full_name='pbnetwork.File.fileName', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='size', full_name='pbnetwork.File.size', index=3,
       number=4, type=5, cpp_type=1, label=2,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='ftID', full_name='pbnetwork.File.ftID', index=4,
       number=5, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1223,
-  serialized_end=1312,
+  serialized_start=1239,
+  serialized_end=1328,
 )
 
 
@@ -1169,28 +1175,28 @@ _FILETRANSFERDATA = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='data', full_name='pbnetwork.FileTransferData.data', index=1,
       number=2, type=12, cpp_type=9, label=2,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1314,
-  serialized_end=1360,
+  serialized_start=1330,
+  serialized_end=1376,
 )
 
 
@@ -1207,21 +1213,21 @@ _BACKENDCONFIG = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1362,
-  serialized_end=1393,
+  serialized_start=1378,
+  serialized_end=1409,
 )
 
 
@@ -1238,21 +1244,21 @@ _APIVERSION = _descriptor.Descriptor(
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1395,
-  serialized_end=1424,
+  serialized_start=1411,
+  serialized_end=1440,
 )
 
 
@@ -1269,14 +1275,14 @@ _WRAPPERMESSAGE = _descriptor.Descriptor(
       has_default_value=False, default_value=1,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='payload', full_name='pbnetwork.WrapperMessage.payload', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -1284,14 +1290,14 @@ _WRAPPERMESSAGE = _descriptor.Descriptor(
   enum_types=[
     _WRAPPERMESSAGE_TYPE,
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1427,
-  serialized_end=2261,
+  serialized_start=1443,
+  serialized_end=2277,
 )
 
 _BUDDY.fields_by_name['status'].enum_type = _STATUSTYPE
@@ -1321,6 +1327,7 @@ DESCRIPTOR.message_types_by_name['WrapperMessage'] = _WRAPPERMESSAGE
 DESCRIPTOR.enum_types_by_name['ConnectionError'] = _CONNECTIONERROR
 DESCRIPTOR.enum_types_by_name['StatusType'] = _STATUSTYPE
 DESCRIPTOR.enum_types_by_name['ParticipantFlag'] = _PARTICIPANTFLAG
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Connected = _reflection.GeneratedProtocolMessageType('Connected', (_message.Message,), dict(
   DESCRIPTOR = _CONNECTED,
