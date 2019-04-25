@@ -6,8 +6,7 @@ import logging
 import asyncore
 import sys
 
-from Spectrum2.iochannel import IOChannel
-from Spectrum2.config import SpectrumConfig
+import Spectrum2
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
 
@@ -39,7 +38,7 @@ logging.basicConfig(
 )
 
 if args.config is not None:
-    specConf = SpectrumConfig(args.config)
+    specConf = Spectrum2.Config(args.config)
 else:
     specConf = None
 
@@ -59,7 +58,7 @@ def connectionClosed():
     closed = True
 
 # Main
-io = IOChannel(args.host, args.port, handleTransportData, connectionClosed)
+io = Spectrum2.IOChannel(args.host, args.port, handleTransportData, connectionClosed)
 
 plugin = WhatsAppBackend(io, args.j, specConf)
 

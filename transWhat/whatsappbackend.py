@@ -1,12 +1,12 @@
 import logging
-from Spectrum2.backend import SpectrumBackend
+import Spectrum2
 
 from .session import Session
 from .registersession import RegisterSession
 
-class WhatsAppBackend(SpectrumBackend):
+class WhatsAppBackend(Spectrum2.Backend):
 	def __init__(self, io, spectrum_jid, specConf):
-		SpectrumBackend.__init__(self)
+		Spectrum2.Backend.__init__(self)
 		self.logger = logging.getLogger(self.__class__.__name__)
 		self.io = io
 		self.specConf = specConf
