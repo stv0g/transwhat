@@ -141,7 +141,7 @@ class Session(YowsupApp):
 			if room not in self.groups:
 				owner = group.getOwner().split('@')[0]
 				subjectOwner = group.getSubjectOwner().split('@')[0]
-				subject = utils.softToUni(group.getSubject())
+				subject = group.getSubject()
 				self.groups[room] = Group(room, owner, subject, subjectOwner,
 							  self.backend, self.user)
 			# add/update room participants
@@ -276,7 +276,7 @@ class Session(YowsupApp):
 	def onTextMessage(self, _id, _from, to, notify, timestamp, participant,
 					  offline, retry, body):
 		buddy = _from.split('@')[0]
-		messageContent = utils.softToUni(body)
+		messageContent = body
 		self.sendReceipt(_id, _from, None, participant)
 		self.recvMsgIDs.append((_id, _from, participant, timestamp))
 		self.logger.info("Message received from %s to %s: %s (at ts=%s)" %
@@ -436,7 +436,7 @@ class Session(YowsupApp):
 		room = group.getGroupId()
 		owner = group.getCreatorJid(full = False)
 		subjectOwner = group.getSubjectOwnerJid(full = False)
-		subject = utils.softToUni(group.getSubject())
+		subject = group.getSubject()
 
 		self.groups[room] = Group(room, owner, subject, subjectOwner, self.backend, self.user)
 		self.groups[room].addParticipants(group.getParticipants(), self.buddies, self.legacyName)

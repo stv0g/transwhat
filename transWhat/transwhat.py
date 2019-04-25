@@ -28,7 +28,6 @@ import traceback
 import logging
 import asyncore
 import sys, os
-import e4u
 import Queue
 import transWhat.threadutils
 
@@ -78,8 +77,6 @@ def handleTransportData(data):
     except:
         logger = logging.getLogger('transwhat')
         logger.error(traceback.format_exc())
-
-e4u.load()
 
 closed = False
 def connectionClosed():

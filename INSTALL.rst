@@ -104,14 +104,12 @@ Install required dependencies:
 
 ::
 
-    $ pip install --pre e4u protobuf python-dateutil yowsup2
+    $ pip install --pre protobuf python-dateutil yowsup2
 
--  e4u_: is a simple emoji4unicode python bindings
 -  yowsup_: is a python library that enables you build application
    which use WhatsApp service.
 
 .. _Spectrum 2: http://www.spectrum.im
-.. _Yowsup 2: https://github.com/tgalal/yowsup
+.. _Yowsup 3: https://github.com/tgalal/yowsup
 .. _Github: https://github.com/hanzz/libtransport
 .. _yowsup: https://github.com/tgalal/yowsup
-.. _e4u: https://pypi.python.org/pypi/e4u

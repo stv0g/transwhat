@@ -21,7 +21,6 @@ __email__ = "post@steffenvogel.de"
  along with transWhat. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import e4u
 import base64
 import hashlib
 
@@ -41,9 +40,6 @@ def ago(secs):
 	if diff > 1: period += "s"
 
 	return "%d %s ago" % (diff, period)
-
-def softToUni(message):
-	return e4u.translate(message.encode("utf-8"), reverse=False, **e4u.SOFTBANK_TRANSLATE_PROFILE)
 
 def decodePassword(password):
 	return base64.b64decode(bytes(password))

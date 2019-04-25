@@ -114,7 +114,7 @@ class BuddyList(dict):
 			if status is None:
 				buddy.statusMsg = ""
 			else:
-				buddy.statusMsg = utils.softToUni(status)
+				buddy.statusMsg = status
 			self.updateSpectrum(buddy)
 
 	def load(self, buddies):
