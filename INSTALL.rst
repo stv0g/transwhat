@@ -31,7 +31,7 @@ Configuration
 The only important thing for us is the configuration of a XMPP component
 (Spectrum 2 in our case). See http://prosody.im/doc/components.
 
-Append the following at the end of ``/etc/prosody/prosody.cfg.lua``
+Append the following at the end of ``/etc/prosody/conf.d/transwhat.cfg.lua``
 
 ::
 
@@ -53,7 +53,7 @@ http://spectrum.im/documentation/installation/from\_source\_code.html.
 Configuration
 ~~~~~~~~~~~~~
 
-Create a new file ``/etc/spectrum2/transports/whatsapp.cfg`` with the
+Create a new file ``/etc/spectrum2/transports/transwhat.cfg`` with the
 following content:
 
 ::
