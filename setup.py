@@ -23,6 +23,7 @@ setup(name='transwhat',
 	url='https://github.com/stv0g/transwhat',
 	author='Steffen Vogel',
 	author_email='stv0g@0l.de',
+	python_requires='>=3.5',
 	classifiers=[
 		'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
 		'Development Status :: 4 - Beta',
