@@ -1,7 +1,7 @@
 transWhat
 =========
 
-transWhat is a WhatsApp XMPP Gateway based on `Spectrum 2`_ and `Yowsup 2`_.
+transWhat is a WhatsApp XMPP Gateway based on `Spectrum 2`_ and `Yowsup 3`_.
 
 Support
 -------
@@ -30,9 +30,9 @@ Branches
 
 -  `yowsup-1`_ My original version which is based on @tgalal first
    Yowsup version (**deprecated** and broken).
--  `yowsup-2`_ Major rewrite from @moyamo for @tgalal’s new Yowsup 2
+-  `yowsup-2`_ Major rewrite from @moyamo for @tgalal’s new Yowsup 2.
+-  `yowsup-3`_ Update to @tgalal’s new Yowsup 3
    (**recommended**).
-
 For production, please use the ``yowsup-2`` branch.
 
 Contributors
@@ -60,9 +60,10 @@ Links
 -  An *outdated* writeup of this project is also availabe at my `blog`_.
 
 .. _Spectrum 2: http://www.spectrum.im
-.. _Yowsup 2: https://github.com/tgalal/yowsup
+.. _Yowsup 3: https://github.com/tgalal/yowsup
 .. _yowsup-1: http://github.com/stv0g/transwhat/tree/yowsup-1
 .. _yowsup-2: http://github.com/stv0g/transwhat/tree/yowsup-2
+.. _yowsup-3: http://github.com/stv0g/transwhat/tree/yowsup-3
 .. _Installation: INSTALL.rst
 .. _Usage: USAGE.rst
 .. _GPLv3: COPYING.rst
