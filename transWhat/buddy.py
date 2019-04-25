@@ -2,7 +2,6 @@ from Spectrum2 import protocol_pb2
 
 import logging
 import time
-import utils
 import base64
 import hashlib
 

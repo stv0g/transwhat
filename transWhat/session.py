@@ -1,4 +1,3 @@
-import utils
 import logging
 import urllib
 import time

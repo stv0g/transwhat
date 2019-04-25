@@ -4,7 +4,6 @@ import re
 import urllib
 import time
 import os
-import utils
 
 class Bot():
 	def __init__(self, session, name = "Bot"):
