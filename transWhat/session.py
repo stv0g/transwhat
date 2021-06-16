@@ -6,7 +6,7 @@ import os
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
-import Spectrum2
+import spectrum2
 
 from . import deferred 
 from .buddy import BuddyList

@@ -2,7 +2,7 @@ import logging
 import time
 import base64
 import hashlib
-import Spectrum2
+import spectrum2
 
 from . import deferred
 
