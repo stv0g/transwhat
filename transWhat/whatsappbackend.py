@@ -30,7 +30,7 @@ class WhatsAppBackend(spectrum2.Backend):
 
         self.sessions[user].login(password)
 
-    def handleLogoutRequest(self, user, legacyName):
+    def handle_logout_request(self, user, legacyName):
         self.logger.debug("handleLogoutRequest(user=%s, legacyName=%s)" % (user, legacyName))
         if user in self.sessions:
             self.sessions[user].logout()

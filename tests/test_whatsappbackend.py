@@ -5,7 +5,7 @@ from unittest.mock import Mock, create_autospec, patch
 
 
 @patch("transWhat.whatsappbackend.Session")
-def test_handle_login_request(mock_session):
+def test_login_logout_work(mock_session_cls):
     jid = "magic@jid.com"
 
     user_name = "user@jid.com"
@@ -18,8 +18,10 @@ def test_handle_login_request(mock_session):
 
     backend.handle_login_request(user_name, legacy_name, password, extra)
 
-    mock_session(backend, user_name, legacy_name, extra).login.assert_called_with(
-        password
-    )
+    mock_session = mock_session_cls(backend, user_name, legacy_name, extra)
 
     assert user_name in backend.sessions
+    mock_session.login.assert_called_with(password)
+
+    backend.handle_logout_request(user_name, legacy_name)
+    mock_session.logout.assert_called()
