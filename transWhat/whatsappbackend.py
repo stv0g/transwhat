@@ -18,7 +18,7 @@ class WhatsAppBackend(spectrum2.Backend):
         self.logger.debug("Backend started")
 
     # RequestsHandlers
-    async def handle_login_request(self, user, legacyName, password, extra):
+    def handle_login_request(self, user, legacyName, password, extra):
         self.logger.debug("handleLoginRequest(user=%s, legacyName=%s)" % (user, legacyName))
         # Key word means we should register a new password
         if password == 'register':
