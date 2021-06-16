@@ -50,7 +50,7 @@ class Session(YowsupApp):
         self.user = user
         self.legacyName = legacyName
 
-        self.status = Spectrum2.protocol_pb2.STATUS_NONE
+        self.status = spectrum2.protocol_pb2.STATUS_NONE
         self.statusMessage = ''
 
         self.groups = {}
@@ -204,7 +204,7 @@ class Session(YowsupApp):
 
         self.backend.handleConnected(self.user)
         self.backend.handleBuddyChanged(self.user, "bot", self.bot.name,
-                        ["Admin"], Spectrum2.protocol_pb2.STATUS_ONLINE)
+                        ["Admin"], spectrum2.protocol_pb2.STATUS_ONLINE)
         # Initialisation?
         self.requestPrivacyList()
         self.requestClientConfig()
@@ -738,8 +738,8 @@ class Session(YowsupApp):
             self.logger.info("Status changed: %s" % status)
             self.status = status
 
-            if status == Spectrum2.protocol_pb2.STATUS_ONLINE \
-                    or status == Spectrum2.protocol_pb2.STATUS_FFC:
+            if status == spectrum2.protocol_pb2.STATUS_ONLINE \
+                    or status == spectrum2.protocol_pb2.STATUS_FFC:
                 self.sendPresence(True)
             else:
                 self.sendPresence(False)
@@ -823,7 +823,7 @@ class Session(YowsupApp):
 
         self.logger.info("Removed %s from room %s" % (buddy, room))
 
-        self.backend.handleParticipantChanged(self.user, buddy, room, Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE, Spectrum2.protocol_pb2.STATUS_NONE) # TODO
+        self.backend.handleParticipantChanged(self.user, buddy, room, spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE, spectrum2.protocol_pb2.STATUS_NONE) # TODO
 
         if receiptRequested: self.call("notification_ack", (gjid, messageId))
 
