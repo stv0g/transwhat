@@ -1,7 +1,7 @@
 import Spectrum2
 
-class Group():
 
+class Group:
     def __init__(self, id, owner, subject, subjectOwner, backend, user):
         self.id = id
         self.subject = subject
@@ -25,7 +25,7 @@ class Group():
             - yourNumber: The number you are using
         """
         for jid in participants:
-            number = jid.split('@')[0]
+            number = jid.split("@")[0]
             try:
                 nick = buddies[number].nick
             except KeyError:
@@ -44,16 +44,22 @@ class Group():
                 flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
             if number == yourNumber:
                 flags = flags | Spectrum2.protocol_pb2.PARTICIPANT_FLAG_ME
-            
+
             try:
-                self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE, 
-                    self.backend.sessions[self.user].buddies[number].image_hash)
+                self._updateParticipant(
+                    number,
+                    flags,
+                    Spectrum2.protocol_pb2.STATUS_ONLINE,
+                    self.backend.sessions[self.user].buddies[number].image_hash,
+                )
             except KeyError:
-                self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE)
+                self._updateParticipant(
+                    number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE
+                )
 
     def removeParticipants(self, participants):
         for jid in participants:
-            number = jid.split('@')[0]
+            number = jid.split("@")[0]
             nick = self.participants[number]
             flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
             self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_NONE)
@@ -72,13 +78,22 @@ class Group():
             flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_MODERATOR
         else:
             flags = Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE
-        self._updateParticipant(number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE, new_nick)
+        self._updateParticipant(
+            number, flags, Spectrum2.protocol_pb2.STATUS_ONLINE, new_nick
+        )
         self.participants[number] = new_nick
 
-    def _updateParticipant(self, number, flags, status, imageHash = "", newNick = ""):
+    def _updateParticipant(self, number, flags, status, imageHash="", newNick=""):
         nick = self.participants[number]
         # Notice the status message is the buddy's number
         if self.joined:
             self.backend.handleParticipantChanged(
-                    self.user, nick, self.id, flags,
-                    status, number, newname = newNick, iconHash = imageHash)
+                self.user,
+                nick,
+                self.id,
+                flags,
+                status,
+                number,
+                newname=newNick,
+                iconHash=imageHash,
+            )

@@ -1,5 +1,6 @@
 from functools import partial
 
+
 class Deferred(object):
     """
     Represents a delayed computation. This is a more elegant way to deal with
@@ -63,14 +64,18 @@ class Deferred(object):
         Args:
             n - the index of the positional argument
         """
+
         def helper(*args, **kwargs):
             return args[n]
+
         return self.then(helper)
 
     def when(self, func, *args, **kwargs):
         """ Calls when func(*args, **kwargs) when deferred gets a value """
+
         def helper(*args2, **kwargs2):
             func(*args, **kwargs)
+
         return self.then(helper)
 
     def __getattr__(self, method_name):
@@ -87,6 +92,7 @@ class Then(object):
     colors.run(['red', 'green'])
     colors.then(print) #=> ['red', 'green', 'blue']
     """
+
     def __init__(self, deferred):
         self.deferred = deferred
 
@@ -96,10 +102,13 @@ class Then(object):
                 return obj(*args, **kwargs)
             else:
                 return obj
+
         def helper(*args, **kwargs):
-            func = (lambda x: tryCall(getattr(x, name), *args, **kwargs))
+            func = lambda x: tryCall(getattr(x, name), *args, **kwargs)
             return self.deferred.then(func)
+
         return helper
+
 
 def call(func, *args, **kwargs):
     """
@@ -119,7 +128,8 @@ def call(func, *args, **kwargs):
             # Function with deferred and possibly deferred arguments
             def restfunc(*arg2, **kwarg2):
                 apply_deferred = partial(normalfunc, *arg2, **kwarg2)
-                return call(apply_deferred, *args[i + 1:], **kwargs)
+                return call(apply_deferred, *args[i + 1 :], **kwargs)
+
             return c.then(restfunc)
     items = kwargs.items()
     for i, (k, v) in enumerate(items):
@@ -129,10 +139,12 @@ def call(func, *args, **kwargs):
             # Function with deferred and possibly deferred arguments
             def restfunc2(*arg2, **kwarg2):
                 apply_deferred = partial(normalfunc, *arg2, **kwarg2)
-                return call(apply_deferred, **dict(items[i + 1:]))
+                return call(apply_deferred, **dict(items[i + 1 :]))
+
             return v.then(restfunc2)
     # No items deferred
     return func(*args, **kwargs)
+
 
 class DeferredHasValue(Exception):
     def __init__(self, string):
