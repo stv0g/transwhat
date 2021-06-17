@@ -36,7 +36,7 @@ class WhatsAppBackend(spectrum2.Backend):
             self.sessions[user].logout()
             del self.sessions[user]
 
-    def handleMessageSendRequest(self, user, buddy, message, xhtml="", ID=""):
+    def handle_message_send_request(self, user, buddy, message, xhtml="", ID=""):
         self.logger.debug("handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml=%s, ID=%s)" %
                     ( user, buddy, message, xhtml, ID))
         # For some reason spectrum occasionally sends to identical messages to
@@ -49,11 +49,11 @@ class WhatsAppBackend(spectrum2.Backend):
             self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
             self.lastMsgId[user] = ID
 
-    def handleJoinRoomRequest(self, user, room, nickname, pasword):
+    def handle_join_room_request(self, user, room, nickname, pasword):
         self.logger.debug("handleJoinRoomRequest(user=%s, room=%s, nickname=%s)" % (user, room, nickname))
         self.sessions[user].joinRoom(room, nickname)
 
-    def handleLeaveRoomRequest(self, user, room):
+    def handle_leave_room_request(self, user, room):
         self.logger.debug("handleLeaveRoomRequest(user=%s, room=%s)" % (user, room))
         self.sessions[user].leaveRoom(room)
 
