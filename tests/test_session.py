@@ -1,6 +1,6 @@
 import pytest
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, create_autospec
 from transWhat.session import Session
 from typing import Optional
 from yowsup.structs import ProtocolEntity
@@ -17,6 +17,12 @@ from contextlib import contextmanager
 from yowsup.layers.protocol_presence.protocolentities import (
     AvailablePresenceProtocolEntity,
     UnavailablePresenceProtocolEntity,
+)
+
+from yowsup.layers.protocol_media.protocolentities import (
+    MediaMessageProtocolEntity,
+    DownloadableMediaMessageProtocolEntity,
+    ImageDownloadableMediaMessageProtocolEntity,
 )
 
 
@@ -127,3 +133,17 @@ def test_callback_on_disconnect(session_instance, mock_backend):
     session_instance.onDisconnect()
 
     mock_backend.handle_disconnected.assert_called()
+
+
+def test_callback_on_media_works_with_images(session_instance, mock_backend):
+    media_inst = create_autospec(DownloadableMediaMessageProtocolEntity)
+
+    media_inst.media_type = MediaMessageProtocolEntity.TYPE_MEDIA_IMAGE
+    media_inst.url = "http://test.com/a-picture"
+    media_inst.caption = "my first image"
+    media_inst.participant = None
+    media_inst.getFrom.return_value = "buddy"
+    media_inst.getTimestamp.return_value = 1
+    # media_inst.isEncrypted.return_value = False
+
+    session_instance.onMedia(media_inst, "image")

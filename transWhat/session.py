@@ -313,24 +313,25 @@ class Session(YowsupApp):
         
     def onMedia(self, media, type):
         self.logger.debug('Received %s message: %s' % (type, media))
-        buddy = media._from.split('@')[0]
+        buddy = media.getFrom(full=False)
         participant = media.participant
+        url = media.url
         caption = ''
 
-        if media.isEncrypted():
-            self.logger.debug('Received encrypted media message')
-            if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
-                ipath = "/" + str(media.timestamp)  + media.getExtension()
+        # TODO: media.isEncrypted does not exist anymore(?)
+        #if media.isEncrypted():
+        #    self.logger.debug('Received encrypted media message')
+        #    if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
+        #        ipath = "/" + str(media.timestamp)  + media.getExtension()
 
-                with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
-                    f.write(media.getMediaContent())
-                url = self.backend.specConf.__getitem__("service.web_url") + ipath
-            else:
-                self.logger.warn('Received encrypted media: web storage not set in config!')
-                url = media.url
+        #        with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
+        #            f.write(media.getMediaContent())
+        #        url = self.backend.specConf.__getitem__("service.web_url") + ipath
+        #    else:
+        #        self.logger.warn('Received encrypted media: web storage not set in config!')
+        #        url = media.url
 
-        else:
-            url = media.url
+        #else:
 
         if type == 'image':
             caption = media.caption
@@ -338,18 +339,18 @@ class Session(YowsupApp):
         if participant is not None: # Group message
             partname = participant.split('@')[0]
             if media._from.split('@')[1] == 'broadcast': # Broadcast message
-                self.sendMessageToXMPP(partname, self.broadcast_prefix, media.timestamp)
-                self.sendMessageToXMPP(partname, url, media.timestamp)
-                self.sendMessageToXMPP(partname, caption, media.timestamp)
+                self.sendMessageToXMPP(partname, self.broadcast_prefix, media.getTimestamp())
+                self.sendMessageToXMPP(partname, url, media.getTimestamp())
+                self.sendMessageToXMPP(partname, caption, media.getTimestamp())
             else: # Group message
-                self.sendGroupMessageToXMPP(buddy, partname, url, media.timestamp)
-                self.sendGroupMessageToXMPP(buddy, partname, caption, media.timestamp)
+                self.sendGroupMessageToXMPP(buddy, partname, url, media.getTimestamp())
+                self.sendGroupMessageToXMPP(buddy, partname, caption, media.getTimestamp())
         else:
-            self.sendMessageToXMPP(buddy, url, media.timestamp)
-            self.sendMessageToXMPP(buddy, caption, media.timestamp)
+            self.sendMessageToXMPP(buddy, url, media.getTimestamp())
+            self.sendMessageToXMPP(buddy, caption, media.getTimestamp())
 
-        self.sendReceipt(media._id,     media._from, None, media.participant)
-        self.recvMsgIDs.append((media._id, media._from, media.participant, media.timestamp))
+        self.sendReceipt(media.getId(), media.getFrom(), None, media.participant)
+        self.recvMsgIDs.append((media.getId(), media.getFrom(), media.participant, media.getTimestamp()))
 
     def onLocation(self, location):
         buddy = location._from.split('@')[0]
