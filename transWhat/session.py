@@ -114,7 +114,7 @@ class Session(YowsupApp):
     def updateRoomList(self):
         rooms = []
         text = []
-        for room, group in self.groups.iteritems():
+        for room, group in self.groups.items():
             rooms.append([self._shortenGroupId(room), group.subject])
             text.append(self._shortenGroupId(room) + '@' + self.backend.spectrum_jid + ' :' + group.subject)
 
@@ -209,8 +209,8 @@ class Session(YowsupApp):
             expiration, props, nonce, t):
         self.logger.info("Auth success: %s" % self.user)
 
-        self.backend.handleConnected(self.user)
-        self.backend.handleBuddyChanged(self.user, "bot", self.bot.name,
+        self.backend.handle_connected(self.user)
+        self.backend.handle_buddy_changed(self.user, "bot", self.bot.name,
                         ["Admin"], spectrum2.protocol_pb2.STATUS_ONLINE)
         # Initialisation?
         self.requestPrivacyList()
@@ -219,7 +219,13 @@ class Session(YowsupApp):
         # ?
 
         self.logger.debug('Requesting groups list')
-        self.requestGroupsList(self._updateGroups)
+
+        # TODO: updateGroups is broken
+        # TODO:
+        # TODO: it also calls methods which do not
+        # TODO: exist in pyspectrum2
+        # self.requestGroupsList(self._updateGroups)
+
         # self.requestBroadcastList()
 
         # This should handle, sync, statuses, and presence
@@ -237,14 +243,14 @@ class Session(YowsupApp):
     # Called by superclass
     def onAuthFailed(self, reason):
         self.logger.info("Auth failed: %s (%s)" % (self.user, reason))
-        self.backend.handleDisconnected(self.user, 0, reason)
+        self.backend.handle_disconnected(self.user, 0, reason)
         self.password = None
         self.loggedIn = False
 
     # Called by superclass
     def onDisconnect(self):
         self.logger.debug('Disconnected')
-        self.backend.handleDisconnected(self.user, 0, 'Disconnected for unknown reasons')
+        self.backend.handle_disconnected(self.user, 0, 'Disconnected for unknown reasons')
 
     # Called by superclass
     def onReceipt(self, _id, _from, timestamp, type, participant, offline, items):
