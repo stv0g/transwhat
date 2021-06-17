@@ -42,7 +42,8 @@ class Session(YowsupApp):
     broadcast_prefix = '\U0001F4E2 '
 
     def __init__(self, backend, user, legacyName, extra):
-        super(Session, self).__init__()
+        super().__init__()
+
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.info("Created: %s" % legacyName)
 
@@ -91,14 +92,14 @@ class Session(YowsupApp):
 
         # Log out otherwise
         self.logger.info("%s logged out" % self.user)
-        super(Session, self).logout()
+        super().logout()
         self.loggedIn = False
 
     def login(self, password):
         self.logger.info("%s attempting login" % self.user)
         self.password = password
         self.shouldBeConncted = True
-        super(Session, self).login(self.legacyName, self.password)
+        super().login(self.legacyName, self.password)
 
     def _shortenGroupId(self, gid):
         # FIXME: might have problems if number begins with 0
@@ -581,7 +582,7 @@ class Session(YowsupApp):
             call(os.remove, pathWithExt)
         call(self.logger.info, "Sending image to %s" % to)
         waId = deferred.Deferred()
-        call(super(Session, self).sendImage, to, pathJpg, onSuccess = waId.run)
+        call(super().sendImage, to, pathJpg, onSuccess = waId.run)
         call(self.setWaId, ID, waId)
         waId.when(call, os.remove, pathJpg)
         waId.when(self.logger.info, "Image sent")
