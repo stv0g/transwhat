@@ -690,18 +690,18 @@ class Session(YowsupApp):
         self.msgIDs[waId] = MsgIDs(ID, waId)
         self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
 
-    def sendMessageToXMPP(self, buddy, messageContent, timestamp = "", nickname = ""):
+    def sendMessageToXMPP(self, buddy, message, timestamp = "", nickname = ""):
         if timestamp:
             timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
         if self.initialized == False:
             self.logger.debug("Message queued from %s to %s: %s" %
-                    (buddy, self.legacyName, messageContent))
-            self.offlineQueue.append((buddy, messageContent, timestamp))
+                    (buddy, self.legacyName, message))
+            self.offlineQueue.append((buddy, message, timestamp))
         else:
             self.logger.debug("Message sent from %s to %s: %s" % (
-                    buddy, self.legacyName, messageContent))
-            self.backend.handleMessage(self.user, buddy, messageContent, "",
+                    buddy, self.legacyName, message))
+            self.backend.handle_message(self.user, buddy, message, "",
                     "", timestamp)
 
     def sendGroupMessageToXMPP(self, room, number, messageContent, timestamp = "", defaultname = ""):

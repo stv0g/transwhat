@@ -50,6 +50,35 @@ def test_logout_works(session_instance, mock_yowstack):
     mock_yowstack.assert_event_called(YowNetworkLayer.EVENT_STATE_DISCONNECT)
 
 
+def test_send_message_to_xmpp_queued(session_instance, mock_backend):
+    session_instance.initialized = False
+
+    session_instance.sendMessageToXMPP(
+        buddy="test@jid.com",
+        message="this is a random message",
+        timestamp=1,
+    )
+
+    assert not mock_backend.handle_message.called
+
+
+def test_send_message_to_xmpp_proper(session_instance, mock_backend):
+    session_instance.initialized = True
+
+    session_instance.sendMessageToXMPP(
+        buddy="test@jid.com", message="this is a random message", timestamp=1
+    )
+
+    mock_backend.handle_message.assert_called_with(
+        "mock@user.com",
+        "test@jid.com",
+        "this is a random message",
+        "",  # why
+        "",  # why
+        "19700101T000001",
+    )
+
+
 @pytest.mark.skip("updateRoomList and _updateGroups are broken and do not work")
 def test_update_room_list(session_instance):
     raise NotImplementedError()
