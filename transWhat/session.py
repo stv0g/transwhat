@@ -84,6 +84,12 @@ class Session(YowsupApp):
         self.logout()
 
     def logout(self):
+        # Do not logout when there is no way that we are logged in
+        if not self.loggedIn:
+            self.logger.info("%s already logged out, ignoring" % self.user)
+            return
+
+        # Log out otherwise
         self.logger.info("%s logged out" % self.user)
         super(Session, self).logout()
         self.loggedIn = False
