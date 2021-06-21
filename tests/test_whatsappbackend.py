@@ -60,3 +60,24 @@ def test_handle_join_and_leave_room(mock_backend, mock_session):
     # Leave room
     backend.handle_leave_room_request(user_name, room_name)
     mock_session.leaveRoom.assert_called_with(room_name)
+
+
+def test_handle_status_change(mock_backend, mock_session):
+    user_name = "user@jid.com"
+
+    backend = WhatsAppBackend(mock_backend, user_name, {})
+    backend.sessions[user_name] = mock_session
+
+    backend.handle_status_change_request(user_name, 123, "this is status message")
+
+    mock_session.changeStatus.assert_called_with(123)
+    mock_session.changeStatusMessage.assert_called_with("this is status message")
+
+
+def test_sendData(mock_backend):
+    user_name = "user@jid.com"
+
+    backend = WhatsAppBackend(mock_backend, user_name, {})
+    backend.sendData(b"1234")
+
+    mock_backend.send_data.assert_called_with(b"1234")

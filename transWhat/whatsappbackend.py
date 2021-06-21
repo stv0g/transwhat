@@ -67,7 +67,7 @@ class WhatsAppBackend(spectrum2.Backend):
         self.logger.debug("handleLeaveRoomRequest(user=%s, room=%s)" % (user, room))
         self.sessions[user].leaveRoom(room)
 
-    def handleStatusChangeRequest(self, user, status, statusMessage):
+    def handle_status_change_request(self, user, status, statusMessage):
         self.logger.debug(
             "handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)"
             % (user, status, statusMessage)
@@ -170,4 +170,4 @@ class WhatsAppBackend(spectrum2.Backend):
         self.logger.info("Meassage ACK request for %s !!" % legacyName)
 
     def sendData(self, data):
-        self.io.sendData(data)
+        self.io.send_data(data)
