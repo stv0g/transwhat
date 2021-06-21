@@ -8,26 +8,30 @@ from yowsup.common import YowConstants
 from yowsup.layers import YowLayerEvent, YowParallelLayer
 
 # Layers
-from yowsup.layers.axolotl                 import AxolotlSendLayer, AxolotlControlLayer, AxolotlReceivelayer
-from yowsup.layers.auth                    import YowAuthenticationProtocolLayer
-from yowsup.layers.coder                   import YowCoderLayer
-from yowsup.layers.logger                  import YowLoggerLayer
-from yowsup.layers.network                 import YowNetworkLayer
-from yowsup.layers.protocol_messages       import YowMessagesProtocolLayer
-from yowsup.layers.protocol_media          import YowMediaProtocolLayer
-from yowsup.layers.protocol_acks           import YowAckProtocolLayer
-from yowsup.layers.protocol_receipts       import YowReceiptProtocolLayer
-from yowsup.layers.protocol_groups         import YowGroupsProtocolLayer
-from yowsup.layers.protocol_presence       import YowPresenceProtocolLayer
-from yowsup.layers.protocol_ib             import YowIbProtocolLayer
-from yowsup.layers.protocol_notifications  import YowNotificationsProtocolLayer
-from yowsup.layers.protocol_iq             import YowIqProtocolLayer
-from yowsup.layers.protocol_contacts       import YowContactsIqProtocolLayer
-from yowsup.layers.protocol_chatstate      import YowChatstateProtocolLayer
-from yowsup.layers.protocol_privacy        import YowPrivacyProtocolLayer
-from yowsup.layers.protocol_profiles       import YowProfilesProtocolLayer
-from yowsup.layers.protocol_calls          import YowCallsProtocolLayer
-from yowsup.layers.axolotl.props           import PROP_IDENTITY_AUTOTRUST
+from yowsup.layers.axolotl import (
+    AxolotlSendLayer,
+    AxolotlControlLayer,
+    AxolotlReceivelayer,
+)
+from yowsup.layers.auth import YowAuthenticationProtocolLayer
+from yowsup.layers.coder import YowCoderLayer
+from yowsup.layers.logger import YowLoggerLayer
+from yowsup.layers.network import YowNetworkLayer
+from yowsup.layers.protocol_messages import YowMessagesProtocolLayer
+from yowsup.layers.protocol_media import YowMediaProtocolLayer
+from yowsup.layers.protocol_acks import YowAckProtocolLayer
+from yowsup.layers.protocol_receipts import YowReceiptProtocolLayer
+from yowsup.layers.protocol_groups import YowGroupsProtocolLayer
+from yowsup.layers.protocol_presence import YowPresenceProtocolLayer
+from yowsup.layers.protocol_ib import YowIbProtocolLayer
+from yowsup.layers.protocol_notifications import YowNotificationsProtocolLayer
+from yowsup.layers.protocol_iq import YowIqProtocolLayer
+from yowsup.layers.protocol_contacts import YowContactsIqProtocolLayer
+from yowsup.layers.protocol_chatstate import YowChatstateProtocolLayer
+from yowsup.layers.protocol_privacy import YowPrivacyProtocolLayer
+from yowsup.layers.protocol_profiles import YowProfilesProtocolLayer
+from yowsup.layers.protocol_calls import YowCallsProtocolLayer
+from yowsup.layers.axolotl.props import PROP_IDENTITY_AUTOTRUST
 
 # ProtocolEntities
 from yowsup.layers.protocol_acks.protocolentities import *
@@ -36,12 +40,12 @@ from yowsup.layers.protocol_contacts.protocolentities import *
 from yowsup.layers.protocol_groups.protocolentities import *
 from yowsup.layers.protocol_media.protocolentities import *
 from yowsup.layers.protocol_notifications.protocolentities import *
-from yowsup.layers.protocol_messages.protocolentities  import *
+from yowsup.layers.protocol_messages.protocolentities import *
 from yowsup.layers.protocol_presence.protocolentities import *
 from yowsup.layers.protocol_profiles.protocolentities import *
 from yowsup.layers.protocol_privacy.protocolentities import *
-from yowsup.layers.protocol_receipts.protocolentities  import *
-from yowsup.layers.protocol_iq.protocolentities  import *
+from yowsup.layers.protocol_receipts.protocolentities import *
+from yowsup.layers.protocol_iq.protocolentities import *
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
@@ -51,12 +55,16 @@ from yowsup.registration import WARegRequest
 
 from functools import partial
 
+
 class YowsupApp(object):
     def __init__(self):
         env.CURRENT_ENV = env.AndroidYowsupEnv()
 
-        layers = (YowsupAppLayer,
-                YowParallelLayer((YowAuthenticationProtocolLayer,
+        layers = (
+            YowsupAppLayer,
+            YowParallelLayer(
+                (
+                    YowAuthenticationProtocolLayer,
                     YowMessagesProtocolLayer,
                     YowReceiptProtocolLayer,
                     YowAckProtocolLayer,
@@ -70,22 +78,21 @@ class YowsupApp(object):
                     YowPrivacyProtocolLayer,
                     YowProfilesProtocolLayer,
                     YowGroupsProtocolLayer,
-                    YowPresenceProtocolLayer)),
-                AxolotlControlLayer,
-                YowParallelLayer((AxolotlSendLayer, AxolotlReceivelayer)),
-                YowCoderLayer,
-                YowNetworkLayer
+                    YowPresenceProtocolLayer,
+                )
+            ),
+            AxolotlControlLayer,
+            YowParallelLayer((AxolotlSendLayer, AxolotlReceivelayer)),
+            YowCoderLayer,
+            YowNetworkLayer,
         )
 
         self.logger = logging.getLogger(self.__class__.__name__)
         stackBuilder = YowStackBuilder()
 
-        self.stack = stackBuilder \
-            .pushDefaultLayers() \
-            .push(YowsupAppLayer) \
-            .build()
+        self.stack = stackBuilder.pushDefaultLayers().push(YowsupAppLayer).build()
         self.stack.broadcastEvent(
-            YowLayerEvent(YowsupAppLayer.EVENT_START, caller = self)
+            YowLayerEvent(YowsupAppLayer.EVENT_START, caller=self)
         )
 
     def login(self, username, password):
@@ -99,20 +106,23 @@ class YowsupApp(object):
 
             - password: (str) base64 encoded password
         """
-        self.stack.setProp(YowAuthenticationProtocolLayer.PROP_CREDENTIALS,
-                            (username, password))
+        self.stack.setProp(
+            YowAuthenticationProtocolLayer.PROP_CREDENTIALS, (username, password)
+        )
         self.stack.setProp(PROP_IDENTITY_AUTOTRUST, True)
-#        self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
+        #        self.stack.setProp(YowIqProtocolLayer.PROP_PING_INTERVAL, 5)
 
         try:
             self.stack.broadcastEvent(
-                    YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT))
-        except TypeError as e: # Occurs when password is not correctly formated
-            self.onAuthFailure('password not base64 encoded')
-#        try:
-#            self.stack.loop(timeout=0.5, discrete=0.5)
-#        except AuthError as e: # For some reason Yowsup throws an exception
-#            self.onAuthFailure("%s" % e)
+                YowLayerEvent(YowNetworkLayer.EVENT_STATE_CONNECT)
+            )
+        except TypeError as e:  # Occurs when password is not correctly formated
+            self.onAuthFailure("password not base64 encoded")
+
+    #        try:
+    #            self.stack.loop(timeout=0.5, discrete=0.5)
+    #        except AuthError as e: # For some reason Yowsup throws an exception
+    #            self.onAuthFailure("%s" % e)
 
     def logout(self):
         """
@@ -130,11 +140,13 @@ class YowsupApp(object):
             - read: ('read' or None) None is just delivered, 'read' is read
             - participant
         """
-        self.logger.debug(u'Sending receipt to whatsapp: %s', [_id, _from, read, participant])
+        self.logger.debug(
+            u"Sending receipt to whatsapp: %s", [_id, _from, read, participant]
+        )
         receipt = OutgoingReceiptProtocolEntity(_id, _from, read, participant)
         self.sendEntity(receipt)
 
-    def downloadMedia(self, url, onSuccess = None, onFailure = None):
+    def downloadMedia(self, url, onSuccess=None, onFailure=None):
         downloader = MediaDownloader(onSuccess, onFailure)
         downloader.download(url)
 
@@ -146,63 +158,123 @@ class YowsupApp(object):
             - to: (xxxxxxxxxx@s.whatsapp.net) who to send the message to
             - message: (str) the body of the message
         """
-        messageEntity = TextMessageProtocolEntity(message.encode('utf-8'), to = to)
+        messageEntity = TextMessageProtocolEntity(message.encode("utf-8"), to=to)
         self.sendEntity(messageEntity)
         return messageEntity.getId()
 
     def sendLocation(self, to, latitude, longitude):
-        messageEntity = LocationMediaMessageProtocolEntity(latitude,longitude, None, None, "raw", to = to)
+        messageEntity = LocationMediaMessageProtocolEntity(
+            latitude, longitude, None, None, "raw", to=to
+        )
         self.sendEntity(messageEntity)
 
         return messageEntity.getId()
 
-    def sendImage(self, jid, path, caption = None, onSuccess = None, onFailure = None):
-        entity = RequestUploadIqProtocolEntity(RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path)
-        successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(jid, path, successEntity, originalEntity, caption, onSuccess, onFailure)
-        errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(jid, path, errorEntity, originalEntity)
+    def sendImage(self, jid, path, caption=None, onSuccess=None, onFailure=None):
+        entity = RequestUploadIqProtocolEntity(
+            RequestUploadIqProtocolEntity.MEDIA_TYPE_IMAGE, filePath=path
+        )
+        successFn = lambda successEntity, originalEntity: self.onRequestUploadResult(
+            jid, path, successEntity, originalEntity, caption, onSuccess, onFailure
+        )
+        errorFn = lambda errorEntity, originalEntity: self.onRequestUploadError(
+            jid, path, errorEntity, originalEntity
+        )
 
         self.sendIq(entity, successFn, errorFn)
 
-    def onRequestUploadResult(self, jid, filePath, resultRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity, caption = None, onSuccess=None, onFailure=None):
-        if requestUploadIqProtocolEntity.mediaType == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO:
+    def onRequestUploadResult(
+        self,
+        jid,
+        filePath,
+        resultRequestUploadIqProtocolEntity,
+        requestUploadIqProtocolEntity,
+        caption=None,
+        onSuccess=None,
+        onFailure=None,
+    ):
+        if (
+            requestUploadIqProtocolEntity.mediaType
+            == RequestUploadIqProtocolEntity.MEDIA_TYPE_AUDIO
+        ):
             doSendFn = self.doSendAudio
         else:
             doSendFn = self.doSendImage
 
         if resultRequestUploadIqProtocolEntity.isDuplicate():
-            doSendFn(filePath, resultRequestUploadIqProtocolEntity.getUrl(), jid,
-               resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
+            doSendFn(
+                filePath,
+                resultRequestUploadIqProtocolEntity.getUrl(),
+                jid,
+                resultRequestUploadIqProtocolEntity.getIp(),
+                caption,
+                onSuccess,
+                onFailure,
+            )
         else:
-            successFn = lambda filePath, jid, url: doSendFn(filePath, url.encode('ascii','ignore'), jid, resultRequestUploadIqProtocolEntity.getIp(), caption, onSuccess, onFailure)
-            ownNumber = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full=False)
-            mediaUploader = MediaUploader(jid, ownNumber, filePath,
-                      resultRequestUploadIqProtocolEntity.getUrl(),
-                      resultRequestUploadIqProtocolEntity.getResumeOffset(),
-                      successFn, self.onUploadError, self.onUploadProgress, asynchronous=False)
+            successFn = lambda filePath, jid, url: doSendFn(
+                filePath,
+                url.encode("ascii", "ignore"),
+                jid,
+                resultRequestUploadIqProtocolEntity.getIp(),
+                caption,
+                onSuccess,
+                onFailure,
+            )
+            ownNumber = self.stack.getLayerInterface(
+                YowAuthenticationProtocolLayer
+            ).getUsername(full=False)
+            mediaUploader = MediaUploader(
+                jid,
+                ownNumber,
+                filePath,
+                resultRequestUploadIqProtocolEntity.getUrl(),
+                resultRequestUploadIqProtocolEntity.getResumeOffset(),
+                successFn,
+                self.onUploadError,
+                self.onUploadProgress,
+                asynchronous=False,
+            )
             mediaUploader.start()
 
-    def onRequestUploadError(self, jid, path, errorRequestUploadIqProtocolEntity, requestUploadIqProtocolEntity):
+    def onRequestUploadError(
+        self,
+        jid,
+        path,
+        errorRequestUploadIqProtocolEntity,
+        requestUploadIqProtocolEntity,
+    ):
         self.logger.error("Request upload for file %s for %s failed" % (path, jid))
 
     def onUploadError(self, filePath, jid, url):
         self.logger.error("Upload file %s to %s for %s failed!" % (filePath, url, jid))
 
     def onUploadProgress(self, filePath, jid, url, progress):
-        self.logger.info("%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress))
+        self.logger.info(
+            "%s => %s, %d%% \r" % (os.path.basename(filePath), jid, progress)
+        )
         pass
 
-    def doSendImage(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to, caption = caption)
+    def doSendImage(
+        self, filePath, url, to, ip=None, caption=None, onSuccess=None, onFailure=None
+    ):
+        entity = ImageDownloadableMediaMessageProtocolEntity.fromFilePath(
+            filePath, url, ip, to, caption=caption
+        )
         self.sendEntity(entity)
-        #self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+        # self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
         if onSuccess is not None:
             onSuccess(entity.getId())
         return entity.getId()
 
-    def doSendAudio(self, filePath, url, to, ip = None, caption = None, onSuccess = None, onFailure = None):
-        entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(filePath, url, ip, to)
+    def doSendAudio(
+        self, filePath, url, to, ip=None, caption=None, onSuccess=None, onFailure=None
+    ):
+        entity = AudioDownloadableMediaMessageProtocolEntity.fromFilePath(
+            filePath, url, ip, to
+        )
         self.sendEntity(entity)
-        #self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
+        # self.msgIDs[entity.getId()] = MsgIDs(self.imgMsgId, entity.getId())
         if onSuccess is not None:
             onSuccess(entity.getId())
         return entity.getId()
@@ -228,7 +300,7 @@ class YowsupApp(object):
                 subscribe to
         """
         self.logger.debug("Subscribing to Presence updates from %s" % phone_number)
-        jid = phone_number + '@s.whatsapp.net'
+        jid = phone_number + "@s.whatsapp.net"
         entity = SubscribePresenceProtocolEntity(jid)
         self.sendEntity(entity)
 
@@ -240,7 +312,7 @@ class YowsupApp(object):
             - phone_number: (str) The cellphone number of the person to
                 unsubscribe from
         """
-        jid = phone_number + '@s.whatsapp.net'
+        jid = phone_number + "@s.whatsapp.net"
         entity = UnsubscribePresenceProtocolEntity(jid)
         self.sendEntity(entity)
 
@@ -251,7 +323,7 @@ class YowsupApp(object):
         Args:
             - group: (str) the group id (e.g. 27831788123-144024456)
         """
-        entity = LeaveGroupsIqProtocolEntity([group + '@g.us'])
+        entity = LeaveGroupsIqProtocolEntity([group + "@g.us"])
         self.sendEntity(entity)
 
     def setStatus(self, statusText):
@@ -264,7 +336,7 @@ class YowsupApp(object):
         iq = SetStatusIqProtocolEntity(statusText)
         self.sendIq(iq)
 
-    def setProfilePicture(self, previewPicture, fullPicture = None):
+    def setProfilePicture(self, previewPicture, fullPicture=None):
         """
         Requests profile picture of whatsapp user
         Args:
@@ -273,7 +345,9 @@ class YowsupApp(object):
         """
         if fullPicture == None:
             fullPicture = previewPicture
-        ownJid = self.stack.getLayerInterface(YowAuthenticationProtocolLayer).getUsername(full = True)
+        ownJid = self.stack.getLayerInterface(
+            YowAuthenticationProtocolLayer
+        ).getUsername(full=True)
         iq = SetPictureIqProtocolEntity(ownJid, previewPicture, fullPicture)
         self.sendIq(iq)
 
@@ -285,7 +359,7 @@ class YowsupApp(object):
             - phoneNumber: (str) cellphone number of the buddy you are typing to.
             - typing: (bool) True if you are typing, False if you are not
         """
-        jid = phoneNumber + '@s.whatsapp.net'
+        jid = phoneNumber + "@s.whatsapp.net"
         if typing:
             state = OutgoingChatstateProtocolEntity(
                 ChatstateProtocolEntity.STATE_TYPING, jid
@@ -296,7 +370,9 @@ class YowsupApp(object):
             )
         self.sendEntity(state)
 
-    def sendSync(self, contacts, delta = False, interactive = True, success = None, failure = None):
+    def sendSync(
+        self, contacts, delta=False, interactive=True, success=None, failure=None
+    ):
         """
         You need to sync new contacts before you interact with
         them, failure to do so could result in a temporary ban.
@@ -312,12 +388,21 @@ class YowsupApp(object):
             - success: (func) - Callback; Takes three arguments: existing numbers,
                 non-existing numbers, invalid numbers.
         """
-        mode = GetSyncIqProtocolEntity.MODE_DELTA if delta else GetSyncIqProtocolEntity.MODE_FULL
-        context = GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE if interactive else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
+        mode = (
+            GetSyncIqProtocolEntity.MODE_DELTA
+            if delta
+            else GetSyncIqProtocolEntity.MODE_FULL
+        )
+        context = (
+            GetSyncIqProtocolEntity.CONTEXT_INTERACTIVE
+            if interactive
+            else GetSyncIqProtocolEntity.CONTEXT_REGISTRATION
+        )
         # International contacts must be preceded by a plus.  Other numbers are
         # considered local.
-        contacts = ['+' + c for c in contacts]
+        contacts = ["+" + c for c in contacts]
         iq = GetSyncIqProtocolEntity(contacts, mode, context)
+
         def onSuccess(response, request):
             # Remove leading plus
             if success is not None:
@@ -326,25 +411,24 @@ class YowsupApp(object):
                 invalid = [s[1:] for s in response.invalidNumbers]
                 success(existing, nonexisting, invalid)
 
-        self.sendIq(iq, onSuccess = onSuccess, onError = failure)
+        self.sendIq(iq, onSuccess=onSuccess, onError=failure)
 
-    def requestClientConfig(self, success = None, failure = None):
+    def requestClientConfig(self, success=None, failure=None):
         """I'm not sure what this does, but it might be required on first login."""
         iq = PushIqProtocolEntity()
-        self.sendIq(iq, onSuccess = success, onError = failure)
+        self.sendIq(iq, onSuccess=success, onError=failure)
 
-
-    def requestPrivacyList(self, success = None, failure = None):
+    def requestPrivacyList(self, success=None, failure=None):
         """I'm not sure what this does, but it might be required on first login."""
         iq = PrivacyListIqProtocolEntity()
-        self.sendIq(iq, onSuccess = success, onError = failure)
+        self.sendIq(iq, onSuccess=success, onError=failure)
 
-    def requestServerProperties(self, success = None, failure = None):
+    def requestServerProperties(self, success=None, failure=None):
         """I'm not sure what this does, but it might be required on first login."""
         iq = PropsIqProtocolEntity()
-        self.sendIq(iq, onSuccess = success, onError = failure)
+        self.sendIq(iq, onSuccess=success, onError=failure)
 
-    def requestStatuses(self, contacts, success = None, failure = None):
+    def requestStatuses(self, contacts, success=None, failure=None):
         """
         Request the statuses of a number of users.
 
@@ -354,19 +438,19 @@ class YowsupApp(object):
             - success: (func) called when request is successful
             - failure: (func) called when request has failed
         """
-        iq = GetStatusesIqProtocolEntity([c + '@s.whatsapp.net' for c in contacts])
+        iq = GetStatusesIqProtocolEntity([c + "@s.whatsapp.net" for c in contacts])
+
         def onSuccess(response, request):
             if success is not None:
                 self.logger.debug("Received Statuses %s" % response)
                 s = {}
                 for k, v in response.statuses.iteritems():
-                    s[k.split('@')[0]] = v
+                    s[k.split("@")[0]] = v
                 success(s)
 
-        self.sendIq(iq, onSuccess = onSuccess, onError = failure)
+        self.sendIq(iq, onSuccess=onSuccess, onError=failure)
 
-
-    def requestLastSeen(self, phoneNumber, success = None, failure = None):
+    def requestLastSeen(self, phoneNumber, success=None, failure=None):
         """
         Requests when user was last seen.
         Args:
@@ -376,14 +460,15 @@ class YowsupApp(object):
                 since last seen.
             - failure: (func) called when request has failed
         """
-        iq = LastseenIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
-        self.sendIq(iq, onSuccess = partial(self._lastSeenSuccess, success),
-                onError = failure)
+        iq = LastseenIqProtocolEntity(phoneNumber + "@s.whatsapp.net")
+        self.sendIq(
+            iq, onSuccess=partial(self._lastSeenSuccess, success), onError=failure
+        )
 
     def _lastSeenSuccess(self, success, response, request):
-        success(response._from.split('@')[0], response.seconds)
+        success(response._from.split("@")[0], response.seconds)
 
-    def requestProfilePicture(self, phoneNumber, onSuccess = None, onFailure = None):
+    def requestProfilePicture(self, phoneNumber, onSuccess=None, onFailure=None):
         """
         Requests profile picture of whatsapp user
         Args:
@@ -391,14 +476,14 @@ class YowsupApp(object):
             - onSuccess: (func) called when request is successfully processed.
             - onFailure: (func) called when request has failed
         """
-        iq = GetPictureIqProtocolEntity(phoneNumber + '@s.whatsapp.net')
-        self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
-    
-    def requestGroupsList(self, onSuccess = None, onFailure = None):
-        iq = ListGroupsIqProtocolEntity()
-        self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+        iq = GetPictureIqProtocolEntity(phoneNumber + "@s.whatsapp.net")
+        self.sendIq(iq, onSuccess=onSuccess, onError=onFailure)
 
-    def requestGroupInfo(self, group, onSuccess = None, onFailure = None):
+    def requestGroupsList(self, onSuccess=None, onFailure=None):
+        iq = ListGroupsIqProtocolEntity()
+        self.sendIq(iq, onSuccess=onSuccess, onError=onFailure)
+
+    def requestGroupInfo(self, group, onSuccess=None, onFailure=None):
         """
         Request info on a specific group (includes participants, subject, owner etc.)
 
@@ -407,8 +492,8 @@ class YowsupApp(object):
             - onSuccess: (func) called when request is successfully processed.
             - onFailure: (func) called when request is has failed
         """
-        iq = InfoGroupsIqProtocolEntity(group + '@g.us')
-        self.sendIq(iq, onSuccess = onSuccess, onError = onFailure)
+        iq = InfoGroupsIqProtocolEntity(group + "@g.us")
+        self.sendIq(iq, onSuccess=onSuccess, onError=onFailure)
 
     def requestSMSCode(self, countryCode, phoneNumber):
         """
@@ -432,11 +517,9 @@ class YowsupApp(object):
                 the country code.
             smsCode: The sms code that you asked for previously
         """
-        smsCode = smsCode.replace('-', '')
+        smsCode = smsCode.replace("-", "")
         request = WARegRequest(countryCode, phoneNumber, smsCode)
         return request.send()
-
-
 
     def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
         """
@@ -478,7 +561,7 @@ class YowsupApp(object):
         """
         pass
 
-    def onAck(self, _id,_class, _from, timestamp):
+    def onAck(self, _id, _class, _from, timestamp):
         """
         Called when Ack is received
 
@@ -526,7 +609,9 @@ class YowsupApp(object):
         """
         pass
 
-    def onTextMessage(self, _id, _from, to, notify, timestamp, participant, offline, retry, body):
+    def onTextMessage(
+        self, _id, _from, to, notify, timestamp, participant, offline, retry, body
+    ):
         """
         Called when text message is received
 
@@ -560,7 +645,6 @@ class YowsupApp(object):
             - entity: AudioDownloadableMediaMessageProtocolEntity
         """
         pass
-
 
     def onVideo(self, entity):
         """
@@ -668,26 +752,28 @@ class YowsupApp(object):
 
     def sendEntity(self, entity):
         """Sends an entity down the stack (as if YowsupAppLayer called toLower)"""
-        self.stack.broadcastEvent(YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT,
-            entity = entity
-        ))
+        self.stack.broadcastEvent(
+            YowLayerEvent(YowsupAppLayer.TO_LOWER_EVENT, entity=entity)
+        )
 
-    def sendIq(self, iq, onSuccess = None, onError = None):
+    def sendIq(self, iq, onSuccess=None, onError=None):
         self.stack.broadcastEvent(
             YowLayerEvent(
                 YowsupAppLayer.SEND_IQ,
-                iq = iq,
-                success = onSuccess,
-                failure = onError,
+                iq=iq,
+                success=onSuccess,
+                failure=onError,
             )
         )
 
+
 from yowsup.layers.interface import YowInterfaceLayer, ProtocolEntityCallback
 
+
 class YowsupAppLayer(YowInterfaceLayer):
-    EVENT_START = 'transwhat.event.YowsupAppLayer.start'
-    TO_LOWER_EVENT = 'transwhat.event.YowsupAppLayer.toLower'
-    SEND_IQ = 'transwhat.event.YowsupAppLayer.sendIq'
+    EVENT_START = "transwhat.event.YowsupAppLayer.start"
+    TO_LOWER_EVENT = "transwhat.event.YowsupAppLayer.toLower"
+    SEND_IQ = "transwhat.event.YowsupAppLayer.sendIq"
 
     def onEvent(self, layerEvent):
         # We cannot pass instance varaibles in through init, so we use an event
@@ -695,48 +781,48 @@ class YowsupAppLayer(YowInterfaceLayer):
         # Return False if you want the event to propogate down the stack
         # return True otherwise
         if layerEvent.getName() == YowsupAppLayer.EVENT_START:
-            self.caller = layerEvent.getArg('caller')
+            self.caller = layerEvent.getArg("caller")
             self.logger = logging.getLogger(self.__class__.__name__)
             return True
         elif layerEvent.getName() == YowNetworkLayer.EVENT_STATE_DISCONNECTED:
             self.caller.onDisconnect()
             return True
         elif layerEvent.getName() == YowsupAppLayer.TO_LOWER_EVENT:
-            self.toLower(layerEvent.getArg('entity'))
+            self.toLower(layerEvent.getArg("entity"))
             return True
         elif layerEvent.getName() == YowsupAppLayer.SEND_IQ:
-            iq = layerEvent.getArg('iq')
-            success = layerEvent.getArg('success')
-            failure = layerEvent.getArg('failure')
+            iq = layerEvent.getArg("iq")
+            success = layerEvent.getArg("success")
+            failure = layerEvent.getArg("failure")
             self._sendIq(iq, success, failure)
             return True
         return False
 
-    @ProtocolEntityCallback('success')
+    @ProtocolEntityCallback("success")
     def onAuthSuccess(self, entity):
         # entity is SuccessProtocolEntity
         status = entity.location
-        kind = "" #entity.kind
+        kind = ""  # entity.kind
         creation = entity.creation
-        expiration = "" #entity.expiration
+        expiration = ""  # entity.expiration
         props = entity.props
-        nonce = "" #entity.nonce
-        t = entity.t # I don't know what this is
+        nonce = ""  # entity.nonce
+        t = entity.t  # I don't know what this is
         self.caller.onAuthSuccess(status, kind, creation, expiration, props, nonce, t)
 
-    @ProtocolEntityCallback('failure')
+    @ProtocolEntityCallback("failure")
     def onAuthFailure(self, entity):
         # entity is FailureProtocolEntity
         reason = entity.reason
         self.caller.onAuthFailure(reason)
 
-    @ProtocolEntityCallback('receipt')
+    @ProtocolEntityCallback("receipt")
     def onReceipt(self, entity):
         """Sends ack automatically"""
         # entity is IncomingReceiptProtocolEntity
-        #ack = OutgoingAckProtocolEntity(entity.getId(),
+        # ack = OutgoingAckProtocolEntity(entity.getId(),
         #        'receipt', entity.getType(), entity.getFrom())
-        #self.toLower(entity.ack())
+        # self.toLower(entity.ack())
         _id = entity._id
         _from = entity._from
         timestamp = entity.timestamp
@@ -746,17 +832,12 @@ class YowsupAppLayer(YowInterfaceLayer):
         items = entity.items
         self.caller.onReceipt(_id, _from, timestamp, type, participant, offline, items)
 
-    @ProtocolEntityCallback('ack')
+    @ProtocolEntityCallback("ack")
     def onAck(self, entity):
         # entity is IncomingAckProtocolEntity
-        self.caller.onAck(
-            entity._id,
-            entity._class,
-            entity._from,
-            entity.timestamp
-        )
+        self.caller.onAck(entity._id, entity._class, entity._from, entity.timestamp)
 
-    @ProtocolEntityCallback('notification')
+    @ProtocolEntityCallback("notification")
     def onNotification(self, entity):
         """
         Sends ack automatically
@@ -769,39 +850,34 @@ class YowsupAppLayer(YowInterfaceLayer):
             self.caller.onParticipantsAddedToGroup(entity)
         elif isinstance(entity, RemoveGroupsNotificationProtocolEntity):
             self.caller.onParticipantsRemovedFromGroup(
-                    entity.getGroupId().split('@')[0],
-                    entity.getParticipants().keys()
+                entity.getGroupId().split("@")[0], entity.getParticipants().keys()
             )
         elif isinstance(entity, SubjectGroupsNotificationProtocolEntity):
             self.caller.onSubjectChanged(
-                    entity.getGroupId().split('@')[0],
-                    entity.getSubject(),
-                    entity.getSubjectOwner(full=False),
-                    entity.getSubjectTimestamp()
+                entity.getGroupId().split("@")[0],
+                entity.getSubject(),
+                entity.getSubjectOwner(full=False),
+                entity.getSubjectTimestamp(),
             )
         elif isinstance(entity, StatusNotificationProtocolEntity):
             self.caller.onContactStatusChanged(
-                    entity._from.split('@')[0],
-                    entity.status
+                entity._from.split("@")[0], entity.status
             )
         elif isinstance(entity, SetPictureNotificationProtocolEntity):
-            self.caller.onContactPictureChanged(entity.setJid.split('@')[0])
+            self.caller.onContactPictureChanged(entity.setJid.split("@")[0])
         elif isinstance(entity, DeletePictureNotificationProtocolEntity):
-            self.caller.onContactPictureChanged(entity.deleteJid.split('@')[0])
+            self.caller.onContactPictureChanged(entity.deleteJid.split("@")[0])
         elif isinstance(entity, RemoveContactNotificationProtocolEntity):
-            self.caller.onContactRemoved(entity.contactJid.split('@')[0])
+            self.caller.onContactRemoved(entity.contactJid.split("@")[0])
         elif isinstance(entity, AddContactNotificationProtocolEntity):
-            self.caller.onContactAdded(
-                    entity.contactJid.split('@')[0],
-                    entity.notify
-            )
+            self.caller.onContactAdded(entity.contactJid.split("@")[0], entity.notify)
         elif isinstance(entity, UpdateContactNotificationProtocolEntity):
             self.caller.onContactUpdated(
-                    entity._from.split('@')[0],
-                    entity.contactJid.split('@')[0],
+                entity._from.split("@")[0],
+                entity.contactJid.split("@")[0],
             )
 
-    @ProtocolEntityCallback('message')
+    @ProtocolEntityCallback("message")
     def onMessageReceived(self, entity):
         self.logger.debug("Received Message: %s" % unicode(entity))
         if entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_TEXT:
@@ -814,7 +890,7 @@ class YowsupAppLayer(YowInterfaceLayer):
                 entity.participant,
                 entity.offline,
                 entity.retry,
-                entity.body
+                entity.body,
             )
         elif entity.getType() == MessageProtocolEntity.MESSAGE_TYPE_MEDIA:
             if isinstance(entity, ImageDownloadableMediaMessageProtocolEntity):
@@ -834,12 +910,12 @@ class YowsupAppLayer(YowInterfaceLayer):
                     entity.to,
                     entity.notify,
                     entity.timestamp,
-                    entity.participant
+                    entity.participant,
                 )
             elif isinstance(entity, LocationMediaMessageProtocolEntity):
                 self.caller.onLocation(entity)
 
-    @ProtocolEntityCallback('presence')
+    @ProtocolEntityCallback("presence")
     def onPresenceReceived(self, presence):
         _type = presence.getType()
         name = presence.getName()
@@ -847,9 +923,9 @@ class YowsupAppLayer(YowInterfaceLayer):
         last = presence.getLast()
         self.caller.onPresenceReceived(_type, name, _from, last)
 
-    @ProtocolEntityCallback('chatstate')
+    @ProtocolEntityCallback("chatstate")
     def onChatstate(self, chatstate):
-        number = chatstate._from.split('@')[0]
+        number = chatstate._from.split("@")[0]
         if chatstate.getState() == ChatstateProtocolEntity.STATE_TYPING:
             self.caller.onContactTyping(number)
         else:
