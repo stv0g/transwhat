@@ -54,7 +54,7 @@ class Session(YowsupApp):
         self.user = user
         self.legacyName = legacyName
 
-        self.status = Spectrum2.protocol_pb2.STATUS_NONE
+        self.status = spectrum2.protocol_pb2.STATUS_NONE
         self.statusMessage = ""
 
         self.groups = {}
