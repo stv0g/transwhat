@@ -35,7 +35,6 @@ setup(
     packages=["transWhat"],
     scripts=["transWhat/transwhat.py"],
     install_requires=[
-        "protobuf <=3.8",
         "yowsup",
         "pyspectrum2",
         "python-dateutil",
