@@ -8,6 +8,7 @@ from .registersession import RegisterSession
 class WhatsAppBackend(spectrum2.Backend):
     def __init__(self, io, spectrum_jid, specConf):
         super().__init__(self)
+
         self.logger = logging.getLogger(self.__class__.__name__)
         self.io = io
         self.specConf = specConf
@@ -136,7 +137,7 @@ class WhatsAppBackend(spectrum2.Backend):
         """
         self.logger.debug("relogin(user=%s, legacyName=%s)" % (user, legacyName))
         # Change password in spectrum database
-        self.handleQuery("register %s %s %s" % (user, legacyName, password))
+        self.handle_query("register %s %s %s" % (user, legacyName, password))
         # Key word means we should register a new password
         if password == "register":  # This shouldn't happen, but just in case
             self.sessions[user] = RegisterSession(self, user, legacyName, extra)

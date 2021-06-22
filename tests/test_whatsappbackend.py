@@ -3,6 +3,7 @@ from spectrum2 import Backend
 from transWhat.session import Session
 from transWhat.whatsappbackend import WhatsAppBackend
 from unittest.mock import Mock, create_autospec, patch
+from spectrum2_utils import generate_buddies
 
 
 @patch("transWhat.whatsappbackend.Session")
@@ -81,3 +82,18 @@ def test_sendData(mock_backend):
     backend.sendData(b"1234")
 
     mock_backend.send_data.assert_called_with(b"1234")
+
+
+def test_relogin(mock_backend):
+    user_name = "user@jid.com"
+
+    backend = WhatsAppBackend(mock_backend, user_name, {})
+
+
+
+def test_handle_buddies(faker, mock_backend):
+    user_name = "user@jid.com"
+    buddies = generate_buddies(faker, 10)
+
+    backend = WhatsAppBackend(mock_backend, user_name, {})
+    backend.handle_buddies(buddies)

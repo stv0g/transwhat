@@ -1,4 +1,5 @@
 import pytest
+from asyncio import Transport
 from spectrum2 import Backend
 from transWhat.session import Session
 from unittest.mock import create_autospec
@@ -76,6 +77,11 @@ class MockYowstack:
         raise AssertionError(
             f"iq type={iq_type} success={success} error={error} not found in {self.events}"
         )
+
+
+@pytest.fixture
+def mock_transport() -> Transport:
+    yield create_autospec(Transport)
 
 
 @pytest.fixture
