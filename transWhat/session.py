@@ -6,7 +6,7 @@ import os
 from yowsup.layers.protocol_media.mediauploader import MediaUploader
 from yowsup.layers.protocol_media.mediadownloader import MediaDownloader
 
-import Spectrum2
+import spectrum2
 
 from . import deferred
 from .buddy import BuddyList
@@ -45,7 +45,8 @@ class Session(YowsupApp):
     broadcast_prefix = "\U0001F4E2 "
 
     def __init__(self, backend, user, legacyName, extra):
-        super(Session, self).__init__()
+        super().__init__()
+
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.info("Created: %s" % legacyName)
 
@@ -53,7 +54,7 @@ class Session(YowsupApp):
         self.user = user
         self.legacyName = legacyName
 
-        self.status = Spectrum2.protocol_pb2.STATUS_NONE
+        self.status = spectrum2.protocol_pb2.STATUS_NONE
         self.statusMessage = ""
 
         self.groups = {}
@@ -86,15 +87,21 @@ class Session(YowsupApp):
         self.logout()
 
     def logout(self):
+        # Do not logout when there is no way that we are logged in
+        if not self.loggedIn:
+            self.logger.info("%s already logged out, ignoring" % self.user)
+            return
+
+        # Log out otherwise
         self.logger.info("%s logged out" % self.user)
-        super(Session, self).logout()
+        super().logout()
         self.loggedIn = False
 
     def login(self, password):
         self.logger.info("%s attempting login" % self.user)
         self.password = password
         self.shouldBeConncted = True
-        super(Session, self).login(self.legacyName, self.password)
+        super().login(self.legacyName, self.password)
 
     def _shortenGroupId(self, gid):
         # FIXME: might have problems if number begins with 0
@@ -111,7 +118,7 @@ class Session(YowsupApp):
     def updateRoomList(self):
         rooms = []
         text = []
-        for room, group in self.groups.iteritems():
+        for room, group in self.groups.items():
             rooms.append([self._shortenGroupId(room), group.subject])
             text.append(
                 self._shortenGroupId(room)
@@ -220,13 +227,13 @@ class Session(YowsupApp):
     def onAuthSuccess(self, status, kind, creation, expiration, props, nonce, t):
         self.logger.info("Auth success: %s" % self.user)
 
-        self.backend.handleConnected(self.user)
-        self.backend.handleBuddyChanged(
+        self.backend.handle_connected(self.user)
+        self.backend.handle_buddy_changed(
             self.user,
             "bot",
             self.bot.name,
             ["Admin"],
-            Spectrum2.protocol_pb2.STATUS_ONLINE,
+            spectrum2.protocol_pb2.STATUS_ONLINE,
         )
         # Initialisation?
         self.requestPrivacyList()
@@ -235,7 +242,13 @@ class Session(YowsupApp):
         # ?
 
         self.logger.debug("Requesting groups list")
-        self.requestGroupsList(self._updateGroups)
+
+        # TODO: updateGroups is broken
+        # TODO:
+        # TODO: it also calls methods which do not
+        # TODO: exist in pyspectrum2
+        # self.requestGroupsList(self._updateGroups)
+
         # self.requestBroadcastList()
 
         # This should handle, sync, statuses, and presence
@@ -253,14 +266,14 @@ class Session(YowsupApp):
     # Called by superclass
     def onAuthFailed(self, reason):
         self.logger.info("Auth failed: %s (%s)" % (self.user, reason))
-        self.backend.handleDisconnected(self.user, 0, reason)
+        self.backend.handle_disconnected(self.user, 0, reason)
         self.password = None
         self.loggedIn = False
 
     # Called by superclass
     def onDisconnect(self):
         self.logger.debug("Disconnected")
-        self.backend.handleDisconnected(
+        self.backend.handle_disconnected(
             self.user, 0, "Disconnected for unknown reasons"
         )
 
@@ -327,34 +340,25 @@ class Session(YowsupApp):
 
     def onMedia(self, media, type):
         self.logger.debug("Received %s message: %s" % (type, media))
-        buddy = media._from.split("@")[0]
+        buddy = media.getFrom(full=False)
         participant = media.participant
+        url = media.url
         caption = ""
 
-        if media.isEncrypted():
-            self.logger.debug("Received encrypted media message")
-            if (
-                self.backend.specConf is not None
-                and self.backend.specConf.__getitem__("service.web_directory")
-                is not None
-                and self.backend.specConf.__getitem__("service.web_url") is not None
-            ):
-                ipath = "/" + str(media.timestamp) + media.getExtension()
+        # TODO: media.isEncrypted does not exist anymore(?)
+        # if media.isEncrypted():
+        #    self.logger.debug('Received encrypted media message')
+        #    if self.backend.specConf is not None and self.backend.specConf.__getitem__("service.web_directory") is not None and self.backend.specConf.__getitem__("service.web_url") is not None :
+        #        ipath = "/" + str(media.timestamp)  + media.getExtension()
 
-                with open(
-                    self.backend.specConf.__getitem__("service.web_directory") + ipath,
-                    "wb",
-                ) as f:
-                    f.write(media.getMediaContent())
-                url = self.backend.specConf.__getitem__("service.web_url") + ipath
-            else:
-                self.logger.warn(
-                    "Received encrypted media: web storage not set in config!"
-                )
-                url = media.url
+        #        with open(self.backend.specConf.__getitem__("service.web_directory") + ipath,"wb") as f:
+        #            f.write(media.getMediaContent())
+        #        url = self.backend.specConf.__getitem__("service.web_url") + ipath
+        #    else:
+        #        self.logger.warn('Received encrypted media: web storage not set in config!')
+        #        url = media.url
 
-        else:
-            url = media.url
+        # else:
 
         if type == "image":
             caption = media.caption
@@ -362,19 +366,23 @@ class Session(YowsupApp):
         if participant is not None:  # Group message
             partname = participant.split("@")[0]
             if media._from.split("@")[1] == "broadcast":  # Broadcast message
-                self.sendMessageToXMPP(partname, self.broadcast_prefix, media.timestamp)
-                self.sendMessageToXMPP(partname, url, media.timestamp)
-                self.sendMessageToXMPP(partname, caption, media.timestamp)
+                self.sendMessageToXMPP(
+                    partname, self.broadcast_prefix, media.getTimestamp()
+                )
+                self.sendMessageToXMPP(partname, url, media.getTimestamp())
+                self.sendMessageToXMPP(partname, caption, media.getTimestamp())
             else:  # Group message
-                self.sendGroupMessageToXMPP(buddy, partname, url, media.timestamp)
-                self.sendGroupMessageToXMPP(buddy, partname, caption, media.timestamp)
+                self.sendGroupMessageToXMPP(buddy, partname, url, media.getTimestamp())
+                self.sendGroupMessageToXMPP(
+                    buddy, partname, caption, media.getTimestamp()
+                )
         else:
-            self.sendMessageToXMPP(buddy, url, media.timestamp)
-            self.sendMessageToXMPP(buddy, caption, media.timestamp)
+            self.sendMessageToXMPP(buddy, url, media.getTimestamp())
+            self.sendMessageToXMPP(buddy, caption, media.getTimestamp())
 
-        self.sendReceipt(media._id, media._from, None, media.participant)
+        self.sendReceipt(media.getId(), media.getFrom(), None, media.participant)
         self.recvMsgIDs.append(
-            (media._id, media._from, media.participant, media.timestamp)
+            (media.getId(), media.getFrom(), media.participant, media.getTimestamp())
         )
 
     def onLocation(self, location):
@@ -637,7 +645,7 @@ class Session(YowsupApp):
             call(os.remove, pathWithExt)
         call(self.logger.info, "Sending image to %s" % to)
         waId = deferred.Deferred()
-        call(super(Session, self).sendImage, to, pathJpg, onSuccess=waId.run)
+        call(super().sendImage, to, pathJpg, onSuccess=waId.run)
         call(self.setWaId, ID, waId)
         waId.when(call, os.remove, pathJpg)
         waId.when(self.logger.info, "Image sent")
@@ -749,24 +757,20 @@ class Session(YowsupApp):
         self.msgIDs[waId] = MsgIDs(ID, waId)
         self.logger.info("WA Location Message send to %s with ID %s", buddy, waId)
 
-    def sendMessageToXMPP(self, buddy, messageContent, timestamp="", nickname=""):
+    def sendMessageToXMPP(self, buddy, message, timestamp="", nickname=""):
         if timestamp:
             timestamp = time.strftime("%Y%m%dT%H%M%S", time.gmtime(timestamp))
 
         if self.initialized == False:
             self.logger.debug(
-                "Message queued from %s to %s: %s"
-                % (buddy, self.legacyName, messageContent)
+                "Message queued from %s to %s: %s" % (buddy, self.legacyName, message)
             )
-            self.offlineQueue.append((buddy, messageContent, timestamp))
+            self.offlineQueue.append((buddy, message, timestamp))
         else:
             self.logger.debug(
-                "Message sent from %s to %s: %s"
-                % (buddy, self.legacyName, messageContent)
+                "Message sent from %s to %s: %s" % (buddy, self.legacyName, message)
             )
-            self.backend.handleMessage(
-                self.user, buddy, messageContent, "", "", timestamp
-            )
+            self.backend.handle_message(self.user, buddy, message, "", "", timestamp)
 
     def sendGroupMessageToXMPP(
         self, room, number, messageContent, timestamp="", defaultname=""
@@ -827,8 +831,8 @@ class Session(YowsupApp):
             self.status = status
 
             if (
-                status == Spectrum2.protocol_pb2.STATUS_ONLINE
-                or status == Spectrum2.protocol_pb2.STATUS_FFC
+                status == spectrum2.protocol_pb2.STATUS_ONLINE
+                or status == spectrum2.protocol_pb2.STATUS_FFC
             ):
                 self.sendPresence(True)
             else:
@@ -935,8 +939,8 @@ class Session(YowsupApp):
             self.user,
             buddy,
             room,
-            Spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE,
-            Spectrum2.protocol_pb2.STATUS_NONE,
+            spectrum2.protocol_pb2.PARTICIPANT_FLAG_NONE,
+            spectrum2.protocol_pb2.STATUS_NONE,
         )  # TODO
 
         if receiptRequested:

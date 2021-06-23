@@ -1,4 +1,4 @@
-import Spectrum2
+import spectrum2
 
 
 class Group:

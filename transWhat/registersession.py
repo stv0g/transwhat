@@ -1,6 +1,6 @@
 import sys
 import logging
-import Spectrum2
+import spectrum2
 
 from .yowsupwrapper import YowsupApp
 

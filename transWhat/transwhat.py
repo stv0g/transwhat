@@ -7,12 +7,12 @@ import asyncore
 import sys
 import queue
 
-import Spectrum2
+import spectrum2
 from yowsup.common import YowConstants
 from yowsup.stacks import YowStack
 
-from .whatsappbackend import WhatsAppBackend
-from . import threadutils
+from transWhat.whatsappbackend import WhatsAppBackend
+from transWhat import threadutils
 
 # Arguments
 parser = argparse.ArgumentParser()

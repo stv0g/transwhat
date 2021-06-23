@@ -1,13 +1,14 @@
 import logging
-import Spectrum2
+import spectrum2
 
 from .session import Session
 from .registersession import RegisterSession
 
 
-class WhatsAppBackend(Spectrum2.Backend):
+class WhatsAppBackend(spectrum2.Backend):
     def __init__(self, io, spectrum_jid, specConf):
-        Spectrum2.Backend.__init__(self)
+        super().__init__(self)
+
         self.logger = logging.getLogger(self.__class__.__name__)
         self.io = io
         self.specConf = specConf
@@ -19,7 +20,7 @@ class WhatsAppBackend(Spectrum2.Backend):
         self.logger.debug("Backend started")
 
     # RequestsHandlers
-    def handleLoginRequest(self, user, legacyName, password, extra):
+    def handle_login_request(self, user, legacyName, password, extra):
         self.logger.debug(
             "handleLoginRequest(user=%s, legacyName=%s)" % (user, legacyName)
         )
@@ -33,7 +34,7 @@ class WhatsAppBackend(Spectrum2.Backend):
 
         self.sessions[user].login(password)
 
-    def handleLogoutRequest(self, user, legacyName):
+    def handle_logout_request(self, user, legacyName):
         self.logger.debug(
             "handleLogoutRequest(user=%s, legacyName=%s)" % (user, legacyName)
         )
@@ -41,7 +42,7 @@ class WhatsAppBackend(Spectrum2.Backend):
             self.sessions[user].logout()
             del self.sessions[user]
 
-    def handleMessageSendRequest(self, user, buddy, message, xhtml="", ID=""):
+    def handle_message_send_request(self, user, buddy, message, xhtml="", ID=""):
         self.logger.debug(
             "handleMessageSendRequest(user=%s, buddy=%s, message=%s, xhtml=%s, ID=%s)"
             % (user, buddy, message, xhtml, ID)
@@ -56,18 +57,18 @@ class WhatsAppBackend(Spectrum2.Backend):
             self.sessions[user].sendMessageToWA(buddy, message, ID, xhtml)
             self.lastMsgId[user] = ID
 
-    def handleJoinRoomRequest(self, user, room, nickname, pasword):
+    def handle_join_room_request(self, user, room, nickname, pasword):
         self.logger.debug(
             "handleJoinRoomRequest(user=%s, room=%s, nickname=%s)"
             % (user, room, nickname)
         )
         self.sessions[user].joinRoom(room, nickname)
 
-    def handleLeaveRoomRequest(self, user, room):
+    def handle_leave_room_request(self, user, room):
         self.logger.debug("handleLeaveRoomRequest(user=%s, room=%s)" % (user, room))
         self.sessions[user].leaveRoom(room)
 
-    def handleStatusChangeRequest(self, user, status, statusMessage):
+    def handle_status_change_request(self, user, status, statusMessage):
         self.logger.debug(
             "handleStatusChangeRequest(user=%s, status=%d, statusMessage=%s)"
             % (user, status, statusMessage)
@@ -136,7 +137,7 @@ class WhatsAppBackend(Spectrum2.Backend):
         """
         self.logger.debug("relogin(user=%s, legacyName=%s)" % (user, legacyName))
         # Change password in spectrum database
-        self.handleQuery("register %s %s %s" % (user, legacyName, password))
+        self.handle_query("register %s %s %s" % (user, legacyName, password))
         # Key word means we should register a new password
         if password == "register":  # This shouldn't happen, but just in case
             self.sessions[user] = RegisterSession(self, user, legacyName, extra)
@@ -170,4 +171,4 @@ class WhatsAppBackend(Spectrum2.Backend):
         self.logger.info("Meassage ACK request for %s !!" % legacyName)
 
     def sendData(self, data):
-        self.io.sendData(data)
+        self.io.send_data(data)
